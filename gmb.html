@@ -55,7 +55,7 @@
   }
   button, input, select { font-family: inherit; -webkit-appearance: none; appearance: none; touch-action: manipulation; }
 
-  /* HEADER - 綠色主題 */
+  /* === HEADER === */
   header.app-header {
     background: #0d5e3a; color: white; padding: 10px 16px;
     flex-shrink: 0; display: flex; align-items: center;
@@ -112,7 +112,7 @@
     .back-btn { padding: 6px 10px; font-size: calc(13px * var(--font-scale)); }
   }
 
-  /* LAYOUT */
+  /* === LAYOUT === */
   .layout {
     flex: 1 1 auto; min-height: 0; min-width: 0;
     display: grid;
@@ -131,7 +131,7 @@
   }
   .sidebar { overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; min-width: 0; min-height: 0; }
 
-  /* FAVOURITES */
+  /* === FAVOURITES === */
   .fav-section { margin-bottom: 8px; margin-top: 0; min-width: 0; }
   .fav-section .title {
     font-size: calc(13px * var(--font-scale)); color: #333; margin-bottom: 4px;
@@ -170,11 +170,10 @@
   .fav-slot .fav-remove:active { background: #c62828; }
   .fav-divider { border: none; border-top: 1px solid #eef; margin: 6px 0; }
 
-  /* SEARCH ROW */
+  /* === SEARCH ROW === */
   .row {
     display: flex; align-items: center; gap: 6px;
     margin-bottom: 10px; min-width: 0;
-    transition: all 0.25s ease;
   }
   .row label { font-size: calc(13px * var(--font-scale)); color: #333; min-width: 60px; flex-shrink: 0; }
   input[type="text"] {
@@ -227,7 +226,7 @@
   }
   .search-btn:disabled { opacity: 0.6; cursor: default; }
 
-  /* DIRECTION */
+  /* === DIRECTION === */
   .direction-row { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; min-width: 0; }
   .direction-row .label { font-size: calc(14px * var(--font-scale)); font-weight: 600; color: #333; flex-shrink: 0; }
   .direction-chip {
@@ -257,7 +256,7 @@
   .direction-picker li span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .direction-picker li .arrow { color: #0d5e3a; font-weight: bold; }
 
-  /* STOP LIST */
+  /* === STOP LIST === */
   h3 { margin: 0 0 8px; font-size: calc(14px * var(--font-scale)); }
   h3 small { color: #666; font-weight: normal; font-size: calc(12px * var(--font-scale)); }
   .stop-list { flex: 1 1 auto; min-height: 80px; min-width: 0; overflow-y: auto; overflow-x: hidden; border-top: 1px solid #eef; margin-top: 4px; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
@@ -286,7 +285,7 @@
   .error { color: #c0392b; font-size: calc(12px * var(--font-scale)); margin-top: 6px; word-break: break-word; }
   .loading { color: #0d5e3a; font-size: calc(12px * var(--font-scale)); padding: 4px 0; }
 
-  /* MAIN AREA */
+  /* === MAIN AREA === */
   .main-area { display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 12px; min-height: 0; min-width: 0; overflow: hidden; }
   .map-wrap { border-radius: 10px; overflow: hidden; min-height: 0; min-width: 0; padding: 0; position: relative; }
   #map-desktop, #map-mobile { position: absolute; top: 0; right: 0; bottom: 0; left: 0; width: 100%; height: 100%; border-radius: 10px; }
@@ -299,12 +298,11 @@
     display: flex; align-items: center; justify-content: center;
   }
 
-  /* ETA PANEL */
+  /* === ETA PANEL === */
   .eta-box { padding: 10px 14px; max-height: 260px; overflow-y: auto; flex-shrink: 0; min-width: 0; -webkit-overflow-scrolling: touch; }
   .eta-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; min-width: 0; }
   .eta-header h3 { margin: 0; min-width: 0; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   .eta-header h3 small { color: #666; font-weight: normal; font-size: calc(12px * var(--font-scale)); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
   .refresh-btn {
     padding: 6px 10px; border: 1px solid #ccd; border-radius: 6px;
     background: white; color: #0d5e3a;
@@ -315,7 +313,6 @@
   .refresh-btn.spinning .icon { animation: spin 1s linear infinite; }
   .refresh-btn .icon { display: inline-block; font-size: 14px; line-height: 1; }
   @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
   .eta-box ul { list-style: none; padding: 0; margin: 0; }
   .eta-box li { display: flex; align-items: center; gap: 12px; padding: 7px 0; border-bottom: 1px dashed #eee; min-width: 0; }
   .eta-box li:last-child { border-bottom: none; }
@@ -323,7 +320,6 @@
   .eta-box .time { font-size: calc(20px * var(--font-scale)); font-weight: 700; color: #0d5e3a; flex-shrink: 0; display: flex; align-items: baseline; gap: 6px; }
   .eta-box .exact-time { font-size: calc(20px * var(--font-scale)); font-weight: 700; color: #0d5e3a; }
   .eta-box .remark { font-size: calc(12px * var(--font-scale)); color: #e67e22; margin-left: auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
   .eta-box .age-line { border-bottom: none; padding: 6px 0 0 0; margin-top: 4px; border-top: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
   .eta-box .age { font-size: calc(11px * var(--font-scale)); color: #888; }
   .eta-box .countdown { font-size: calc(11px * var(--font-scale)); color: #0d5e3a; display: flex; align-items: center; gap: 4px; font-weight: 600; }
@@ -331,7 +327,7 @@
   .eta-box .stale-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #e67e22; margin-right: 5px; vertical-align: middle; }
   .eta-box .stale { color: #e67e22; font-weight: 600; margin-left: 6px; }
 
-  /* STOP NAME LABEL (map) */
+  /* === STOP NAME LABEL === */
   .stop-name-label {
     background: rgba(255,255,255,0.92);
     border: 1px solid #0d5e3a;
@@ -347,18 +343,11 @@
     max-width: 160px;
     overflow: hidden;
     text-overflow: ellipsis;
-    -webkit-transform: translateZ(0);
-    transform: translateZ(0);
   }
-  .stop-name-label.selected {
-    background: #cfeedd;
-    border-color: #0d5e3a;
-    color: #0d5e3a;
-  }
-
+  .stop-name-label.selected { background: #cfeedd; border-color: #0d5e3a; color: #0d5e3a; }
   @keyframes busPulse { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
 
-  /* MOBILE */
+  /* === MOBILE === */
   @media (max-width: 900px) {
     .layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 8px; padding: 8px; }
     .main-area { display: contents; }
@@ -395,7 +384,7 @@
     .row.landing .search-btn { padding: 12px 14px; font-size: calc(14px * var(--font-scale)); }
   }
 
-  /* MAP OVERLAY */
+  /* === MAP OVERLAY === */
   .map-overlay { display: none; }
   @media (max-width: 900px) {
     .map-overlay {
@@ -453,9 +442,7 @@
               <span class="fav-route">{{ fav.route }}</span>
               <span class="fav-company">GMB</span>
               <span class="fav-dest">{{ fav.dest_tc }}</span>
-              <button class="fav-remove"
-                      @click.stop="removeFavourite(i)"
-                      aria-label="移除">✕</button>
+              <button class="fav-remove" @click.stop="removeFavourite(i)">✕</button>
             </template>
             <template v-else>
               <span class="fav-plus">+</span>
@@ -489,12 +476,8 @@
       <div v-if="searching" class="searching-hint">正在搜尋小巴路線…</div>
 
       <div v-if="!selectedDirectionLabel || pickingDirection">
-        <div v-if="matchedRoutes.length > 1" class="direction-row">
-          <span class="label">方向</span>
-        </div>
         <ul v-if="matchedRoutes.length > 1" class="direction-picker">
-          <li v-for="r in matchedRoutes"
-              :key="r.key"
+          <li v-for="r in matchedRoutes" :key="r.key"
               :class="{ active: routeKey === r.key }"
               @click="selectDirection(r)">
             <span>{{ r.orig_tc }} <span class="arrow">→</span> {{ r.dest_tc }}</span>
@@ -527,11 +510,8 @@
               :class="{ active: selectedStop && selectedStop.id === s.id }"
               @click="onStopClick(s)">
             <span class="stop-name">{{ s.name }}</span>
-            <button class="stop-map-btn"
-                    @click.stop="onStopMapClick(s)"
-                    title="查看地圖">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <button class="stop-map-btn" @click.stop="onStopMapClick(s)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polygon points="1 6 8 3 16 6 23 3 23 18 16 21 8 18 1 21 1 6" fill="#e6f5ec"/>
                 <line x1="8" y1="3" x2="8" y2="18"/>
                 <line x1="16" y1="6" x2="16" y2="21"/>
@@ -619,7 +599,7 @@
 <script>
 const { createApp, ref, computed, onMounted, onUnmounted, nextTick } = Vue;
 
-/* ==================== 工具函式 ==================== */
+/* ==================== 通用工具 ==================== */
 function dbgError(label, err) {
   console.error(`❌ ${label}：${err && err.message ? err.message : err}`);
 }
@@ -679,34 +659,88 @@ function isMapUsable(map) {
   } catch (e) { return false; }
 }
 
-/* ==================== 節流與快取（GMB 有 429 限制） ==================== */
-const GMB_MIN_INTERVAL_MS = 800; /* 兩次 GMB 請求之間最少間隔 */
-let gmbLastRequestTime = 0;
+/* ============================================================
+   🗺️ HK80 Grid → WGS84 (Latitude/Longitude) 轉換
+   政府 GMB 站點座標使用 HK80 Grid（Easting/Northing），
+   Leaflet 需要 WGS84 lat/lng。此處使用標準公式轉換。
+   ============================================================ */
+function hk80ToWgs84(easting, northing) {
+  /* --- 第一步：HK80 Grid (E, N) → HK80 geodetic (lat, lng) --- */
+  /* HK80 Transverse Mercator 參數 */
+  const a = 6378388;                /* 半長軸（HK80 / International 1924 橢球） */
+  const f = 1 / 297;                /* 扁率 */
+  const e2 = 2 * f - f * f;         /* 第一偏心率平方 */
+  const lat0 = 22.31213333333333 * Math.PI / 180;  /* 原點緯度 */
+  const lng0 = 114.1785555555556 * Math.PI / 180;  /* 原點經度 */
+  const k0 = 1;                     /* 尺度因子 */
+  const falseE = 836694.05;         /* 假東 */
+  const falseN = 819069.80;         /* 假北 */
 
-async function gmbFetch(url) {
-  const now = Date.now();
-  const wait = GMB_MIN_INTERVAL_MS - (now - gmbLastRequestTime);
-  if (wait > 0) await new Promise(r => setTimeout(r, wait));
-  gmbLastRequestTime = Date.now();
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) throw new Error("HTTP " + res.status);
-  return res.json();
+  const ep2 = e2 / (1 - e2);        /* 第二偏心率平方 */
+  const M0 = a * (
+    (1 - e2 / 4 - 3 * e2 * e2 / 64 - 5 * e2 * e2 * e2 / 256) * lat0 -
+    (3 * e2 / 8 + 3 * e2 * e2 / 32 + 45 * e2 * e2 * e2 / 1024) * Math.sin(2 * lat0) +
+    (15 * e2 * e2 / 256 + 45 * e2 * e2 * e2 / 1024) * Math.sin(4 * lat0) -
+    (35 * e2 * e2 * e2 / 3072) * Math.sin(6 * lat0)
+  );
+
+  const M = M0 + (northing - falseN) / k0;
+  const mu = M / (a * (1 - e2 / 4 - 3 * e2 * e2 / 64 - 5 * e2 * e2 * e2 / 256));
+  const e1 = (1 - Math.sqrt(1 - e2)) / (1 + Math.sqrt(1 - e2));
+
+  const phi1 =
+    mu +
+    (3 * e1 / 2 - 27 * e1 * e1 * e1 / 32) * Math.sin(2 * mu) +
+    (21 * e1 * e1 / 16 - 55 * e1 * e1 * e1 * e1 / 32) * Math.sin(4 * mu) +
+    (151 * e1 * e1 * e1 / 96) * Math.sin(6 * mu);
+
+  const sinPhi1 = Math.sin(phi1);
+  const cosPhi1 = Math.cos(phi1);
+  const tanPhi1 = Math.tan(phi1);
+
+  const N1 = a / Math.sqrt(1 - e2 * sinPhi1 * sinPhi1);
+  const T1 = tanPhi1 * tanPhi1;
+  const C1 = ep2 * cosPhi1 * cosPhi1;
+  const R1 = a * (1 - e2) / Math.pow(1 - e2 * sinPhi1 * sinPhi1, 1.5);
+  const D = (easting - falseE) / (N1 * k0);
+
+  const lat =
+    phi1 -
+    (N1 * tanPhi1 / R1) * (
+      D * D / 2 -
+      (5 + 3 * T1 + 10 * C1 - 4 * C1 * C1 - 9 * ep2) * D * D * D * D / 24 +
+      (61 + 90 * T1 + 298 * C1 + 45 * T1 * T1 - 252 * ep2 - 3 * C1 * C1) * D * D * D * D * D * D / 720
+    );
+
+  const lng = lng0 + (
+    D -
+    (1 + 2 * T1 + C1) * D * D * D / 6 +
+    (5 - 2 * C1 + 28 * T1 - 3 * C1 * C1 + 8 * ep2 + 24 * T1 * T1) * D * D * D * D * D / 120
+  ) / cosPhi1;
+
+  const hk80Lat = lat * 180 / Math.PI;
+  const hk80Lng = lng * 180 / Math.PI;
+
+  /* --- 第二步：HK80 geodetic → WGS84 geodetic --- */
+  /* 使用簡化的 Molodensky 轉換（HK80 到 WGS84 的參數） */
+  const dLat = -5.5 / 3600;   /* 緯度偏移（約 -5.5 秒） */
+  const dLng = 8.5 / 3600;    /* 經度偏移（約 +8.5 秒） */
+
+  const wgsLat = hk80Lat + dLat;
+  const wgsLng = hk80Lng + dLng;
+
+  return { lat: wgsLat, lng: wgsLng };
 }
 
-/* ETA 記憶體快取：{ [routeId+routeSeq+stopSeq]: { items, timestamp } } */
-const etaCache = new Map();
-const ETA_CACHE_TTL_MS = 30000;
-
-/* 站點列表記憶體快取：{ [routeId+routeSeq]: stopsArray } */
-const stopsCache = new Map();
-
-/* ==================== 小巴站座標（從政府靜態資料載入） ==================== */
+/* ============================================================
+   🚐 GMB 站點座標 CSV 載入與解析
+   ============================================================ */
 const GMB_COORD_CACHE_KEY = "hk-gmb-stop-coords-v1";
 const GMB_COORD_VERSION = 1;
 const GMB_COORD_DAYS = 30;
-const GMB_COORD_URL = "https://static.data.gov.hk/td/gmb-stop-list/gmb-stop-list.csv";
+const GMB_COORD_URL = "gmb-stops-coords.csv";  /* 從你的 GitHub Pages 載入 */
 
-let gmbCoordDb = null;      /* { [stop_id]: { lat, lng } } */
+let gmbCoordDb = null;
 let gmbCoordLoading = null;
 
 function loadGmbCoordCache() {
@@ -729,7 +763,6 @@ function saveGmbCoordCache(data) {
   } catch (e) {}
 }
 
-/* CSV parser - simple, handles quoted fields with commas */
 function parseCsvLine(line) {
   const out = [];
   let cur = "";
@@ -762,16 +795,17 @@ async function fetchGmbCoordDb() {
       const res = await fetch(GMB_COORD_URL, { cache: "no-store" });
       if (!res.ok) throw new Error("HTTP " + res.status);
       const text = await res.text();
-      const lines = text.split(/\r?\n/);
+      /* 去掉 BOM */
+      const clean = text.charCodeAt(0) === 0xFEFF ? text.substring(1) : text;
+      const lines = clean.split(/\r?\n/);
       if (!lines.length) return null;
 
-      /* 找出欄位索引（首行是標題） */
       const headers = parseCsvLine(lines[0]).map(h => h.trim().replace(/^"|"$/g, ""));
       const idxStopId = headers.findIndex(h => /stop.?id/i.test(h));
-      const idxLat = headers.findIndex(h => /latitude|lat/i.test(h));
-      const idxLng = headers.findIndex(h => /longitude|long|lng/i.test(h));
+      const idxE = headers.findIndex(h => /easting/i.test(h));
+      const idxN = headers.findIndex(h => /northing/i.test(h));
 
-      if (idxStopId < 0 || idxLat < 0 || idxLng < 0) {
+      if (idxStopId < 0 || idxE < 0 || idxN < 0) {
         dbgError("GMB coord CSV", "找不到必要欄位");
         return null;
       }
@@ -779,12 +813,15 @@ async function fetchGmbCoordDb() {
       const db = {};
       for (let i = 1; i < lines.length; i++) {
         const row = parseCsvLine(lines[i]);
-        if (!row || row.length <= Math.max(idxStopId, idxLat, idxLng)) continue;
+        if (!row || row.length <= Math.max(idxStopId, idxE, idxN)) continue;
         const sid = String(row[idxStopId]).trim().replace(/^"|"$/g, "");
-        const lat = parseFloat(String(row[idxLat]).trim().replace(/^"|"$/g, ""));
-        const lng = parseFloat(String(row[idxLng]).trim().replace(/^"|"$/g, ""));
-        if (!sid || !isFinite(lat) || !isFinite(lng)) continue;
-        db[sid] = { lat, lng };
+        const e = parseFloat(String(row[idxE]).trim().replace(/^"|"$/g, ""));
+        const n = parseFloat(String(row[idxN]).trim().replace(/^"|"$/g, ""));
+        if (!sid || !isFinite(e) || !isFinite(n)) continue;
+        const wgs = hk80ToWgs84(e, n);
+        if (isValidCoord(wgs.lat, wgs.lng)) {
+          db[sid] = { lat: wgs.lat, lng: wgs.lng };
+        }
       }
       gmbCoordDb = db;
       saveGmbCoordCache(db);
@@ -801,14 +838,32 @@ async function fetchGmbCoordDb() {
 
 function lookupGmbCoord(stopId) {
   if (!gmbCoordDb) return null;
-  const sid = String(stopId);
-  const rec = gmbCoordDb[sid];
+  const rec = gmbCoordDb[String(stopId)];
   if (!rec) return null;
   return safeLatLng(rec.lat, rec.lng);
 }
 
-/* ==================== 小巴 API ==================== */
+/* ============================================================
+   🚐 GMB API（含節流 + 快取避免 429）
+   ============================================================ */
 const GMB_BASE = "https://data.etagmb.gov.hk";
+const GMB_MIN_INTERVAL_MS = 800;
+let gmbLastRequestTime = 0;
+
+async function gmbFetch(url) {
+  const now = Date.now();
+  const wait = GMB_MIN_INTERVAL_MS - (now - gmbLastRequestTime);
+  if (wait > 0) await new Promise(r => setTimeout(r, wait));
+  gmbLastRequestTime = Date.now();
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  return res.json();
+}
+
+/* 快取 */
+const etaCache = new Map();
+const ETA_CACHE_TTL_MS = 30000;
+const stopsCache = new Map();
 
 async function fetchGmbRouteDetails(region, routeCode) {
   const j = await gmbFetch(`${GMB_BASE}/route/${region}/${routeCode}`);
@@ -835,23 +890,18 @@ async function fetchGmbRouteStops(routeId, routeSeq) {
 
   const j = await gmbFetch(`${GMB_BASE}/route-stop/${routeId}/${routeSeq}`);
   const raw = (j.data && j.data.route_stops) || [];
-  const stops = raw.map((s) => ({
-    seq: Number(s.stop_seq),
-    stopSeq: String(s.stop_seq),
-    id: String(s.stop_id),
-    name: s.name_tc || s.name_en || "",
-    lat: NaN,
-    lng: NaN,
-  }));
-
-  /* 用座標 DB 補上座標 */
-  if (gmbCoordDb) {
-    for (const st of stops) {
-      const ll = lookupGmbCoord(st.id);
-      if (ll) { st.lat = ll[0]; st.lng = ll[1]; }
-    }
-  }
-
+  const stops = raw.map((s) => {
+    const id = String(s.stop_id);
+    const coords = lookupGmbCoord(id);
+    return {
+      seq: Number(s.stop_seq),
+      stopSeq: String(s.stop_seq),
+      id,
+      name: s.name_tc || s.name_en || "",
+      lat: coords ? coords[0] : NaN,
+      lng: coords ? coords[1] : NaN,
+    };
+  });
   stopsCache.set(cacheKey, stops);
   return stops;
 }
@@ -862,7 +912,6 @@ async function fetchGmbEta(routeId, routeSeq, stopSeq) {
   if (cached && (Date.now() - cached.timestamp < ETA_CACHE_TTL_MS)) {
     return cached.items;
   }
-
   const url = `${GMB_BASE}/eta/route-stop/${routeId}/${routeSeq}/${stopSeq}`;
   const j = await gmbFetch(url);
   const raw = (j.data && j.data.eta) || [];
@@ -1061,15 +1110,15 @@ createApp({
       dataAge.value = null; countdown.value = null;
       clearMap();
       try {
-        /* 先確保座標 DB 已載入（若尚未載入則載入） */
-        if (!gmbCoordDb) {
-          await fetchGmbCoordDb();
-        }
-        /* 再載入站點列表（同時會用座標 DB 補座標） */
+        /* 確保座標 DB 已載入 */
+        if (!gmbCoordDb) await fetchGmbCoordDb();
         stops.value = await fetchGmbRouteStops(r.routeId, r.routeSeq);
         const tgt = isMobile.value ? (mapExpanded.value ? mapMobile : null) : mapDesktop;
         if (isMapUsable(tgt)) { activeMap = tgt; drawOnActiveMap(); }
-        await autoLocateNearestStop();
+        /* 只有在有座標的站點才自動定位 */
+        if (stops.value.some(s => isValidCoord(s.lat, s.lng))) {
+          await autoLocateNearestStop();
+        }
       } catch (e) {
         error.value = "無法載入小巴站：" + e.message;
       } finally {
@@ -1183,7 +1232,7 @@ createApp({
       await expandMap();
     }
 
-    /* ========== GPS 定位 ========== */
+    /* ========== GPS ========== */
     let lastUserPos = null;
     function getUserPosition() {
       return new Promise((resolve, reject) => {
@@ -1458,7 +1507,7 @@ createApp({
       applyFontScale(fontScale.value);
       initMaps();
       if (mapDesktop) buildLabelLayer(mapDesktop);
-      /* 背景預先載入小巴站座標（無需等待使用者操作） */
+      /* 背景預先載入座標 DB */
       fetchGmbCoordDb().catch(() => {});
       window.addEventListener("resize", handleResize);
       window.addEventListener("orientationchange", handleResize);
