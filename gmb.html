@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="format-detection" content="telephone=no" />
+<title>Ansum 小巴</title>
+<link rel="icon" type="image/png" href="bus.png" />
+<link rel="apple-touch-icon" href="bus.png" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous" />
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
+<style>
+  :root { --font-scale: 1; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
+  html, body {
+    margin: 0; padding: 0; height: 100%; overflow: hidden;
+    overscroll-behavior: none;
+    -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
+    -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+  }
+  body {
+    background: #f5f7fb; color: #222;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang HK", "Microsoft JhengHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  }
+  @supports (-webkit-touch-callout: none) { html, body { height: -webkit-fill-available; } }
+  #app {
+    display: flex; flex-direction: column;
+    height: 100vh; height: 100dvh;
+    min-height: 0; min-width: 0; max-width: 100%;
+    overflow: hidden;
+  }
+  @supports (-webkit-touch-callout: none) { #app { height: -webkit-fill-available; } }
+  button, input, select { font-family: inherit; -webkit-appearance: none; appearance: none; touch-action: manipulation; }
+
+  /* HEADER - 綠色主題 */
+  header.app-header {
+    background: #0d5e3a; color: white; padding: 10px 16px;
+    flex-shrink: 0; display: flex; align-items: center;
+    justify-content: space-between; gap: 12px;
+    min-width: 0; min-height: 0;
+    padding-top: max(10px, env(safe-area-inset-top));
+  }
+  header.app-header h1 {
+    margin: 0; font-size: calc(17px * var(--font-scale)); white-space: nowrap;
+    display: flex; align-items: center; gap: 9px;
+    min-width: 0; overflow: hidden;
+  }
+  .header-logo-badge {
+    width: 34px; height: 34px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: #fff; border-radius: 50%;
+    font-size: 20px; line-height: 1;
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.28), 0 1px 4px rgba(0,0,0,0.3);
+  }
+  header.app-header p { margin: 0; font-size: calc(11px * var(--font-scale)); opacity: 0.75; flex-shrink: 0; }
+  .header-meta { display: flex; align-items: center; gap: 12px; flex-shrink: 0; min-width: 0; }
+  .header-clock {
+    font-size: calc(14px * var(--font-scale)); font-weight: 600; letter-spacing: 0.4px;
+    font-variant-numeric: tabular-nums; opacity: 0.95; white-space: nowrap;
+  }
+  .back-btn {
+    background: rgba(255,255,255,0.18); color: white;
+    border: none; border-radius: 8px;
+    padding: 6px 12px; font-size: calc(14px * var(--font-scale));
+    font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; gap: 4px;
+    flex-shrink: 0;
+    text-decoration: none;
+  }
+  .back-btn:active { background: rgba(255,255,255,0.32); }
+
+  .font-size-controls { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+  .font-btn {
+    width: 28px; height: 28px; border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.4);
+    background: rgba(255,255,255,0.15); color: white;
+    font-size: 16px; font-weight: 700; line-height: 1; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .font-btn:active { transform: scale(0.95); }
+
+  @media (max-width: 600px) {
+    header.app-header { padding: 8px 12px; padding-top: max(8px, env(safe-area-inset-top)); }
+    header.app-header h1 { font-size: calc(15px * var(--font-scale)); }
+    .header-logo-badge { width: 30px; height: 30px; font-size: 18px; }
+    header.app-header p { display: none; }
+    .header-clock { font-size: calc(13px * var(--font-scale)); }
+    .font-btn { width: 26px; height: 26px; font-size: 14px; }
+    .back-btn { padding: 6px 10px; font-size: calc(13px * var(--font-scale)); }
+  }
+
+  /* LAYOUT */
+  .layout {
+    flex: 1 1 auto; min-height: 0; min-width: 0;
+    display: grid;
+    grid-template-columns: 340px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    gap: 12px; padding: 12px;
+    max-width: 1400px; width: 100%;
+    margin: 0 auto; overflow: hidden;
+  }
+  .panel {
+    background: white; border-radius: 10px; padding: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    display: flex; flex-direction: column;
+    min-height: 0; min-width: 0;
+    overflow: hidden;
+  }
+  .sidebar { overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; min-width: 0; min-height: 0; }
+
+  /* FAVOURITES */
+  .fav-section { margin-bottom: 8px; margin-top: 0; min-width: 0; }
+  .fav-section .title {
+    font-size: calc(13px * var(--font-scale)); color: #333; margin-bottom: 4px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .fav-section .title .star { color: #f9a825; font-size: calc(14px * var(--font-scale)); }
+  .fav-slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .fav-slot {
+    position: relative; padding: 5px 4px;
+    border: 2px dashed #ccd; border-radius: 10px;
+    background: #fafbff; cursor: pointer;
+    min-height: 62px; min-width: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 2px; transition: all 0.15s;
+    overflow: visible; text-align: center;
+  }
+  .fav-slot.empty { color: #aaa; }
+  .fav-slot.empty:active { background: #e6f5ec; border-color: #4caf7e; }
+  .fav-slot.filled { border-style: solid; border-color: #0d5e3a; background: #e6f5ec; color: #0d5e3a; }
+  .fav-slot.filled:active { background: #cfeedd; transform: scale(0.97); }
+  .fav-slot .fav-route { font-size: calc(16px * var(--font-scale)); font-weight: 800; line-height: 1; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fav-slot .fav-company { font-size: calc(9px * var(--font-scale)); font-weight: 700; letter-spacing: 0.5px; padding: 1px 5px; border-radius: 8px; background: rgba(13,94,58,0.12); color: #0d5e3a; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fav-slot .fav-dest { font-size: calc(9.5px * var(--font-scale)); font-weight: 500; line-height: 1.15; color: #555; max-width: 100%; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word; }
+  .fav-slot .fav-plus { font-size: calc(22px * var(--font-scale)); line-height: 1; color: #0d5e3a; opacity: 0.5; }
+  .fav-slot .fav-hint { font-size: calc(10px * var(--font-scale)); color: #999; }
+  .fav-slot .fav-remove {
+    position: absolute; top: -6px; right: -6px;
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 2px solid white; background: #e53935; color: white;
+    font-size: 12px; font-weight: 700; line-height: 1;
+    padding: 0; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.25); z-index: 2;
+  }
+  .fav-slot .fav-remove:active { background: #c62828; }
+  .fav-divider { border: none; border-top: 1px solid #eef; margin: 6px 0; }
+
+  /* SEARCH ROW */
+  .row {
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 10px; min-width: 0;
+  }
+  .row label { font-size: calc(13px * var(--font-scale)); color: #333; min-width: 60px; flex-shrink: 0; }
+  input[type="text"] {
+    flex: 1 1 0; min-width: 0; width: 0;
+    padding: 8px 10px;
+    border: 1px solid #ccd; border-radius: 6px;
+    font-size: calc(16px * var(--font-scale)); background: white;
+  }
+  input[type="text"]:focus { outline: 2px solid #0d5e3a; border-color: #0d5e3a; }
+
+  .row.landing { margin-bottom: 14px; gap: 8px; }
+  .row.landing label {
+    font-size: calc(20px * var(--font-scale)); font-weight: 800;
+    color: #0d5e3a; min-width: 80px; letter-spacing: 0.5px;
+  }
+  .row.landing input[type="text"] {
+    font-size: calc(18px * var(--font-scale));
+    padding: 13px 14px;
+    border: 2px solid #0d5e3a; border-radius: 10px;
+    box-shadow: 0 0 0 4px rgba(13,94,58,0.10);
+    font-weight: 600;
+  }
+  .row.landing .search-btn { padding: 13px 18px; font-size: calc(15px * var(--font-scale)); border-radius: 10px; }
+  .row.landing input[type="text"]::placeholder {
+    color: #0d5e3a; font-weight: 700; opacity: 1;
+    animation: placeholderBlink 2.4s ease-in-out infinite;
+    -webkit-animation: placeholderBlink 2.4s ease-in-out infinite;
+  }
+  @keyframes placeholderBlink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  select {
+    flex: 1 1 0; min-width: 0;
+    padding: 8px 10px;
+    border: 1px solid #ccd; border-radius: 6px;
+    font-size: calc(15px * var(--font-scale));
+    background: white; color: #222;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><polyline points='2,4 6,8 10,4' fill='none' stroke='%230d5e3a' stroke-width='2'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 30px;
+  }
+  select:focus { outline: 2px solid #0d5e3a; border-color: #0d5e3a; }
+
+  .search-btn {
+    padding: 8px 14px; border: none; border-radius: 6px;
+    background: #0d5e3a; color: white;
+    font-size: calc(13px * var(--font-scale)); font-weight: 600;
+    cursor: pointer; flex-shrink: 0;
+  }
+  .search-btn:disabled { opacity: 0.6; cursor: default; }
+
+  /* DIRECTION */
+  .direction-row { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; min-width: 0; }
+  .direction-row .label { font-size: calc(14px * var(--font-scale)); font-weight: 600; color: #333; flex-shrink: 0; }
+  .direction-chip {
+    flex: 1 1 0; min-width: 0; padding: 8px 12px;
+    border: 1px solid #0d5e3a; border-radius: 8px;
+    background: #e6f5ec; color: #0d5e3a;
+    font-size: calc(13px * var(--font-scale)); font-weight: 600;
+    cursor: pointer; text-align: center; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  .fav-btn {
+    padding: 8px 10px; border: 1px solid #0d5e3a; border-radius: 8px;
+    background: white; color: #0d5e3a;
+    font-size: calc(18px * var(--font-scale)); line-height: 1; cursor: pointer;
+    flex-shrink: 0;
+  }
+  .fav-btn.active { background: #ffd54f; border-color: #f9a825; color: #f57f17; }
+  .direction-picker { list-style: none; padding: 0; margin: 0 0 8px; }
+  .direction-picker li {
+    padding: 9px 11px; border: 1px solid #dde; border-radius: 6px;
+    margin-bottom: 5px; cursor: pointer;
+    font-size: calc(13px * var(--font-scale));
+    display: flex; justify-content: space-between;
+    align-items: center; gap: 6px; background: white; min-width: 0;
+  }
+  .direction-picker li.active { background: #cfeedd; border-color: #0d5e3a; font-weight: 600; }
+  .direction-picker li span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .direction-picker li .arrow { color: #0d5e3a; font-weight: bold; }
+
+  /* STOP LIST */
+  h3 { margin: 0 0 8px; font-size: calc(14px * var(--font-scale)); }
+  h3 small { color: #666; font-weight: normal; font-size: calc(12px * var(--font-scale)); }
+  .stop-list { flex: 1 1 auto; min-height: 80px; min-width: 0; overflow-y: auto; overflow-x: hidden; border-top: 1px solid #eef; margin-top: 4px; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+  .stop-list ul { list-style: none; padding: 0; margin: 0; }
+  .stop-list li {
+    padding: 8px 10px; border-bottom: 1px solid #eef;
+    cursor: pointer; font-size: calc(13px * var(--font-scale));
+    display: flex; align-items: center; gap: 6px; min-width: 0;
+  }
+  .stop-list li.active { background: #cfeedd; color: #0d5e3a; font-weight: 700; border-left: 4px solid #0d5e3a; padding-left: 6px; }
+  .stop-list li .stop-name { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .stop-list .distance { font-size: calc(11px * var(--font-scale)); color: #27ae60; background: #e8f8ee; padding: 2px 6px; border-radius: 10px; font-weight: 600; flex-shrink: 0; }
+  .stop-list li.active .distance { background: #cfeedd; color: #0d5e3a; }
+
+  .hint { color: #999; font-size: calc(13px * var(--font-scale)); padding: 6px 0; word-break: break-word; }
+  .error { color: #c0392b; font-size: calc(12px * var(--font-scale)); margin-top: 6px; word-break: break-word; }
+  .loading { color: #0d5e3a; font-size: calc(12px * var(--font-scale)); padding: 4px 0; }
+
+  /* MAIN AREA */
+  .main-area { display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 12px; min-height: 0; min-width: 0; overflow: hidden; }
+  .map-wrap { border-radius: 10px; overflow: hidden; min-height: 0; min-width: 0; padding: 0; position: relative; }
+  #map-desktop, #map-mobile { position: absolute; top: 0; right: 0; bottom: 0; left: 0; width: 100%; height: 100%; border-radius: 10px; }
+
+  /* ETA PANEL */
+  .eta-box { padding: 10px 14px; max-height: 260px; overflow-y: auto; flex-shrink: 0; min-width: 0; -webkit-overflow-scrolling: touch; }
+  .eta-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; min-width: 0; }
+  .eta-header h3 { margin: 0; min-width: 0; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .eta-header h3 small { color: #666; font-weight: normal; font-size: calc(12px * var(--font-scale)); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .refresh-btn {
+    padding: 6px 10px; border: 1px solid #ccd; border-radius: 6px;
+    background: white; color: #0d5e3a;
+    font-size: calc(12px * var(--font-scale)); font-weight: 600;
+    cursor: pointer; flex-shrink: 0;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .refresh-btn.spinning .icon { animation: spin 1s linear infinite; }
+  .refresh-btn .icon { display: inline-block; font-size: 14px; line-height: 1; }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+  .eta-box ul { list-style: none; padding: 0; margin: 0; }
+  .eta-box li { display: flex; align-items: center; gap: 12px; padding: 7px 0; border-bottom: 1px dashed #eee; min-width: 0; }
+  .eta-box li:last-child { border-bottom: none; }
+  .eta-box .rank { width: 78px; color: #0d5e3a; font-size: calc(20px * var(--font-scale)); font-weight: 700; flex-shrink: 0; }
+  .eta-box .time { font-size: calc(20px * var(--font-scale)); font-weight: 700; color: #0d5e3a; flex-shrink: 0; display: flex; align-items: baseline; gap: 6px; }
+  .eta-box .exact-time { font-size: calc(20px * var(--font-scale)); font-weight: 700; color: #0d5e3a; }
+  .eta-box .remark { font-size: calc(12px * var(--font-scale)); color: #e67e22; margin-left: auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .eta-box .age-line { border-bottom: none; padding: 6px 0 0 0; margin-top: 4px; border-top: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .eta-box .age { font-size: calc(11px * var(--font-scale)); color: #888; }
+  .eta-box .countdown { font-size: calc(11px * var(--font-scale)); color: #0d5e3a; display: flex; align-items: center; gap: 4px; font-weight: 600; }
+  .eta-box .fresh-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #27ae60; margin-right: 5px; vertical-align: middle; }
+  .eta-box .stale-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #e67e22; margin-right: 5px; vertical-align: middle; }
+  .eta-box .stale { color: #e67e22; font-weight: 600; margin-left: 6px; }
+
+  /* MOBILE */
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 8px; padding: 8px; }
+    .main-area { display: contents; }
+    .map-wrap-desktop { display: none !important; }
+    .panel { padding: 10px; min-width: 0; max-width: 100%; }
+    .sidebar { max-width: 100%; min-width: 0; max-height: none; overflow: visible; }
+
+    .fav-slots.collapsed { max-height: 62px; overflow-y: auto; overflow-x: hidden; padding-right: 1px; }
+    .fav-slot { height: 62px; min-height: 0; padding: 4px 3px; gap: 1px; overflow: hidden; }
+    .fav-slot .fav-remove { top: 1px; right: 1px; width: 16px; height: 16px; font-size: 10px; border-width: 1.5px; }
+    .fav-slot .fav-route { font-size: calc(14px * var(--font-scale)); }
+    .fav-slot .fav-company { font-size: calc(8px * var(--font-scale)); padding: 1px 4px; }
+    .fav-slot .fav-dest { font-size: calc(9px * var(--font-scale)); -webkit-line-clamp: 2; }
+    .fav-slot .fav-plus { font-size: calc(18px * var(--font-scale)); }
+    .fav-slot .fav-hint { font-size: calc(9px * var(--font-scale)); }
+
+    .eta-box { max-height: 260px; padding: 8px 12px; }
+    .eta-box .time { font-size: calc(18px * var(--font-scale)); }
+    .eta-box .exact-time { font-size: calc(18px * var(--font-scale)); }
+    .eta-box .rank { width: 68px; font-size: calc(18px * var(--font-scale)); }
+    .eta-header h3 small { font-size: calc(11px * var(--font-scale)); }
+    .stop-list { max-height: 60vh; }
+
+    .row label { min-width: 60px; }
+    .row input[type="text"] { font-size: max(16px, calc(16px * var(--font-scale))); padding: 10px 12px; }
+    .row .search-btn { padding: 11px 14px; font-size: calc(14px * var(--font-scale)); border-radius: 8px; }
+    select { font-size: max(16px, calc(15px * var(--font-scale))); padding: 10px 30px 10px 12px; }
+
+    .row.landing label { font-size: calc(18px * var(--font-scale)); min-width: 74px; }
+    .row.landing input[type="text"] { font-size: max(16px, calc(16px * var(--font-scale))); padding: 12px; }
+    .row.landing .search-btn { padding: 12px 14px; font-size: calc(14px * var(--font-scale)); }
+  }
+
+  /* MAP OVERLAY */
+  .map-overlay { display: none; }
+  @media (max-width: 900px) {
+    .map-overlay {
+      display: flex; position: fixed;
+      top: 0; right: 0; bottom: 0; left: 0;
+      z-index: 3000;
+      background: rgba(0,0,0,0.55);
+      flex-direction: column;
+      padding: 10px;
+      padding-top: max(10px, env(safe-area-inset-top));
+      padding-bottom: max(10px, env(safe-area-inset-bottom));
+    }
+    .map-overlay-inner { flex: 1 1 auto; min-height: 0; background: white; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; }
+    .map-overlay-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: #0d5e3a; color: white; flex-shrink: 0; gap: 10px; }
+    .map-overlay-header .title { font-size: calc(14px * var(--font-scale)); font-weight: 600; flex: 1 1 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .map-overlay-header .close-btn { flex-shrink: 0; width: 34px; height: 34px; border-radius: 8px; border: none; background: rgba(255,255,255,0.18); color: white; font-size: 18px; cursor: pointer; }
+    .map-overlay .map-body { flex: 1 1 auto; min-height: 0; position: relative; overflow: hidden; }
+    .map-overlay #map-mobile { width: 100%; height: 100%; border-radius: 0; }
+  }
+
+  .searching-hint { color: #0d5e3a; font-size: calc(12px * var(--font-scale)); padding: 4px 0; display: flex; align-items: center; gap: 6px; }
+  .searching-hint::before { content: ""; width: 10px; height: 10px; border: 2px solid #0d5e3a; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; }
+
+  .map-stop-pin {
+    width: 22px; height: 26px;
+    background: #0d5e3a;
+    border: 2px solid white;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.35);
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header class="app-header">
+    <a href="index.html" class="back-btn">← 返回</a>
+    <h1>
+      <span class="header-logo-badge">🚐</span>
+      Ansum 小巴
+    </h1>
+    <div class="header-meta">
+      <div class="font-size-controls">
+        <button class="font-btn" @click="decreaseFontSize" title="縮小字型">−</button>
+        <button class="font-btn" @click="increaseFontSize" title="放大字型">+</button>
+      </div>
+      <span class="header-clock">{{ clockText }}</span>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="panel sidebar">
+
+      <div class="fav-section">
+        <div class="title"><span class="star">⭐</span>我的最愛</div>
+        <div class="fav-slots" :class="{ collapsed: !favExpanded }">
+          <div v-for="(fav, i) in favourites" :key="i"
+               class="fav-slot"
+               :class="fav ? 'filled' : 'empty'"
+               @click="onFavClick(i)">
+            <template v-if="fav">
+              <span class="fav-route">{{ fav.route }}</span>
+              <span class="fav-company">GMB</span>
+              <span class="fav-dest">{{ fav.dest_tc }}</span>
+              <button class="fav-remove"
+                      @click.stop="removeFavourite(i)"
+                      aria-label="移除">✕</button>
+            </template>
+            <template v-else>
+              <span class="fav-plus">+</span>
+              <span class="fav-hint">最愛</span>
+            </template>
+          </div>
+        </div>
+      </div>
+
+      <hr class="fav-divider" />
+
+      <div class="row">
+        <label>區域</label>
+        <select v-model="region" @change="onRegionChange">
+          <option value="HKI">港島</option>
+          <option value="KLN">九龍</option>
+          <option value="NT">新界</option>
+        </select>
+      </div>
+
+      <div class="row" :class="{ landing: isLanding }">
+        <label>小巴路線</label>
+        <input type="text" v-model.trim="routeInput"
+               placeholder="請輸入小巴號碼"
+               @keyup.enter="onSearch" />
+        <button class="search-btn" @click="onSearch" :disabled="searching">
+          {{ searching ? '搜尋中' : '查詢' }}
+        </button>
+      </div>
+
+      <div v-if="searching" class="searching-hint">正在搜尋小巴路線…</div>
+
+      <div v-if="!selectedDirectionLabel || pickingDirection">
+        <div v-if="matchedRoutes.length > 1" class="direction-row">
+          <span class="label">方向</span>
+        </div>
+        <ul v-if="matchedRoutes.length > 1" class="direction-picker">
+          <li v-for="r in matchedRoutes"
+              :key="r.key"
+              :class="{ active: routeKey === r.key }"
+              @click="selectDirection(r)">
+            <span>{{ r.orig_tc }} <span class="arrow">→</span> {{ r.dest_tc }}</span>
+          </li>
+        </ul>
+      </div>
+
+      <div v-else class="direction-row">
+        <span class="label">方向</span>
+        <div class="direction-chip" @click="clearDirection">
+          {{ selectedDirectionLabel }}
+        </div>
+        <button class="fav-btn"
+                :class="{ active: isCurrentFavourite }"
+                @click.stop="toggleFavourite">
+          {{ isCurrentFavourite ? '★' : '☆' }}
+        </button>
+      </div>
+
+      <div v-if="searched && !matchedRoutes.length" class="hint">
+        找不到小巴路線「{{ lastSearched }}」
+      </div>
+
+      <h3 v-if="stops.length || loadingStops">沿線小巴站</h3>
+      <div v-if="loadingStops" class="loading">載入中…</div>
+      <div class="stop-list" v-if="stops.length" ref="stopListRef">
+        <ul>
+          <li v-for="s in stops" :key="s.id"
+              :data-stop-id="s.id"
+              :class="{ active: selectedStop && selectedStop.id === s.id }"
+              @click="onStopClick(s)">
+            <span class="stop-name">{{ s.name }}</span>
+            <span v-if="Number.isFinite(s.distance)" class="distance">{{ formatDistance(s.distance) }}</span>
+          </li>
+        </ul>
+      </div>
+      <p v-if="error" class="error">{{ error }}</p>
+    </aside>
+
+    <main class="main-area">
+      <div class="panel map-wrap map-wrap-desktop">
+        <div id="map-desktop"></div>
+      </div>
+
+      <div class="panel eta-box">
+        <div class="eta-header">
+          <h3>
+            最近三班候車時間
+            <small v-if="selectedStop">— {{ selectedStop.name }}</small>
+          </h3>
+          <button v-if="selectedStop"
+                  class="refresh-btn"
+                  :class="{ spinning: refreshing }"
+                  :disabled="refreshing"
+                  @click="manualRefresh">
+            <span class="icon">⟳</span>
+            <span>{{ refreshing ? '更新中' : '更新' }}</span>
+          </button>
+        </div>
+
+        <div v-if="!selectedStop" class="hint">請先選擇小巴站</div>
+        <ul v-else>
+          <li v-for="(e, i) in etas" :key="i">
+            <span class="rank">第 {{ i + 1 }} 班</span>
+            <span class="time">
+              <span>{{ formatMinutes(e.minutes) }}</span>
+              <span v-if="e.exactTime" class="exact-time">{{ e.exactTime }}</span>
+            </span>
+            <span class="remark" v-if="e.remark">{{ e.remark }}</span>
+          </li>
+          <li v-if="!etas.length" class="hint" style="justify-content:center;">暫無班次資料</li>
+          <li v-if="etas.length || dataAge !== null" class="age-line">
+            <span class="age">
+              <span :class="dataAge > 90 ? 'stale-dot' : 'fresh-dot'"></span>
+              <template v-if="refreshing">更新中…</template>
+              <template v-else-if="dataAge !== null">資料更新於 {{ dataAge }} 秒前</template>
+              <template v-else>已載入</template>
+              <span v-if="!refreshing && dataAge > 90" class="stale">⚠ 可能延遲</span>
+            </span>
+            <span v-if="countdown !== null && !refreshing" class="countdown">
+              下次更新 <span class="num">{{ countdown }}</span> 秒
+            </span>
+          </li>
+        </ul>
+      </div>
+    </main>
+  </div>
+
+  <Teleport to="body">
+    <div v-if="mapExpanded" class="map-overlay" @click.self="collapseMap">
+      <div class="map-overlay-inner">
+        <div class="map-overlay-header">
+          <span class="title">📍 {{ mapRowText }}</span>
+          <button class="close-btn" @click="collapseMap">✕</button>
+        </div>
+        <div class="map-body">
+          <div id="map-mobile"></div>
+        </div>
+      </div>
+    </div>
+  </Teleport>
+</div>
+
+<script>
+const { createApp, ref, computed, onMounted, onUnmounted, nextTick } = Vue;
+
+/* ========== 工具函式 ========== */
+function dbgError(label, err) { console.error(`❌ ${label}：${err && err.message ? err.message : err}`); }
+function parseDate(input) {
+  if (!input) return null;
+  if (input instanceof Date) return input;
+  const s = String(input).trim();
+  if (!s) return null;
+  let d = new Date(s); if (!isNaN(d.getTime())) return d;
+  d = new Date(s.replace(" ", "T")); if (!isNaN(d.getTime())) return d;
+  d = new Date(s.replace(" ", "T") + "+08:00"); if (!isNaN(d.getTime())) return d;
+  const m = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})[ T](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?/);
+  if (m) { d = new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], m[6] ? +m[6] : 0); if (!isNaN(d.getTime())) return d; }
+  return null;
+}
+function formatExactTime(t) {
+  const d = parseDate(t);
+  if (!d) return "";
+  const p = (n) => String(n).padStart(2, "0");
+  return `(${p(d.getHours())}:${p(d.getMinutes())})`;
+}
+async function getJSON(url) {
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  return res.json();
+}
+function isValidCoord(lat, lng) {
+  return typeof lat === "number" && typeof lng === "number" && isFinite(lat) && isFinite(lng) &&
+    lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180 && !(lat === 0 && lng === 0);
+}
+function safeLatLng(lat, lng) {
+  const a = Number(lat), b = Number(lng);
+  if (!isFinite(a) || !isFinite(b)) return null;
+  if (a < -90 || a > 90 || b < -180 || b > 180) return null;
+  if (a === 0 && b === 0) return null;
+  return [a, b];
+}
+function haversineMeters(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const t = (d) => d * Math.PI / 180;
+  const dLat = t(lat2 - lat1), dLon = t(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(t(lat1)) * Math.cos(t(lat2)) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+function isMapUsable(map) {
+  if (!map) return false;
+  try { const c = map.getContainer(); return !!c && c.clientWidth > 0 && c.clientHeight > 0; }
+  catch (e) { return false; }
+}
+
+/* ========== 小巴 API（已驗證結構） ========== */
+const GMB_BASE = "https://data.etagmb.gov.hk";
+
+async function fetchGmbRouteDetails(region, routeCode) {
+  const j = await getJSON(`${GMB_BASE}/route/${region}/${routeCode}`);
+  const raw = j.data || [];
+  const result = [];
+  for (const r of raw) {
+    const directions = r.directions || [];
+    for (const d of directions) {
+      result.push({
+        routeId: String(r.route_id),
+        routeSeq: String(d.route_seq),
+        route: String(r.route_code),
+        orig_tc: d.orig_tc || "",
+        dest_tc: d.dest_tc || "",
+      });
+    }
+  }
+  return result;
+}
+
+async function fetchGmbRouteStops(routeId, routeSeq) {
+  const j = await getJSON(`${GMB_BASE}/route-stop/${routeId}/${routeSeq}`);
+  const raw = (j.data && j.data.route_stops) || [];
+  /* GMB route-stop 端點不提供座標，改用政府另一份「專線小巴站位置」靜態資料才能取得座標。
+     目前先不顯示距離與地圖，站點列表功能正常。 */
+  return raw.map((s) => ({
+    seq: Number(s.stop_seq),
+    stopSeq: String(s.stop_seq),
+    id: String(s.stop_id),
+    name: s.name_tc || s.name_en || "",
+    lat: NaN,
+    lng: NaN,
+  }));
+}
+
+async function fetchGmbEta(routeId, routeSeq, stopSeq) {
+  const url = `${GMB_BASE}/eta/route-stop/${routeId}/${routeSeq}/${stopSeq}`;
+  const j = await getJSON(url);
+  const raw = (j.data && j.data.eta) || [];
+  return raw.slice(0, 3).map((e) => {
+    const d = parseDate(e.timestamp);
+    return {
+      eta: e.timestamp,
+      minutes: typeof e.diff === "number" ? Math.max(0, e.diff) : null,
+      exactTime: formatExactTime(d),
+      remark: e.remarks_tc || "",
+      dataTimestamp: e.timestamp,
+    };
+  });
+}
+
+/* ========== 儲存層 ========== */
+const FAV_STORAGE_KEY = "hk-gmb-favourites-v1";
+const FONT_SCALE_KEY = "hk-bus-font-scale"; /* 與巴士共用字型大小設定 */
+const FAV_COOKIE_DAYS = 365;
+const MAX_FAVOURITES = 6;
+const MIN_FONT_SCALE = 0.8;
+const MAX_FONT_SCALE = 1.6;
+
+function readCookie(name) {
+  try {
+    const pat = new RegExp("(?:^|; )" + name.replace(/([.$?*|{}()\[\]\\\/\+^])/g, "\\$1") + "=([^;]*)");
+    const m = document.cookie.match(pat);
+    return m ? decodeURIComponent(m[1]) : null;
+  } catch (e) { return null; }
+}
+function writeCookie(name, value, days) {
+  try {
+    const exp = new Date(Date.now() + days * 864e5).toUTCString();
+    document.cookie = name + "=" + encodeURIComponent(value) + "; expires=" + exp + "; path=/; SameSite=Lax";
+    return true;
+  } catch (e) { return false; }
+}
+function emptyFavArray() { return new Array(MAX_FAVOURITES).fill(null); }
+function compactFavourites(arr) {
+  const n = (arr || []).filter(Boolean);
+  const r = emptyFavArray();
+  for (let i = 0; i < MAX_FAVOURITES && i < n.length; i++) r[i] = n[i];
+  return r;
+}
+function parseFavArray(raw) {
+  if (!raw) return null;
+  try {
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) return null;
+    const r = emptyFavArray();
+    for (let i = 0; i < MAX_FAVOURITES && i < arr.length; i++) {
+      const x = arr[i];
+      if (x && typeof x === "object" && x.route && x.routeId && x.routeSeq) r[i] = x;
+    }
+    return r;
+  } catch (e) { return null; }
+}
+function loadFavourites() {
+  let ls = null;
+  try { ls = parseFavArray(localStorage.getItem(FAV_STORAGE_KEY)); } catch (e) {}
+  const ck = parseFavArray(readCookie(FAV_STORAGE_KEY));
+  const countLS = ls ? ls.filter(Boolean).length : 0;
+  const countCk = ck ? ck.filter(Boolean).length : 0;
+  let best = null;
+  if (ls && ck) best = countLS >= countCk ? ls : ck;
+  else best = ls || ck || null;
+  if (!best) return emptyFavArray();
+  const json = JSON.stringify(best);
+  try { localStorage.setItem(FAV_STORAGE_KEY, json); } catch (e) {}
+  writeCookie(FAV_STORAGE_KEY, json, FAV_COOKIE_DAYS);
+  return best;
+}
+function loadFontScale() {
+  const tp = (raw) => { const v = parseFloat(raw); return (isFinite(v) && v >= MIN_FONT_SCALE && v <= MAX_FONT_SCALE) ? v : null; };
+  try { const v = tp(localStorage.getItem(FONT_SCALE_KEY)); if (v !== null) return v; } catch (e) {}
+  try { const v = tp(readCookie(FONT_SCALE_KEY)); if (v !== null) return v; } catch (e) {}
+  return 1;
+}
+function saveFontScale(s) {
+  try { localStorage.setItem(FONT_SCALE_KEY, String(s)); } catch (e) {}
+  writeCookie(FONT_SCALE_KEY, String(s), FAV_COOKIE_DAYS);
+}
+
+const AUTO_REFRESH_INTERVAL = 30;
+
+/* ========== Vue App ========== */
+createApp({
+  setup() {
+    const fontScale = ref(loadFontScale());
+    const applyFontScale = (s) => document.documentElement.style.setProperty('--font-scale', String(s));
+    const updateFontScale = (s) => {
+      const c = Math.min(Math.max(s, MIN_FONT_SCALE), MAX_FONT_SCALE);
+      fontScale.value = c; applyFontScale(c); saveFontScale(c);
+    };
+    const increaseFontSize = () => updateFontScale(fontScale.value + 0.1);
+    const decreaseFontSize = () => updateFontScale(fontScale.value - 0.1);
+
+    const region = ref("HKI");
+    const routeInput = ref("");
+    const lastSearched = ref("");
+    const searched = ref(false);
+    const searching = ref(false);
+    const matchedRoutes = ref([]);
+    const routeKey = ref("");
+    const selectedDirectionLabel = ref("");
+    const pickingDirection = ref(false);
+    const stops = ref([]);
+    const selectedStop = ref(null);
+    const etas = ref([]);
+    const dataAge = ref(null);
+    const countdown = ref(null);
+    const refreshing = ref(false);
+    const loadingStops = ref(false);
+    const error = ref("");
+    const stopListRef = ref(null);
+    const mapExpanded = ref(false);
+    const isMobile = ref(window.matchMedia("(max-width: 900px)").matches);
+    const favExpanded = ref(true);
+    const favourites = ref(loadFavourites());
+
+    const isLanding = computed(() => !searched.value && !routeInput.value.trim() && !stops.value.length);
+    const mapRowText = computed(() => selectedStop.value ? selectedStop.value.name : "小巴路線地圖");
+
+    function saveFavourites() {
+      const json = JSON.stringify(favourites.value);
+      try { localStorage.setItem(FAV_STORAGE_KEY, json); } catch (e) {}
+      writeCookie(FAV_STORAGE_KEY, json, FAV_COOKIE_DAYS);
+    }
+    function collapseFavourites() { if (favExpanded.value) favExpanded.value = false; }
+
+    function findCurrentRoute() {
+      return matchedRoutes.value.find(r => r.key === routeKey.value) || null;
+    }
+    const isCurrentFavourite = computed(() => {
+      if (!routeKey.value) return false;
+      return favourites.value.some(f => f && f.directionKey === routeKey.value);
+    });
+
+    function onRegionChange() {
+      matchedRoutes.value = [];
+      routeKey.value = "";
+      selectedDirectionLabel.value = "";
+      stops.value = []; selectedStop.value = null; etas.value = [];
+      searched.value = false;
+    }
+
+    async function onSearch() {
+      const q = (routeInput.value || "").trim();
+      if (!q) return;
+      collapseFavourites();
+      searching.value = true;
+      error.value = "";
+      searched.value = true;
+      lastSearched.value = q;
+      matchedRoutes.value = [];
+      routeKey.value = "";
+      selectedDirectionLabel.value = "";
+      stops.value = []; selectedStop.value = null; etas.value = [];
+      dataAge.value = null; countdown.value = null;
+      try {
+        const routes = await fetchGmbRouteDetails(region.value, q);
+        matchedRoutes.value = routes.map(r => ({ ...r, key: `${r.routeId}+${r.routeSeq}` }));
+        if (routes.length === 1) {
+          await selectDirection(matchedRoutes.value[0]);
+        } else if (routes.length > 1) {
+          pickingDirection.value = true;
+        }
+      } catch (e) {
+        error.value = "無法載入小巴路線：" + e.message;
+      } finally {
+        searching.value = false;
+      }
+    }
+
+    function clearDirection() {
+      routeKey.value = ""; selectedDirectionLabel.value = "";
+      pickingDirection.value = true;
+      stops.value = []; selectedStop.value = null; etas.value = [];
+      dataAge.value = null; countdown.value = null;
+    }
+
+    async function selectDirection(r) {
+      routeKey.value = r.key;
+      selectedDirectionLabel.value = `${r.orig_tc} → ${r.dest_tc}`;
+      pickingDirection.value = false;
+      loadingStops.value = true; error.value = "";
+      stops.value = []; selectedStop.value = null; etas.value = [];
+      dataAge.value = null; countdown.value = null;
+      try {
+        stops.value = await fetchGmbRouteStops(r.routeId, r.routeSeq);
+        /* GMB 端點無座標，跳過地圖繪製與自動定位 */
+      } catch (e) {
+        error.value = "無法載入小巴站：" + e.message;
+      } finally {
+        loadingStops.value = false;
+      }
+    }
+
+    function toggleFavourite() {
+      if (!routeKey.value || !selectedDirectionLabel.value) return;
+      const r = findCurrentRoute();
+      if (!r) return;
+      const idx = favourites.value.findIndex(f => f && f.directionKey === routeKey.value);
+      if (idx !== -1) {
+        const n = favourites.value.filter((_, i) => i !== idx);
+        while (n.length < MAX_FAVOURITES) n.push(null);
+        favourites.value = n; saveFavourites(); return;
+      }
+      const emptyIdx = favourites.value.findIndex(f => !f);
+      if (emptyIdx === -1) return;
+      favourites.value[emptyIdx] = {
+        route: r.route,
+        routeId: r.routeId,
+        routeSeq: r.routeSeq,
+        region: region.value,
+        directionKey: r.key,
+        orig_tc: r.orig_tc,
+        dest_tc: r.dest_tc,
+      };
+      favourites.value = [...favourites.value]; saveFavourites();
+    }
+
+    function removeFavourite(index) {
+      const fav = favourites.value[index];
+      if (!fav) return;
+      if (!confirm(`確定移除最愛「${fav.route} ${fav.dest_tc}」？`)) return;
+      const n = favourites.value.filter((_, i) => i !== index);
+      while (n.length < MAX_FAVOURITES) n.push(null);
+      favourites.value = n; saveFavourites();
+    }
+
+    async function onFavClick(index) {
+      const fav = favourites.value[index];
+      if (!fav) return;
+      collapseFavourites();
+      region.value = fav.region || "HKI";
+      routeInput.value = fav.route;
+      matchedRoutes.value = [{
+        routeId: fav.routeId,
+        routeSeq: fav.routeSeq,
+        route: fav.route,
+        orig_tc: fav.orig_tc,
+        dest_tc: fav.dest_tc,
+        key: fav.directionKey,
+      }];
+      await selectDirection(matchedRoutes.value[0]);
+    }
+
+    async function refreshEta() {
+      const stop = selectedStop.value;
+      const r = findCurrentRoute();
+      if (!stop || !r) return;
+      if (refreshing.value) return;
+      refreshing.value = true;
+      countdown.value = AUTO_REFRESH_INTERVAL;
+      try {
+        const items = await fetchGmbEta(r.routeId, r.routeSeq, stop.stopSeq);
+        etas.value = items;
+        dataAge.value = 0;
+      } catch (e) {
+        etas.value = []; dataAge.value = null;
+        error.value = "無法取得 ETA：" + e.message;
+      } finally {
+        refreshing.value = false;
+        countdown.value = AUTO_REFRESH_INTERVAL;
+      }
+    }
+
+    function manualRefresh() { if (refreshing.value) return; refreshEta(); }
+    function formatMinutes(m) { if (m == null) return "—"; if (m <= 0) return "即將到達"; return m + " 分鐘"; }
+    function formatDistance(m) {
+      if (m == null || !Number.isFinite(m)) return "";
+      if (m < 1000) return Math.round(m) + " m";
+      return (m / 1000).toFixed(1) + " km";
+    }
+
+    async function applySelection(stop) {
+      if (!stop) return;
+      const current = stops.value.find(s => s.id === stop.id);
+      selectedStop.value = current || stop;
+      if (mapExpanded.value) mapExpanded.value = false;
+      await nextTick();
+      await scrollSelectedIntoView(selectedStop.value);
+      await refreshEta();
+    }
+
+    async function scrollSelectedIntoView(stop) {
+      const c = stopListRef.value;
+      if (!c) return;
+      const el = c.querySelector(`[data-stop-id="${stop.id}"]`);
+      if (!el) return;
+      await new Promise(r => requestAnimationFrame(() => r()));
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    async function onStopClick(stop) { await applySelection(stop); }
+    async function onStopMapClick(stop) { await applySelection(stop); }
+
+    /* 地圖相關（GMB 站點無座標，此處保留結構以備未來擴充） */
+    let mapDesktop = null, mapMobile = null;
+    function collapseMap() { mapExpanded.value = false; }
+    function handleResize() {
+      isMobile.value = window.matchMedia("(max-width: 900px)").matches;
+      if (!isMobile.value && mapExpanded.value) mapExpanded.value = false;
+    }
+
+    function saveFavouritesOnExit() { try { saveFavourites(); } catch (e) {} }
+
+    let tickTimer = null;
+    const clockText = ref(formatClock(new Date()));
+    function formatClock(d) {
+      const p = (n) => String(n).padStart(2, "0");
+      return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+    }
+    function tick() {
+      clockText.value = formatClock(new Date());
+      if (dataAge.value !== null && !refreshing.value) dataAge.value += 1;
+      if (!selectedStop.value) { countdown.value = null; return; }
+      if (refreshing.value) return;
+      if (countdown.value === null) { countdown.value = AUTO_REFRESH_INTERVAL; return; }
+      countdown.value -= 1;
+      if (countdown.value <= 0) { countdown.value = AUTO_REFRESH_INTERVAL; refreshEta(); }
+    }
+    function handleVisibility() {
+      if (document.visibilityState === "visible" && selectedStop.value) refreshEta();
+      if (document.visibilityState === "hidden") saveFavouritesOnExit();
+    }
+
+    onMounted(() => {
+      applyFontScale(fontScale.value);
+      window.addEventListener("resize", handleResize);
+      window.addEventListener("orientationchange", handleResize);
+      window.addEventListener("beforeunload", saveFavouritesOnExit);
+      window.addEventListener("pagehide", saveFavouritesOnExit);
+      document.addEventListener("visibilitychange", handleVisibility);
+      tickTimer = setInterval(tick, 1000);
+    });
+    onUnmounted(() => {
+      clearInterval(tickTimer);
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("orientationchange", handleResize);
+      window.removeEventListener("beforeunload", saveFavouritesOnExit);
+      window.removeEventListener("pagehide", saveFavouritesOnExit);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    });
+
+    return {
+      fontScale, increaseFontSize, decreaseFontSize,
+      region, routeInput, lastSearched, searched, searching,
+      matchedRoutes, routeKey, selectedDirectionLabel, pickingDirection,
+      stops, selectedStop, etas, dataAge, countdown, refreshing,
+      loadingStops, error, stopListRef, mapExpanded, mapRowText,
+      isMobile, favExpanded, favourites, isLanding, isCurrentFavourite,
+      clockText,
+      onRegionChange, onSearch, selectDirection, clearDirection,
+      toggleFavourite, removeFavourite, onFavClick,
+      onStopClick, onStopMapClick, collapseMap,
+      manualRefresh, formatMinutes, formatDistance,
+    };
+  },
+}).mount("#app");
+</script>
+</body>
+</html>
