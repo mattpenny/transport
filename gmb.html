@@ -55,7 +55,7 @@
   }
   button, input, select { font-family: inherit; -webkit-appearance: none; appearance: none; touch-action: manipulation; }
 
-  /* HEADER */
+  /* === HEADER === */
   header.app-header {
     background: #0d5e3a; color: white; padding: 10px 16px;
     flex-shrink: 0; display: flex; align-items: center;
@@ -112,7 +112,7 @@
     .back-btn { padding: 6px 10px; font-size: calc(13px * var(--font-scale)); }
   }
 
-  /* LAYOUT */
+  /* === LAYOUT === */
   .layout {
     flex: 1 1 auto; min-height: 0; min-width: 0;
     display: grid;
@@ -131,7 +131,7 @@
   }
   .sidebar { overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; min-width: 0; min-height: 0; }
 
-  /* FAVOURITES */
+  /* === FAVOURITES === */
   .fav-section { margin-bottom: 8px; margin-top: 0; min-width: 0; }
   .fav-section .title {
     font-size: calc(13px * var(--font-scale)); color: #333; margin-bottom: 4px;
@@ -170,7 +170,51 @@
   .fav-slot .fav-remove:active { background: #c62828; }
   .fav-divider { border: none; border-top: 1px solid #eef; margin: 6px 0; }
 
-  /* SEARCH ROW */
+  /* === 區域按鈕群組 === */
+  .region-buttons {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .region-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 10px 4px;
+    border: 2px solid #dde;
+    border-radius: 10px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.15s;
+    min-width: 0;
+    touch-action: manipulation;
+    font-family: inherit;
+  }
+  .region-btn:hover { background: #f5f8ff; border-color: #9db5e0; }
+  .region-btn:active { transform: scale(0.96); }
+  .region-btn.active {
+    border-color: #0d5e3a;
+    background: #e6f5ec;
+    box-shadow: 0 0 0 2px rgba(13,94,58,0.15);
+  }
+  .region-btn .region-icon {
+    font-size: 26px;
+    line-height: 1;
+    display: block;
+  }
+  .region-btn .region-name {
+    font-size: calc(11px * var(--font-scale));
+    color: #555;
+    font-weight: 700;
+  }
+  .region-btn.active .region-name {
+    color: #0d5e3a;
+  }
+
+  /* === SEARCH ROW === */
   .row {
     display: flex; align-items: center; gap: 6px;
     margin-bottom: 10px; min-width: 0;
@@ -204,19 +248,34 @@
   }
   @keyframes placeholderBlink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-  select {
-    flex: 1 1 0; min-width: 0;
-    padding: 8px 10px;
-    border: 1px solid #ccd; border-radius: 6px;
+  /* === 搜尋後的區域內嵌文字 === */
+  .region-inline {
     font-size: calc(15px * var(--font-scale));
-    background: white; color: #222;
-    cursor: pointer;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><polyline points='2,4 6,8 10,4' fill='none' stroke='%230d5e3a' stroke-width='2'/></svg>");
-    background-repeat: no-repeat;
-    background-position: right 10px center;
-    padding-right: 30px;
+    font-weight: 700;
+    color: #0d5e3a;
+    margin-left: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
-  select:focus { outline: 2px solid #0d5e3a; border-color: #0d5e3a; }
+
+  /* === 搜尋後的緊湊搜尋列 === */
+  .row.route-searched {
+    margin-bottom: 10px;
+    gap: 6px;
+  }
+  .row.route-searched label {
+    font-size: calc(16px * var(--font-scale));
+    font-weight: 800;
+    color: #0d5e3a;
+    min-width: 78px;
+  }
+  .row.route-searched input[type="text"] {
+    font-size: calc(16px * var(--font-scale));
+    padding: 10px 12px;
+    border: 2px solid #0d5e3a;
+    border-radius: 8px;
+    font-weight: 600;
+  }
 
   .search-btn {
     padding: 8px 14px; border: none; border-radius: 6px;
@@ -226,7 +285,7 @@
   }
   .search-btn:disabled { opacity: 0.6; cursor: default; }
 
-  /* DIRECTION */
+  /* === DIRECTION === */
   .direction-row { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; min-width: 0; }
   .direction-row .label { font-size: calc(14px * var(--font-scale)); font-weight: 600; color: #333; flex-shrink: 0; }
   .direction-chip {
@@ -256,7 +315,7 @@
   .direction-picker li span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .direction-picker li .arrow { color: #0d5e3a; font-weight: bold; }
 
-  /* STOP LIST */
+  /* === STOP LIST === */
   h3 { margin: 0 0 8px; font-size: calc(14px * var(--font-scale)); }
   h3 small { color: #666; font-weight: normal; font-size: calc(12px * var(--font-scale)); }
   .stop-list { flex: 1 1 auto; min-height: 80px; min-width: 0; overflow-y: auto; overflow-x: hidden; border-top: 1px solid #eef; margin-top: 4px; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
@@ -285,7 +344,7 @@
   .error { color: #c0392b; font-size: calc(12px * var(--font-scale)); margin-top: 6px; word-break: break-word; }
   .loading { color: #0d5e3a; font-size: calc(12px * var(--font-scale)); padding: 4px 0; }
 
-  /* MAIN AREA */
+  /* === MAIN AREA === */
   .main-area { display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 12px; min-height: 0; min-width: 0; overflow: hidden; }
   .map-wrap { border-radius: 10px; overflow: hidden; min-height: 0; min-width: 0; padding: 0; position: relative; }
   #map-desktop, #map-mobile { position: absolute; top: 0; right: 0; bottom: 0; left: 0; width: 100%; height: 100%; border-radius: 10px; }
@@ -298,13 +357,12 @@
     display: flex; align-items: center; justify-content: center;
   }
 
-  /* ETA PANEL */
+  /* === ETA PANEL === */
   .eta-box { padding: 10px 14px; max-height: 260px; overflow-y: auto; flex-shrink: 0; min-width: 0; -webkit-overflow-scrolling: touch; }
   .eta-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; min-width: 0; }
   .eta-header h3 { margin: 0; min-width: 0; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   .eta-header h3 small { color: #666; font-weight: normal; font-size: calc(12px * var(--font-scale)); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-  /* 票價顯示 */
   .fare-line {
     display: flex; align-items: baseline; gap: 8px;
     padding: 6px 0 8px;
@@ -341,7 +399,6 @@
   .eta-box .stale-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #e67e22; margin-right: 5px; vertical-align: middle; }
   .eta-box .stale { color: #e67e22; font-weight: 600; margin-left: 6px; }
 
-  /* STOP NAME LABEL */
   .stop-name-label {
     background: rgba(255,255,255,0.92);
     border: 1px solid #0d5e3a;
@@ -361,7 +418,7 @@
   .stop-name-label.selected { background: #cfeedd; border-color: #0d5e3a; color: #0d5e3a; }
   @keyframes busPulse { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
 
-  /* MOBILE */
+  /* === MOBILE === */
   @media (max-width: 900px) {
     .layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 8px; padding: 8px; }
     .main-area { display: contents; }
@@ -394,14 +451,20 @@
     .row label { min-width: 60px; }
     .row input[type="text"] { font-size: max(16px, calc(16px * var(--font-scale))); padding: 10px 12px; flex: 1 1 0; min-width: 0; width: 0; }
     .row .search-btn { padding: 11px 14px; font-size: calc(14px * var(--font-scale)); border-radius: 8px; flex-shrink: 0; }
-    select { font-size: max(16px, calc(15px * var(--font-scale))); padding: 10px 30px 10px 12px; }
 
     .row.landing label { font-size: calc(18px * var(--font-scale)); min-width: 74px; }
     .row.landing input[type="text"] { font-size: max(16px, calc(16px * var(--font-scale))); padding: 12px; }
     .row.landing .search-btn { padding: 12px 14px; font-size: calc(14px * var(--font-scale)); }
+
+    .row.route-searched label { min-width: 68px; font-size: calc(15px * var(--font-scale)); }
+    .row.route-searched input[type="text"] { font-size: max(16px, calc(16px * var(--font-scale))); padding: 10px 12px; }
+    .region-inline { font-size: calc(14px * var(--font-scale)); }
+
+    .region-btn .region-icon { font-size: 22px; }
+    .region-btn .region-name { font-size: calc(10px * var(--font-scale)); }
   }
 
-  /* MAP OVERLAY */
+  /* === MAP OVERLAY === */
   .map-overlay { display: none; }
   @media (max-width: 900px) {
     .map-overlay {
@@ -471,20 +534,38 @@
 
       <hr class="fav-divider" />
 
-      <div class="row">
-        <label>區域</label>
-        <select v-model="region" @change="onRegionChange">
-          <option value="HKI">港島</option>
-          <option value="KLN">九龍</option>
-          <option value="NT">新界</option>
-        </select>
+      <!-- 區域按鈕群組（只在選擇器可見時顯示） -->
+      <div v-if="regionPickerVisible" class="region-buttons">
+        <button class="region-btn"
+                :class="{ active: region === 'HKI' }"
+                @click="onRegionPick('HKI')">
+          <span class="region-icon">🏙️</span>
+          <span class="region-name">港島</span>
+        </button>
+        <button class="region-btn"
+                :class="{ active: region === 'KLN' }"
+                @click="onRegionPick('KLN')">
+          <span class="region-icon">🌃</span>
+          <span class="region-name">九龍</span>
+        </button>
+        <button class="region-btn"
+                :class="{ active: region === 'NT' }"
+                @click="onRegionPick('NT')">
+          <span class="region-icon">🌄</span>
+          <span class="region-name">新界</span>
+        </button>
       </div>
 
-      <div class="row" :class="{ landing: isLanding }">
+      <!-- 搜尋列 -->
+      <div class="row" :class="searched ? 'route-searched' : { landing: isLanding }">
         <label>小巴路線</label>
         <input type="text" v-model.trim="routeInput"
                placeholder="請輸入小巴號碼"
-               @keyup.enter="onSearch" />
+               @keyup.enter="onSearch"
+               @focus="onRouteInputFocus" />
+        <span v-if="searched && !regionPickerVisible" class="region-inline">
+          ({{ regionLabel }})
+        </span>
         <button class="search-btn" @click="onSearch" :disabled="searching">
           {{ searching ? '搜尋中' : '查詢' }}
         </button>
@@ -678,7 +759,7 @@ function isMapUsable(map) {
 }
 
 /* ============================================================
-   🗺️ HK80 Grid → WGS84 轉換
+   HK80 Grid → WGS84
    ============================================================ */
 function hk80ToWgs84(easting, northing) {
   const a = 6378388;
@@ -742,7 +823,7 @@ function hk80ToWgs84(easting, northing) {
 }
 
 /* ============================================================
-   🚐 GMB 站點座標 CSV 載入
+   GMB 站點座標 CSV 載入
    ============================================================ */
 const GMB_COORD_CACHE_KEY = "hk-gmb-stop-coords-v1";
 const GMB_COORD_VERSION = 1;
@@ -852,7 +933,7 @@ function lookupGmbCoord(stopId) {
 }
 
 /* ============================================================
-   💰 GMB 票價（從自己的 GitHub Pages 載入）
+   GMB 票價（從自己的 GitHub Pages 載入）
    ============================================================ */
 const FARE_CACHE_KEY = "hk-gmb-fare-data-v3";
 const FARE_CACHE_VERSION = 3;
@@ -884,7 +965,6 @@ function saveFareCache(data) {
   } catch (e) {}
 }
 
-/* 建立 GMB 票價索引：用條目內部 route / serviceType / bound.gmb */
 function buildGmbFareIndex(raw) {
   const index = {};
   const src = raw && raw.routeList ? raw.routeList : raw;
@@ -946,7 +1026,6 @@ async function fetchGmbFareDb() {
   finally { gmbFareLoading = null; }
 }
 
-/* 查詢 GMB 全程票價 */
 function lookupGmbFare(routeCode, serviceType, bound) {
   if (!gmbFareDb) return null;
   const st = String(serviceType || "1");
@@ -972,7 +1051,7 @@ function lookupGmbFare(routeCode, serviceType, bound) {
 }
 
 /* ============================================================
-   🚐 GMB API（含節流 + 快取避免 429）
+   GMB API（節流 + 快取，避免 429）
    ============================================================ */
 const GMB_BASE = "https://data.etagmb.gov.hk";
 const GMB_MIN_INTERVAL_MS = 800;
@@ -1142,6 +1221,7 @@ createApp({
     const decreaseFontSize = () => updateFontScale(fontScale.value - 0.1);
 
     const region = ref("HKI");
+    const regionPickerVisible = ref(true);
     const routeInput = ref("");
     const lastSearched = ref("");
     const searched = ref(false);
@@ -1167,6 +1247,10 @@ createApp({
 
     const isLanding = computed(() => !searched.value && !routeInput.value.trim() && !stops.value.length);
     const mapRowText = computed(() => selectedStop.value ? selectedStop.value.name : "小巴路線地圖");
+    const regionLabel = computed(() => {
+      const map = { HKI: "港島", KLN: "九龍", NT: "新界" };
+      return map[region.value] || region.value;
+    });
 
     function saveFavourites() {
       const json = JSON.stringify(favourites.value);
@@ -1183,20 +1267,32 @@ createApp({
       return favourites.value.some(f => f && f.directionKey === routeKey.value);
     });
 
-    function onRegionChange() {
+    function onRegionPick(id) {
+      region.value = id;
       matchedRoutes.value = [];
       routeKey.value = "";
       selectedDirectionLabel.value = "";
       stops.value = []; selectedStop.value = null; etas.value = [];
       currentGmbFare.value = null;
       searched.value = false;
+      regionPickerVisible.value = false;
       clearMap();
+      /* 自動聚焦到輸入框，方便用戶立即輸入 */
+      nextTick(() => {
+        const input = document.querySelector(".sidebar input[type='text']");
+        if (input) input.focus();
+      });
+    }
+
+    function onRouteInputFocus() {
+      regionPickerVisible.value = true;
     }
 
     async function onSearch() {
       const q = (routeInput.value || "").trim();
       if (!q) return;
       collapseFavourites();
+      regionPickerVisible.value = false;
       searching.value = true;
       error.value = "";
       searched.value = true;
@@ -1309,6 +1405,7 @@ createApp({
       if (!fav) return;
       collapseFavourites();
       region.value = fav.region || "HKI";
+      regionPickerVisible.value = false;
       routeInput.value = fav.route;
       matchedRoutes.value = [{
         routeId: fav.routeId,
@@ -1672,13 +1769,15 @@ createApp({
 
     return {
       fontScale, increaseFontSize, decreaseFontSize,
-      region, routeInput, lastSearched, searched, searching,
+      region, regionPickerVisible, regionLabel,
+      routeInput, lastSearched, searched, searching,
       matchedRoutes, routeKey, selectedDirectionLabel, pickingDirection,
       stops, selectedStop, etas, dataAge, countdown, refreshing,
       loadingStops, error, stopListRef, mapExpanded, mapRowText,
       isMobile, favExpanded, favourites, isLanding, isCurrentFavourite,
       clockText, currentGmbFare,
-      onRegionChange, onSearch, selectDirection, clearDirection,
+      onRegionPick, onRouteInputFocus,
+      onSearch, selectDirection, clearDirection,
       toggleFavourite, removeFavourite, onFavClick,
       onStopClick, onStopMapClick, expandMap, collapseMap, zoomIn, zoomOut,
       manualRefresh, formatMinutes, formatDistance,
