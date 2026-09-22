@@ -215,6 +215,15 @@
   .mode-link .mode-desc { font-size: calc(11px * var(--font-scale)); color: #888; }
   .mode-link .mode-arrow { font-size: 18px; color: #1a3d7c; flex-shrink: 0; font-weight: 700; }
 
+  .mode-section-title {
+  font-size: calc(12px * var(--font-scale));
+  color: #888;
+  font-weight: 600;
+  text-align: center;
+  margin: 0 0 8px;
+  letter-spacing: 0.5px;
+}
+
   h3 { margin: 0 0 8px; font-size: calc(14px * var(--font-scale)); }
   h3 small { color: #666; font-weight: normal; font-size: calc(12px * var(--font-scale)); }
 
@@ -519,24 +528,25 @@
 
       <div v-if="mobileSearching" class="searching-hint">正在搜尋路線…</div>
 
-      <div class="other-modes">
-        <a href="gmb.html" class="mode-link">
-          <span class="mode-icon">🚐</span>
-          <span class="mode-text">
-            <span class="mode-title">專線小巴</span>
-            <span class="mode-desc">港島 / 九龍 / 新界</span>
-          </span>
-          <span class="mode-arrow">→</span>
-        </a>
-        <a href="ferry.html" class="mode-link">
-          <span class="mode-icon">⛴️</span>
-          <span class="mode-text">
-            <span class="mode-title">渡輪</span>
-            <span class="mode-desc">新渡輪航線</span>
-          </span>
-          <span class="mode-arrow">→</span>
-        </a>
-      </div>
+      <div v-if="!searched" class="other-modes">
+  <div class="mode-section-title">可選擇其他交通工具</div>
+  <a href="gmb.html" class="mode-link">
+    <span class="mode-icon">🚐</span>
+    <span class="mode-text">
+      <span class="mode-title">專線小巴</span>
+      <span class="mode-desc">港島 / 九龍 / 新界</span>
+    </span>
+    <span class="mode-arrow">→</span>
+  </a>
+  <a href="ferry.html" class="mode-link">
+    <span class="mode-icon">⛴️</span>
+    <span class="mode-text">
+      <span class="mode-title">渡輪</span>
+      <span class="mode-desc">新渡輪航線</span>
+    </span>
+    <span class="mode-arrow">→</span>
+  </a>
+</div>
 
       <div v-if="!selectedDirectionLabel || pickingDirection">
         <div v-if="matchedRoutes.length > 1" class="direction-row">
