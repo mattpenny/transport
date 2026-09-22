@@ -55,7 +55,7 @@
   }
   button, input, select { font-family: inherit; -webkit-appearance: none; appearance: none; touch-action: manipulation; }
 
-  /* === HEADER === */
+  /* HEADER */
   header.app-header {
     background: #0d5e3a; color: white; padding: 10px 16px;
     flex-shrink: 0; display: flex; align-items: center;
@@ -112,7 +112,7 @@
     .back-btn { padding: 6px 10px; font-size: calc(13px * var(--font-scale)); }
   }
 
-  /* === LAYOUT === */
+  /* LAYOUT */
   .layout {
     flex: 1 1 auto; min-height: 0; min-width: 0;
     display: grid;
@@ -131,7 +131,7 @@
   }
   .sidebar { overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; min-width: 0; min-height: 0; }
 
-  /* === FAVOURITES === */
+  /* FAVOURITES */
   .fav-section { margin-bottom: 8px; margin-top: 0; min-width: 0; }
   .fav-section .title {
     font-size: calc(13px * var(--font-scale)); color: #333; margin-bottom: 4px;
@@ -170,7 +170,7 @@
   .fav-slot .fav-remove:active { background: #c62828; }
   .fav-divider { border: none; border-top: 1px solid #eef; margin: 6px 0; }
 
-  /* === SEARCH ROW === */
+  /* SEARCH ROW */
   .row {
     display: flex; align-items: center; gap: 6px;
     margin-bottom: 10px; min-width: 0;
@@ -226,7 +226,7 @@
   }
   .search-btn:disabled { opacity: 0.6; cursor: default; }
 
-  /* === DIRECTION === */
+  /* DIRECTION */
   .direction-row { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; min-width: 0; }
   .direction-row .label { font-size: calc(14px * var(--font-scale)); font-weight: 600; color: #333; flex-shrink: 0; }
   .direction-chip {
@@ -256,7 +256,7 @@
   .direction-picker li span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .direction-picker li .arrow { color: #0d5e3a; font-weight: bold; }
 
-  /* === STOP LIST === */
+  /* STOP LIST */
   h3 { margin: 0 0 8px; font-size: calc(14px * var(--font-scale)); }
   h3 small { color: #666; font-weight: normal; font-size: calc(12px * var(--font-scale)); }
   .stop-list { flex: 1 1 auto; min-height: 80px; min-width: 0; overflow-y: auto; overflow-x: hidden; border-top: 1px solid #eef; margin-top: 4px; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
@@ -285,7 +285,7 @@
   .error { color: #c0392b; font-size: calc(12px * var(--font-scale)); margin-top: 6px; word-break: break-word; }
   .loading { color: #0d5e3a; font-size: calc(12px * var(--font-scale)); padding: 4px 0; }
 
-  /* === MAIN AREA === */
+  /* MAIN AREA */
   .main-area { display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 12px; min-height: 0; min-width: 0; overflow: hidden; }
   .map-wrap { border-radius: 10px; overflow: hidden; min-height: 0; min-width: 0; padding: 0; position: relative; }
   #map-desktop, #map-mobile { position: absolute; top: 0; right: 0; bottom: 0; left: 0; width: 100%; height: 100%; border-radius: 10px; }
@@ -298,13 +298,13 @@
     display: flex; align-items: center; justify-content: center;
   }
 
-  /* === ETA PANEL === */
+  /* ETA PANEL */
   .eta-box { padding: 10px 14px; max-height: 260px; overflow-y: auto; flex-shrink: 0; min-width: 0; -webkit-overflow-scrolling: touch; }
   .eta-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; min-width: 0; }
   .eta-header h3 { margin: 0; min-width: 0; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   .eta-header h3 small { color: #666; font-weight: normal; font-size: calc(12px * var(--font-scale)); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-  /* === 票價顯示 === */
+  /* 票價顯示 */
   .fare-line {
     display: flex; align-items: baseline; gap: 8px;
     padding: 6px 0 8px;
@@ -341,7 +341,7 @@
   .eta-box .stale-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #e67e22; margin-right: 5px; vertical-align: middle; }
   .eta-box .stale { color: #e67e22; font-weight: 600; margin-left: 6px; }
 
-  /* === STOP NAME LABEL === */
+  /* STOP NAME LABEL */
   .stop-name-label {
     background: rgba(255,255,255,0.92);
     border: 1px solid #0d5e3a;
@@ -361,7 +361,7 @@
   .stop-name-label.selected { background: #cfeedd; border-color: #0d5e3a; color: #0d5e3a; }
   @keyframes busPulse { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
 
-  /* === MOBILE === */
+  /* MOBILE */
   @media (max-width: 900px) {
     .layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 8px; padding: 8px; }
     .main-area { display: contents; }
@@ -401,7 +401,7 @@
     .row.landing .search-btn { padding: 12px 14px; font-size: calc(14px * var(--font-scale)); }
   }
 
-  /* === MAP OVERLAY === */
+  /* MAP OVERLAY */
   .map-overlay { display: none; }
   @media (max-width: 900px) {
     .map-overlay {
@@ -566,7 +566,7 @@
           </button>
         </div>
 
-        <!-- === 全程票價 === -->
+        <!-- 全程票價 -->
         <div v-if="currentGmbFare !== null" class="fare-line">
           <span class="fare-label">全程收費</span>
           <span class="fare-value">${{ currentGmbFare.toFixed(1) }}</span>
@@ -678,7 +678,7 @@ function isMapUsable(map) {
 }
 
 /* ============================================================
-   🗺️ HK80 Grid → WGS84 (Latitude/Longitude) 轉換
+   🗺️ HK80 Grid → WGS84 轉換
    ============================================================ */
 function hk80ToWgs84(easting, northing) {
   const a = 6378388;
@@ -742,7 +742,7 @@ function hk80ToWgs84(easting, northing) {
 }
 
 /* ============================================================
-   🚐 GMB 站點座標 CSV 載入與解析
+   🚐 GMB 站點座標 CSV 載入
    ============================================================ */
 const GMB_COORD_CACHE_KEY = "hk-gmb-stop-coords-v1";
 const GMB_COORD_VERSION = 1;
@@ -852,13 +852,13 @@ function lookupGmbCoord(stopId) {
 }
 
 /* ============================================================
-   💰 GMB 票價（複用 hkbus.app routeFareList）
+   💰 GMB 票價（從自己的 GitHub Pages 載入）
    ============================================================ */
-const FARE_CACHE_KEY = "hk-gmb-fare-data-v1";
-const FARE_CACHE_VERSION = 1;
+const FARE_CACHE_KEY = "hk-gmb-fare-data-v3";
+const FARE_CACHE_VERSION = 3;
 const FARE_CACHE_DAYS = 7;
-const FARE_URL_PRIMARY = "https://data.hkbus.app/routeFareList.min.json";
-const FARE_URL_FALLBACK = "https://hkbus.github.io/hk-bus-crawling/routeFareList.min.json";
+const FARE_URL_PRIMARY = "routeFareList.min.json";
+const FARE_URL_FALLBACK = "routeFareList.min.json";
 
 let gmbFareDb = null;
 let gmbFareLoading = null;
@@ -884,7 +884,7 @@ function saveFareCache(data) {
   } catch (e) {}
 }
 
-/* 建立 GMB 票價索引：{ routeCode+serviceType+bound: fullFare } */
+/* 建立 GMB 票價索引：用條目內部 route / serviceType / bound.gmb */
 function buildGmbFareIndex(raw) {
   const index = {};
   const src = raw && raw.routeList ? raw.routeList : raw;
@@ -904,15 +904,16 @@ function buildGmbFareIndex(raw) {
 
     const routeCode = String(e.route || "");
     const serviceType = String(e.serviceType || "1");
-    const bound = e.bound && e.bound.gmb ? String(e.bound.gmb) : "";
+    const boundGmb = e.bound && e.bound.gmb ? String(e.bound.gmb) : "";
 
-    /* 用多重 key 增加命中率 */
-    const indexKey = `${routeCode}+${serviceType}+${bound}`;
+    if (!routeCode) continue;
+
+    const indexKey = `${routeCode}+${serviceType}+${boundGmb}`;
     index[indexKey] = {
       fullFare: fares[0],
       routeCode,
       serviceType,
-      bound
+      boundGmb,
     };
   }
   return index;
@@ -945,17 +946,15 @@ async function fetchGmbFareDb() {
   finally { gmbFareLoading = null; }
 }
 
-/* 查詢 GMB 全程票價：多層比對 */
+/* 查詢 GMB 全程票價 */
 function lookupGmbFare(routeCode, serviceType, bound) {
   if (!gmbFareDb) return null;
   const st = String(serviceType || "1");
   const b = String(bound || "");
 
-  /* 1. 精確匹配 */
-  let key = `${routeCode}+${st}+${b}`;
-  if (gmbFareDb[key]) return gmbFareDb[key].fullFare;
+  const exact = `${routeCode}+${st}+${b}`;
+  if (gmbFareDb[exact]) return gmbFareDb[exact].fullFare;
 
-  /* 2. 忽略 bound */
   for (const k of Object.keys(gmbFareDb)) {
     const parts = k.split("+");
     if (parts[0] === routeCode && parts[1] === st) {
@@ -963,7 +962,6 @@ function lookupGmbFare(routeCode, serviceType, bound) {
     }
   }
 
-  /* 3. 只比對 routeCode */
   for (const k of Object.keys(gmbFareDb)) {
     const parts = k.split("+");
     if (parts[0] === routeCode) {
@@ -1255,7 +1253,6 @@ createApp({
       currentGmbFare.value = null;
       clearMap();
 
-      /* 並行載入票價 */
       const farePromise = loadGmbFareForCurrentRoute().catch(() => {});
 
       try {
@@ -1380,7 +1377,7 @@ createApp({
       await expandMap();
     }
 
-    /* ========== GPS ========== */
+    /* GPS */
     let lastUserPos = null;
     function getUserPosition() {
       return new Promise((resolve, reject) => {
@@ -1432,7 +1429,7 @@ createApp({
       } catch (e) {}
     }
 
-    /* ========== 地圖 ========== */
+    /* 地圖 */
     const HK_CENTER = [22.322, 114.178];
     const HK_ZOOM = 13;
     const TILE_BASEMAP = "https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/basemap/wgs84/{z}/{x}/{y}.png";
