@@ -303,6 +303,20 @@
   .eta-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; min-width: 0; }
   .eta-header h3 { margin: 0; min-width: 0; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   .eta-header h3 small { color: #666; font-weight: normal; font-size: calc(12px * var(--font-scale)); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* === 票價顯示 === */
+  .fare-line {
+    display: flex; align-items: baseline; gap: 8px;
+    padding: 6px 0 8px;
+    border-bottom: 1px solid #f0f0f0;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+    font-size: calc(20px * var(--font-scale));
+    line-height: 1.2;
+  }
+  .fare-label { font-size: inherit; color: #888; font-weight: 700; }
+  .fare-value { font-size: inherit; font-weight: 800; color: #e67e22; font-variant-numeric: tabular-nums; }
+
   .refresh-btn {
     padding: 6px 10px; border: 1px solid #ccd; border-radius: 6px;
     background: white; color: #0d5e3a;
@@ -372,6 +386,9 @@
     .eta-box .exact-time { font-size: calc(18px * var(--font-scale)); }
     .eta-box .rank { width: 68px; font-size: calc(18px * var(--font-scale)); }
     .eta-header h3 small { font-size: calc(11px * var(--font-scale)); }
+
+    .fare-line { font-size: calc(18px * var(--font-scale)); }
+
     .stop-list { max-height: 60vh; }
 
     .row label { min-width: 60px; }
@@ -549,6 +566,12 @@
           </button>
         </div>
 
+        <!-- === 全程票價 === -->
+        <div v-if="currentGmbFare !== null" class="fare-line">
+          <span class="fare-label">全程收費</span>
+          <span class="fare-value">${{ currentGmbFare.toFixed(1) }}</span>
+        </div>
+
         <div v-if="!selectedStop" class="hint">請先選擇小巴站</div>
         <ul v-else>
           <li v-for="(e, i) in etas" :key="i">
@@ -627,11 +650,6 @@ function formatExactTime(t) {
   const p = (n) => String(n).padStart(2, "0");
   return `(${p(d.getHours())}:${p(d.getMinutes())})`;
 }
-async function getJSON(url) {
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) throw new Error("HTTP " + res.status);
-  return res.json();
-}
 function isValidCoord(lat, lng) {
   return typeof lat === "number" && typeof lng === "number" && isFinite(lat) && isFinite(lng) &&
     lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180 && !(lat === 0 && lng === 0);
@@ -661,22 +679,18 @@ function isMapUsable(map) {
 
 /* ============================================================
    🗺️ HK80 Grid → WGS84 (Latitude/Longitude) 轉換
-   政府 GMB 站點座標使用 HK80 Grid（Easting/Northing），
-   Leaflet 需要 WGS84 lat/lng。此處使用標準公式轉換。
    ============================================================ */
 function hk80ToWgs84(easting, northing) {
-  /* --- 第一步：HK80 Grid (E, N) → HK80 geodetic (lat, lng) --- */
-  /* HK80 Transverse Mercator 參數 */
-  const a = 6378388;                /* 半長軸（HK80 / International 1924 橢球） */
-  const f = 1 / 297;                /* 扁率 */
-  const e2 = 2 * f - f * f;         /* 第一偏心率平方 */
-  const lat0 = 22.31213333333333 * Math.PI / 180;  /* 原點緯度 */
-  const lng0 = 114.1785555555556 * Math.PI / 180;  /* 原點經度 */
-  const k0 = 1;                     /* 尺度因子 */
-  const falseE = 836694.05;         /* 假東 */
-  const falseN = 819069.80;         /* 假北 */
+  const a = 6378388;
+  const f = 1 / 297;
+  const e2 = 2 * f - f * f;
+  const lat0 = 22.31213333333333 * Math.PI / 180;
+  const lng0 = 114.1785555555556 * Math.PI / 180;
+  const k0 = 1;
+  const falseE = 836694.05;
+  const falseN = 819069.80;
 
-  const ep2 = e2 / (1 - e2);        /* 第二偏心率平方 */
+  const ep2 = e2 / (1 - e2);
   const M0 = a * (
     (1 - e2 / 4 - 3 * e2 * e2 / 64 - 5 * e2 * e2 * e2 / 256) * lat0 -
     (3 * e2 / 8 + 3 * e2 * e2 / 32 + 45 * e2 * e2 * e2 / 1024) * Math.sin(2 * lat0) +
@@ -721,15 +735,10 @@ function hk80ToWgs84(easting, northing) {
   const hk80Lat = lat * 180 / Math.PI;
   const hk80Lng = lng * 180 / Math.PI;
 
-  /* --- 第二步：HK80 geodetic → WGS84 geodetic --- */
-  /* 使用簡化的 Molodensky 轉換（HK80 到 WGS84 的參數） */
-  const dLat = -5.5 / 3600;   /* 緯度偏移（約 -5.5 秒） */
-  const dLng = 8.5 / 3600;    /* 經度偏移（約 +8.5 秒） */
+  const dLat = -5.5 / 3600;
+  const dLng = 8.5 / 3600;
 
-  const wgsLat = hk80Lat + dLat;
-  const wgsLng = hk80Lng + dLng;
-
-  return { lat: wgsLat, lng: wgsLng };
+  return { lat: hk80Lat + dLat, lng: hk80Lng + dLng };
 }
 
 /* ============================================================
@@ -738,7 +747,7 @@ function hk80ToWgs84(easting, northing) {
 const GMB_COORD_CACHE_KEY = "hk-gmb-stop-coords-v1";
 const GMB_COORD_VERSION = 1;
 const GMB_COORD_DAYS = 30;
-const GMB_COORD_URL = "gmb-stops-coords.csv";  /* 從你的 GitHub Pages 載入 */
+const GMB_COORD_URL = "gmb-stops-coords.csv";
 
 let gmbCoordDb = null;
 let gmbCoordLoading = null;
@@ -795,7 +804,6 @@ async function fetchGmbCoordDb() {
       const res = await fetch(GMB_COORD_URL, { cache: "no-store" });
       if (!res.ok) throw new Error("HTTP " + res.status);
       const text = await res.text();
-      /* 去掉 BOM */
       const clean = text.charCodeAt(0) === 0xFEFF ? text.substring(1) : text;
       const lines = clean.split(/\r?\n/);
       if (!lines.length) return null;
@@ -844,6 +852,128 @@ function lookupGmbCoord(stopId) {
 }
 
 /* ============================================================
+   💰 GMB 票價（複用 hkbus.app routeFareList）
+   ============================================================ */
+const FARE_CACHE_KEY = "hk-gmb-fare-data-v1";
+const FARE_CACHE_VERSION = 1;
+const FARE_CACHE_DAYS = 7;
+const FARE_URL_PRIMARY = "https://data.hkbus.app/routeFareList.min.json";
+const FARE_URL_FALLBACK = "https://hkbus.github.io/hk-bus-crawling/routeFareList.min.json";
+
+let gmbFareDb = null;
+let gmbFareLoading = null;
+
+function loadFareCache() {
+  try {
+    const raw = localStorage.getItem(FARE_CACHE_KEY);
+    if (!raw) return null;
+    const p = JSON.parse(raw);
+    if (!p || p.version !== FARE_CACHE_VERSION) return null;
+    if (Date.now() - (p.timestamp || 0) > FARE_CACHE_DAYS * 864e5) return null;
+    return p.data || null;
+  } catch (e) { return null; }
+}
+
+function saveFareCache(data) {
+  try {
+    localStorage.setItem(FARE_CACHE_KEY, JSON.stringify({
+      version: FARE_CACHE_VERSION,
+      timestamp: Date.now(),
+      data
+    }));
+  } catch (e) {}
+}
+
+/* 建立 GMB 票價索引：{ routeCode+serviceType+bound: fullFare } */
+function buildGmbFareIndex(raw) {
+  const index = {};
+  const src = raw && raw.routeList ? raw.routeList : raw;
+  if (!src || typeof src !== "object") return index;
+
+  for (const key of Object.keys(src)) {
+    const e = src[key];
+    if (!e) continue;
+
+    const coList = Array.isArray(e.co) ? e.co.map(c => String(c).toLowerCase()) : [];
+    if (!coList.includes("gmb")) continue;
+
+    const fares = Array.isArray(e.fares)
+      ? e.fares.map(f => parseFloat(f)).filter(Number.isFinite)
+      : [];
+    if (!fares.length) continue;
+
+    const routeCode = String(e.route || "");
+    const serviceType = String(e.serviceType || "1");
+    const bound = e.bound && e.bound.gmb ? String(e.bound.gmb) : "";
+
+    /* 用多重 key 增加命中率 */
+    const indexKey = `${routeCode}+${serviceType}+${bound}`;
+    index[indexKey] = {
+      fullFare: fares[0],
+      routeCode,
+      serviceType,
+      bound
+    };
+  }
+  return index;
+}
+
+async function fetchGmbFareDb() {
+  if (gmbFareDb) return gmbFareDb;
+  if (gmbFareLoading) return gmbFareLoading;
+
+  gmbFareLoading = (async () => {
+    const cached = loadFareCache();
+    if (cached) { gmbFareDb = cached; return gmbFareDb; }
+
+    for (const url of [FARE_URL_PRIMARY, FARE_URL_FALLBACK]) {
+      try {
+        const res = await fetch(url, { cache: "no-store" });
+        if (!res.ok) continue;
+        const raw = await res.json();
+        const idx = buildGmbFareIndex(raw);
+        if (!Object.keys(idx).length) continue;
+        gmbFareDb = idx;
+        saveFareCache(idx);
+        return gmbFareDb;
+      } catch (e) {}
+    }
+    return null;
+  })();
+
+  try { return await gmbFareLoading; }
+  finally { gmbFareLoading = null; }
+}
+
+/* 查詢 GMB 全程票價：多層比對 */
+function lookupGmbFare(routeCode, serviceType, bound) {
+  if (!gmbFareDb) return null;
+  const st = String(serviceType || "1");
+  const b = String(bound || "");
+
+  /* 1. 精確匹配 */
+  let key = `${routeCode}+${st}+${b}`;
+  if (gmbFareDb[key]) return gmbFareDb[key].fullFare;
+
+  /* 2. 忽略 bound */
+  for (const k of Object.keys(gmbFareDb)) {
+    const parts = k.split("+");
+    if (parts[0] === routeCode && parts[1] === st) {
+      return gmbFareDb[k].fullFare;
+    }
+  }
+
+  /* 3. 只比對 routeCode */
+  for (const k of Object.keys(gmbFareDb)) {
+    const parts = k.split("+");
+    if (parts[0] === routeCode) {
+      return gmbFareDb[k].fullFare;
+    }
+  }
+  return null;
+}
+
+/* ============================================================
    🚐 GMB API（含節流 + 快取避免 429）
    ============================================================ */
 const GMB_BASE = "https://data.etagmb.gov.hk";
@@ -860,7 +990,6 @@ async function gmbFetch(url) {
   return res.json();
 }
 
-/* 快取 */
 const etaCache = new Map();
 const ETA_CACHE_TTL_MS = 30000;
 const stopsCache = new Map();
@@ -1036,6 +1165,7 @@ createApp({
     const isMobile = ref(window.matchMedia("(max-width: 900px)").matches);
     const favExpanded = ref(true);
     const favourites = ref(loadFavourites());
+    const currentGmbFare = ref(null);
 
     const isLanding = computed(() => !searched.value && !routeInput.value.trim() && !stops.value.length);
     const mapRowText = computed(() => selectedStop.value ? selectedStop.value.name : "小巴路線地圖");
@@ -1060,6 +1190,7 @@ createApp({
       routeKey.value = "";
       selectedDirectionLabel.value = "";
       stops.value = []; selectedStop.value = null; etas.value = [];
+      currentGmbFare.value = null;
       searched.value = false;
       clearMap();
     }
@@ -1077,6 +1208,7 @@ createApp({
       selectedDirectionLabel.value = "";
       stops.value = []; selectedStop.value = null; etas.value = [];
       dataAge.value = null; countdown.value = null;
+      currentGmbFare.value = null;
       clearMap();
       try {
         const routes = await fetchGmbRouteDetails(region.value, q);
@@ -1098,7 +1230,19 @@ createApp({
       pickingDirection.value = true;
       stops.value = []; selectedStop.value = null; etas.value = [];
       dataAge.value = null; countdown.value = null;
+      currentGmbFare.value = null;
       clearMap();
+    }
+
+    async function loadGmbFareForCurrentRoute() {
+      currentGmbFare.value = null;
+      const r = findCurrentRoute();
+      if (!r) return;
+      const db = await fetchGmbFareDb();
+      if (!db) return;
+      const boundCode = r.routeSeq === "1" ? "O" : "I";
+      const fare = lookupGmbFare(r.route, "1", boundCode);
+      if (fare !== null) currentGmbFare.value = fare;
     }
 
     async function selectDirection(r) {
@@ -1108,14 +1252,17 @@ createApp({
       loadingStops.value = true; error.value = "";
       stops.value = []; selectedStop.value = null; etas.value = [];
       dataAge.value = null; countdown.value = null;
+      currentGmbFare.value = null;
       clearMap();
+
+      /* 並行載入票價 */
+      const farePromise = loadGmbFareForCurrentRoute().catch(() => {});
+
       try {
-        /* 確保座標 DB 已載入 */
         if (!gmbCoordDb) await fetchGmbCoordDb();
         stops.value = await fetchGmbRouteStops(r.routeId, r.routeSeq);
         const tgt = isMobile.value ? (mapExpanded.value ? mapMobile : null) : mapDesktop;
         if (isMapUsable(tgt)) { activeMap = tgt; drawOnActiveMap(); }
-        /* 只有在有座標的站點才自動定位 */
         if (stops.value.some(s => isValidCoord(s.lat, s.lng))) {
           await autoLocateNearestStop();
         }
@@ -1124,6 +1271,7 @@ createApp({
       } finally {
         loadingStops.value = false;
       }
+      await farePromise;
     }
 
     function toggleFavourite() {
@@ -1507,8 +1655,8 @@ createApp({
       applyFontScale(fontScale.value);
       initMaps();
       if (mapDesktop) buildLabelLayer(mapDesktop);
-      /* 背景預先載入座標 DB */
       fetchGmbCoordDb().catch(() => {});
+      fetchGmbFareDb().catch(() => {});
       window.addEventListener("resize", handleResize);
       window.addEventListener("orientationchange", handleResize);
       window.addEventListener("beforeunload", saveFavouritesOnExit);
@@ -1532,7 +1680,7 @@ createApp({
       stops, selectedStop, etas, dataAge, countdown, refreshing,
       loadingStops, error, stopListRef, mapExpanded, mapRowText,
       isMobile, favExpanded, favourites, isLanding, isCurrentFavourite,
-      clockText,
+      clockText, currentGmbFare,
       onRegionChange, onSearch, selectDirection, clearDirection,
       toggleFavourite, removeFavourite, onFavClick,
       onStopClick, onStopMapClick, expandMap, collapseMap, zoomIn, zoomOut,
