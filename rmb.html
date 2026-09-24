@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<!--
+  Ansum 紅巴 (Red Minibus) — rmb.html
+  ================================================================
+  純靜態頁：唯一資料來源是 rmb-routes.json，沒有 ETA / 地圖 / GPS。
+
+  版面流程（與 gmb.html 對齊的操作習慣）：
+      選地區  →  路線清單  →  路線詳細資料
+
+    · 桌面 (> 900px)：地區格線在左欄內嵌；路線清單出現在右欄；
+                      詳細資料「內嵌」在右欄，不需點「詳請」。
+    · 手機 (≤ 900px)：地區格線同樣內嵌；路線清單接在同一捲動欄下方；
+                      詳細資料「彈出」全螢幕面板（GMB 的「詳請」樣式）。
+
+  關鍵設計 —— 一份 markup，兩種呈現：
+    詳細資料只寫一次（.detail-stack > .detail-sheet）。
+    桌面用 `display: contents` 讓 .detail-sheet 這層「消失」，卡片直接融入右欄；
+    手機則由 @media 把 .detail-stack.open 變成 fixed 浮層 + 半透明遮罩。
+    → 不必維護兩份幾乎相同的 ~90 行詳細卡片 markup。
+
+  ⚠️ 維護注意：本頁用 Vue 3 的 **prod** 建置。
+     模板用到、但 setup() 的 return {} 沒有匯出的識別字，
+     在 prod 建置下**不會報錯、不會警告**，只會被靜默當成 undefined，
+     令 v-if 走錯分支（區塊消失／顯示錯誤），Console 全綠。
+     改完模板或 setup() 後，請在本專案根目錄執行：
+         python tools/check-bindings.py index.html gmb.html rmb.html
+-->
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="format-detection" content="telephone=no" />
+<title>Ansum 紅巴</title>
+<link rel="icon" type="image/png" href="rmb.png" />
+<link rel="apple-touch-icon" href="rmb.png" />
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js" crossorigin="anonymous"></script>
+<style>
+  :root { --font-scale: 1; --rmb-red: #c8102e; --rmb-red-dark: #9c0c24; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
+  html, body {
+    margin: 0; padding: 0; height: 100%; overflow: hidden;
+    overscroll-behavior: none;
+    -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
+    -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+  }
+  body {
+    background: #f5f7fb; color: #222;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang HK", "Microsoft JhengHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  }
+  @supports (-webkit-touch-callout: none) { html, body { height: -webkit-fill-available; } }
+  #app {
+    display: flex; flex-direction: column;
+    height: 100vh; height: 100dvh;
+    min-height: 0; min-width: 0; max-width: 100%;
+    overflow: hidden;
+  }
+  @supports (-webkit-touch-callout: none) { #app { height: -webkit-fill-available; } }
+  button, input, select { font-family: inherit; -webkit-appearance: none; appearance: none; touch-action: manipulation; }
+
+  /* === HEADER === */
+  header.app-header {
+    background: var(--rmb-red); color: white; padding: 10px 16px;
+    flex-shrink: 0; display: flex; align-items: center;
+    justify-content: space-between; gap: 12px;
+    min-width: 0;
+    padding-top: max(10px, env(safe-area-inset-top));
+  }
+  header.app-header h1 {
+    margin: 0; font-size: calc(17px * var(--font-scale)); white-space: nowrap;
+    display: flex; align-items: center; gap: 9px; min-width: 0; overflow: hidden;
+  }
+  .header-logo-badge {
+    width: 34px; height: 34px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: #fff; border-radius: 50%; font-size: 19px; line-height: 1;
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.28), 0 1px 4px rgba(0,0,0,0.3);
+    overflow: hidden;
+  }
+  .header-logo { width: 26px; height: 26px; object-fit: contain; display: block; }
+  .header-meta { display: flex; align-items: center; gap: 12px; flex-shrink: 0; min-width: 0; }
+  .header-clock {
+    font-size: calc(14px * var(--font-scale)); font-weight: 600; letter-spacing: 0.4px;
+    font-variant-numeric: tabular-nums; opacity: 0.95; white-space: nowrap;
+  }
+  .back-btn {
+    background: rgba(255,255,255,0.18); color: white; border: none; border-radius: 8px;
+    padding: 6px 12px; font-size: calc(14px * var(--font-scale));
+    font-weight: 700; cursor: pointer; flex-shrink: 0;
+    text-decoration: none; display: inline-block;
+  }
+  .font-size-controls { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+  .font-btn {
+    width: 28px; height: 28px; border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.4);
+    background: rgba(255,255,255,0.15); color: white;
+    font-size: 16px; font-weight: 700; line-height: 1; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .font-btn:active { transform: scale(0.95); }
+
+  /* === LAYOUT (matches gmb.html / index.html) === */
+  .layout {
+    flex: 1 1 auto; min-height: 0; min-width: 0;
+    display: grid;
+    grid-template-columns: 340px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    gap: 12px; padding: 12px;
+    max-width: 1400px; width: 100%;
+    margin: 0 auto; overflow: hidden;
+  }
+  .panel {
+    background: #fff; border-radius: 10px; padding: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    display: flex; flex-direction: column;
+    min-height: 0; min-width: 0;
+    overflow: hidden;
+  }
+  .sidebar {
+    display: flex; flex-direction: column; gap: 10px;
+    overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    min-width: 0; min-height: 0;
+  }
+  .main-area {
+    display: flex; flex-direction: column; gap: 12px;
+    min-width: 0; min-height: 0;
+    overflow-y: auto; overflow-x: hidden;
+    overscroll-behavior: contain;
+  }
+  @media (max-width: 900px) {
+    /* One scrollable column: sidebar content then the route list / empty state. */
+    .layout {
+      display: flex; flex-direction: column;
+      gap: 8px; padding: 8px;
+      overflow-y: auto; overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+    }
+    .panel { padding: 10px; min-width: 0; max-width: 100%; }
+    /* The sidebar fills whatever height the (often empty) main area leaves over,
+       so closing a popup does not leave a large dead gap below the content.
+       flex-basis auto + grow 1: it still shrinks to content when the column
+       overflows, and never collapses below its own content height. */
+    .sidebar { max-width: 100%; min-width: 0; max-height: none; overflow: visible; flex: 1 0 auto; }
+    .main-area { min-height: 0; overflow: visible; flex: 0 0 auto; }
+  }
+  /* === FAVOURITES === */
+  .fav-section .title {
+    font-size: calc(13px * var(--font-scale)); font-weight: 700; color: var(--rmb-red);
+    display: flex; align-items: center; gap: 6px; margin-bottom: 8px;
+  }
+  .fav-slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .fav-slot {
+    position: relative; border: 1px dashed #cfd7e6; border-radius: 9px;
+    padding: 7px 6px; min-height: 52px; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 2px; text-align: center; background: #fbfcfe;
+  }
+  .fav-slot.filled { border-style: solid; border-color: #f0c3ca; background: #fff5f6; }
+  .fav-slot .fav-route { font-size: calc(12px * var(--font-scale)); font-weight: 800; color: var(--rmb-red); }
+  .fav-slot .fav-dest {
+    font-size: calc(10px * var(--font-scale)); color: #667; width: 100%;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .fav-slot .fav-company { font-size: calc(9px * var(--font-scale)); color: #9aa3b5; }
+  .fav-slot .fav-remove {
+    position: absolute; top: 1px; right: 1px; width: 18px; height: 18px;
+    border: none; border-radius: 50%; background: rgba(0,0,0,0.06); color: #888;
+    font-size: 11px; line-height: 1; cursor: pointer;
+  }
+  .fav-slot .fav-plus { font-size: 17px; color: #c3cbd9; line-height: 1; }
+  .fav-slot .fav-hint { font-size: calc(9px * var(--font-scale)); color: #b6bfcd; }
+  .fav-divider { border: none; border-top: 1px solid #eef1f6; margin: 2px 0; }
+
+  /* === DISTRICT PICKER (inline grid in the sidebar) ===
+     Tapping a card pops the route list up in a modal (see .picker-stack). */
+  .district-title {
+    font-size: calc(17px * var(--font-scale)); font-weight: 800; color: #333f57;
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;
+  }
+  .district-buttons {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .district-btn {
+    display: flex; align-items: center; justify-content: center;
+    padding: 3px 6px; border: 1px solid #e2e8f2; border-radius: 9px;
+    background: #fbfcfe; color: #44506a; cursor: pointer;
+    font-size: calc(16px * var(--font-scale)); font-weight: 800; line-height: 1.2;
+    text-align: center; min-height: 34px;
+    min-width: 0; touch-action: manipulation; font-family: inherit;
+  }
+  .district-btn:hover { background: #fff5f6; border-color: #f0c3ca; }
+  .district-btn:active { transform: scale(0.96); }
+  .district-btn.active { background: #fff0f2; border-color: var(--rmb-red); color: var(--rmb-red); }
+
+  /* === DISTRICT ROUTE PICKER (modal overlay)
+     Tapping a district card opens this popup instead of dumping the route list
+     at the bottom of the page. Picking a route closes it and hands off to the
+     route detail (inline on desktop, full-screen sheet on mobile).
+     Frame metrics deliberately mirror gmb.html's .detail-modal / .detail-modal-box
+     so both popups occupy the same block on screen: 20px frame, 720px max-width,
+     flex-start alignment, and a height that fills the available viewport. */
+  .picker-stack {
+    position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+    z-index: 5000; display: flex; align-items: flex-start; justify-content: center;
+    background: rgba(0,0,0,0.5); padding: 20px;
+    padding-top: max(20px, env(safe-area-inset-top));
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+    overflow-y: auto;
+  }
+  .picker-sheet {
+    display: flex; flex-direction: column;
+    width: 100%; max-width: 720px;
+    /* dvh accounts for mobile browser chrome; fallback via JS-set --modal-max-h.
+       GMB's modal is a fixed height that fills the frame, not content-height. */
+    height: var(--modal-max-h, calc(100dvh - 40px));
+    max-height: 100dvh; margin: 0 auto;
+    border-radius: 12px; overflow: hidden;
+    background: #fff; box-shadow: 0 8px 32px rgba(0,0,0,0.28);
+  }
+  .picker-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    width: 100%; flex-shrink: 0; padding: 12px 16px;
+    background: #fff; border-bottom: 1px solid #eef0f4;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .picker-title {
+    font-size: calc(15px * var(--font-scale)); font-weight: 700; color: #1e2740;
+    min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .picker-body {
+    flex: 1 1 auto; min-height: 0;
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+    padding: 12px 14px;
+    overscroll-behavior: contain;
+  }
+  .picker-close {
+    width: 30px; height: 30px; border-radius: 6px; border: none;
+    background: #f0f0f0; color: #333; font-size: 16px;
+    cursor: pointer; flex-shrink: 0;
+  }
+  .picker-close:active { transform: scale(0.95); }
+
+  /* Phones: tighten the frame so the popup uses the full width, exactly as
+     gmb.html's .detail-modal does at <=600px. */
+  @media (max-width: 600px) {
+    .picker-stack { padding: 8px; padding-top: max(8px, env(safe-area-inset-top)); }
+    .picker-sheet { max-width: 100%; height: var(--modal-max-h, calc(100dvh - 16px)); }
+  }
+
+  /* === ROUTE DETAIL ===
+     Desktop: renders inline in the right-hand area, replacing the route list.
+     Mobile (<=900px): the SAME markup becomes a GMB-style popup when .open is set,
+     so the detail markup only has to be written once.
+     The popup metrics below deliberately mirror gmb.html's .detail-modal so
+     路線詳細資料 looks and measures the same on both pages:
+     max-width 720px, 20px frame padding, 40px vertical reserve, 16px body padding. */
+  .detail-stack { display: block; }
+  .detail-sheet { display: contents; }
+  .detail-sheet-head { display: none; }
+  .detail-sheet-body { display: flex; flex-direction: column; gap: 12px; }
+  .detail-sheet-title { font-size: calc(15px * var(--font-scale)); font-weight: 700; color: #222; }
+  .detail-sheet-close {
+    width: 30px; height: 30px; border-radius: 6px; border: none;
+    background: #f0f0f0; color: #333; font-size: 16px; cursor: pointer; flex-shrink: 0;
+  }
+  .detail-sheet-close:active { transform: scale(0.95); }
+
+  @media (max-width: 900px) {
+    .detail-stack { display: none; }
+    .detail-stack.open {
+      display: flex; position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+      z-index: 4000; align-items: flex-start; justify-content: center;
+      background: rgba(0,0,0,0.5); padding: 20px;
+      padding-top: max(20px, env(safe-area-inset-top));
+      padding-bottom: max(20px, env(safe-area-inset-bottom));
+      overflow-y: auto;
+    }
+    .detail-stack.open .detail-sheet {
+      display: flex; flex-direction: column;
+      width: 100%; max-width: 720px;
+      /* dvh accounts for mobile browser chrome; fallback via JS-set --modal-max-h */
+      height: var(--modal-max-h, calc(100dvh - 40px));
+      max-height: 100dvh; margin: 0 auto;
+      border-radius: 12px; overflow: hidden;
+      background: #fff; box-shadow: 0 8px 32px rgba(0,0,0,0.28);
+    }
+    .detail-stack.open .detail-sheet-head {
+      display: flex; align-items: center; justify-content: space-between;
+      width: 100%; flex-shrink: 0; padding: 12px 16px;
+      background: #fff; border-bottom: 1px solid #eef0f4;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .detail-stack.open .detail-sheet-body {
+      flex: 1 1 auto; min-height: 0;
+      overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 16px;
+    }
+  }
+
+  /* Phones: tighten the frame so the popup uses the full width, exactly as
+     gmb.html's .detail-modal does at <=600px. */
+  @media (max-width: 600px) {
+    .detail-stack.open { padding: 8px; padding-top: max(8px, env(safe-area-inset-top)); }
+    .detail-stack.open .detail-sheet { max-width: 100%; height: var(--modal-max-h, calc(100dvh - 16px)); border-radius: 12px; }
+  }
+
+
+  /* === SEARCH (matches gmb.html .row / .row.landing) === */
+  .row {
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 10px; min-width: 0;
+  }
+  .row label { font-size: calc(13px * var(--font-scale)); color: #333; min-width: 60px; flex-shrink: 0; }
+  .search-input {
+    flex: 1 1 0; min-width: 0; width: 0;
+    padding: 8px 10px; border: 1px solid #ccd; border-radius: 6px;
+    font-size: calc(16px * var(--font-scale)); background: #fff; color: #222;
+  }
+  .search-input:focus { outline: none; border-color: var(--rmb-red); background: #fff; }
+
+  /* Landing treatment — matches the 「小巴路線」 label on gmb.html */
+  .row.landing { margin-bottom: 14px; gap: 8px; }
+  .row.landing label {
+    font-size: calc(20px * var(--font-scale)); font-weight: 800;
+    color: var(--rmb-red); min-width: 80px; letter-spacing: 0.5px;
+  }
+  .row.landing .search-input {
+    font-size: calc(18px * var(--font-scale));
+    padding: 13px 14px;
+    border: 2px solid var(--rmb-red); border-radius: 10px;
+    box-shadow: 0 0 0 4px rgba(200,16,46,0.10);
+    font-weight: 600;
+  }
+  .row.landing .search-input::placeholder {
+    color: var(--rmb-red); font-weight: 700; opacity: 1;
+    animation: placeholderBlink 2.4s ease-in-out infinite;
+    -webkit-animation: placeholderBlink 2.4s ease-in-out infinite;
+  }
+  @keyframes placeholderBlink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+  /* Once a district/route is picked the row shrinks back, like gmb's .route-searched */
+  .row.route-searched label { min-width: 68px; font-size: calc(15px * var(--font-scale)); color: #333; }
+  .row.route-searched .search-input { font-size: calc(16px * var(--font-scale)); padding: 8px 10px; border-width: 1px; border-radius: 6px; box-shadow: none; font-weight: 400; }
+
+  /* === OTHER MODES ENTRY (matches the bus landing page) === */
+  .other-modes {
+    display: flex; flex-direction: column; gap: 8px;
+    margin: 14px 0 12px;
+  }
+  .mode-link {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px;
+    background: #f8faff;
+    border: 1px solid #dde;
+    border-radius: 10px;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.15s;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .mode-link:hover { background: #fff0f2; border-color: var(--rmb-red); }
+  .mode-link:active { transform: scale(0.98); }
+  .mode-link .mode-icon { font-size: 26px; flex-shrink: 0; line-height: 1; }
+  .mode-link .mode-icon-img {
+    width: 46px; height: 30px; flex-shrink: 0;
+    object-fit: contain; display: block;
+  }
+  .mode-link .mode-text { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .mode-link .mode-title { font-size: calc(15px * var(--font-scale)); font-weight: 700; color: var(--rmb-red); }
+  .mode-link .mode-desc { font-size: calc(11px * var(--font-scale)); color: #888; }
+  .mode-link .mode-arrow { font-size: 18px; color: var(--rmb-red); flex-shrink: 0; font-weight: 700; }
+
+  /* Section heading — oversized like the landing label on the bus page */
+  .mode-section-title {
+    font-size: calc(22px * var(--font-scale));
+    font-weight: 800;
+    color: var(--rmb-red);
+    text-align: center;
+    margin: 0 0 10px;
+    letter-spacing: 0.5px;
+  }
+  .clear-btn {
+    flex-shrink: 0; width: 36px; border: 1px solid #dbe2ee; border-radius: 9px;
+    background: #fbfcfe; color: #7b8598; font-size: 15px; cursor: pointer;
+  }
+  .row.landing .clear-btn { padding: 13px 0; border-radius: 10px; }
+  .search-btn {
+    flex-shrink: 0;
+    padding: 8px 14px; border: none; border-radius: 6px;
+    background: var(--rmb-red); color: #fff;
+    font-size: calc(14px * var(--font-scale)); font-weight: 700;
+    cursor: pointer; touch-action: manipulation;
+  }
+  .search-btn:hover { background: var(--rmb-red-dark); }
+  .search-btn:active { transform: scale(0.97); }
+  .search-btn:disabled { opacity: 0.6; cursor: default; }
+  .row.landing .search-btn { padding: 13px 18px; font-size: calc(15px * var(--font-scale)); border-radius: 10px; }
+  .hint-line { font-size: calc(11px * var(--font-scale)); color: #98a1b3; padding: 2px 0; }
+
+  /* === RESULT LIST ===
+     Every result list now lives inside the popup, whose .picker-body owns the
+     scrolling, so the list itself never needs its own height cap or overflow. */
+  .results { display: flex; flex-direction: column; gap: 5px; }
+  .result-item {
+    border: 1px solid #eef1f6; border-radius: 9px; padding: 8px 10px;
+    cursor: pointer; background: #fff; display: flex; flex-direction: column; gap: 2px;
+  }
+  .result-item:hover { background: #fff7f8; border-color: #f3ccd3; }
+  .result-item.active { border-color: var(--rmb-red); background: #fff0f2; }
+  .result-name { font-size: calc(13px * var(--font-scale)); font-weight: 800; color: #1e2740; }
+  .result-od {
+    font-size: calc(11px * var(--font-scale)); color: #6a7488;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .result-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+  .tag-pill {
+    font-size: calc(9px * var(--font-scale)); font-weight: 700; padding: 1px 6px;
+    border-radius: 999px; background: #eef2fa; color: #5b6478;
+  }
+  .tag-pill.overnight { background: #2b3350; color: #fff; }
+  .tag-pill.morning { background: #fdf0d6; color: #9a6a00; }
+  .tag-pill.evening { background: #ece5ff; color: #5c3fb0; }
+  .tag-pill.special { background: #e2f6ec; color: #12704a; }
+  .tag-pill.circular { background: #e3f0ff; color: #1f5aa8; }
+  /* === CARDS === */
+  .card { padding: 14px 16px; }
+  .card-title {
+    font-size: calc(13px * var(--font-scale)); font-weight: 800; color: var(--rmb-red);
+    margin: 0 0 10px; display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+  }
+  .card-title small { font-weight: 600; color: #8b95a8; font-size: calc(11px * var(--font-scale)); }
+  .route-title { font-size: calc(19px * var(--font-scale)); font-weight: 900; color: #1e2740; margin: 0 0 4px; }
+  .route-od { font-size: calc(13px * var(--font-scale)); color: #5b6478; white-space: pre-line; }
+  .route-meta-row {
+    display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 8px;
+    font-size: calc(12px * var(--font-scale)); color: #6a7488;
+  }
+  .route-meta-row b { color: #1e2740; font-weight: 700; }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; align-items: center; }
+  .chip {
+    border: 1px solid #e2e8f2; border-radius: 999px; background: #fbfcfe;
+    padding: 5px 11px; font-size: calc(12px * var(--font-scale)); font-weight: 700;
+    color: #44506a; cursor: pointer;
+  }
+  .chip.active { background: #fff0f2; border-color: var(--rmb-red); color: var(--rmb-red); }
+  .chip-primary { background: var(--rmb-red); border-color: var(--rmb-red); color: #fff; }
+  .chip-primary:hover { background: var(--rmb-red-dark); border-color: var(--rmb-red-dark); }
+  .chip-primary:active { transform: scale(0.97); }
+  .chip-label { font-size: calc(11px * var(--font-scale)); color: #98a1b3; }
+
+  /* Detail cards — used inline on desktop and inside the popup on mobile.
+     flex-shrink: 0 is load-bearing: .detail-sheet-body is a column flex container
+     with a fixed height, so without it every card would shrink to fit and its
+     content would be chopped (cards measured clientH 85 vs scrollH 160). The card
+     must keep its natural height and let the BODY do the scrolling. */
+  .detail-card {
+    background: #fff; border: 1px solid #eef1f6; border-radius: 10px;
+    padding: 14px 16px; box-shadow: 0 1px 3px rgba(20,30,60,0.06);
+    overflow: hidden; flex-shrink: 0;
+  }
+  .detail-card .card-title { margin: 0 0 10px; }
+
+  /* === FARE ROWS (styled to match the bus page) === */
+  .fare-table { display: flex; flex-direction: column; }
+  .fare-row {
+    display: flex; align-items: baseline; gap: 8px;
+    padding: 6px 0 8px;
+    border-bottom: 1px solid #f0f0f0;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+    font-size: calc(20px * var(--font-scale));
+    line-height: 1.2;
+  }
+  .fare-row:last-child { border-bottom: none; margin-bottom: 0; }
+  .fare-label { font-size: inherit; color: #888; font-weight: 700; }
+  .fare-value {
+    font-size: inherit; font-weight: 800; color: #e67e22;
+    font-variant-numeric: tabular-nums;
+  }
+  .fare-note { font-size: inherit; color: #888; font-weight: 600; margin-top: 8px; white-space: pre-line; line-height: 1.5; }
+  .flag-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
+  .flag {
+    font-size: calc(10px * var(--font-scale)); font-weight: 700; padding: 2px 8px;
+    border-radius: 6px; background: #eef2fa; color: #4b5670;
+  }
+
+  /* === TIMETABLE === */
+  .tt-table { border: 1px solid #eef1f6; border-radius: 10px; overflow: hidden; }
+  .tt-row { display: flex; align-items: baseline; gap: 10px; padding: 8px 12px; }
+  .tt-row + .tt-row { border-top: 1px solid #f4f6fa; }
+  .tt-day { flex: 0 0 108px; font-size: calc(12px * var(--font-scale)); color: #6a7488; }
+  .tt-time {
+    flex: 1 1 auto; min-width: 0; font-size: calc(13px * var(--font-scale));
+    font-weight: 700; color: #1e2740; white-space: pre-line;
+  }
+  .tt-headway { flex: 0 0 auto; font-size: calc(11px * var(--font-scale)); color: #8b95a8; }
+
+  /* === ROUTEING === */
+  .rt-table { border: 1px solid #eef1f6; border-radius: 10px; overflow: hidden; }
+  .rt-row { display: flex; align-items: flex-start; gap: 10px; padding: 7px 12px; }
+  .rt-row + .rt-row { border-top: 1px solid #f4f6fa; }
+  .rt-road { flex: 0 0 132px; font-size: calc(12px * var(--font-scale)); font-weight: 700; color: #44506a; }
+  .rt-points {
+    flex: 1 1 auto; min-width: 0; font-size: calc(12px * var(--font-scale)); color: #5b6478;
+    white-space: pre-line; line-height: 1.5;
+  }
+
+  .notice { font-size: calc(11px * var(--font-scale)); color: #8b95a8; white-space: pre-line; line-height: 1.6; }
+  .notice + .notice { margin-top: 6px; }
+  .source-line { font-size: calc(10px * var(--font-scale)); color: #a7b0c0; margin-top: 6px; }
+  .source-line a { color: #a7b0c0; }
+  .error { color: var(--rmb-red); font-size: calc(12px * var(--font-scale)); padding: 6px 0; }
+  .loading-hint { color: var(--rmb-red); font-size: calc(12px * var(--font-scale)); }
+  @media (max-width: 900px) {
+    .tt-day { flex: 0 0 92px; }
+    .rt-road { flex: 0 0 96px; }
+    .tt-row, .rt-row { padding: 7px 10px; }
+    .fare-row { font-size: calc(18px * var(--font-scale)); padding: 6px 0 8px; }
+    .row.landing label { font-size: calc(18px * var(--font-scale)); min-width: 74px; }
+    .row.landing .search-input { font-size: max(16px, calc(16px * var(--font-scale))); padding: 12px; }
+    .row.landing .search-btn { padding: 12px 14px; font-size: calc(14px * var(--font-scale)); }
+    .row.route-searched label { min-width: 68px; font-size: calc(15px * var(--font-scale)); }
+    .row.route-searched .search-input { font-size: max(16px, calc(16px * var(--font-scale))); padding: 10px 12px; }
+    .district-btn { min-height: 40px; }
+    .mode-section-title { font-size: calc(18px * var(--font-scale)); }
+    .other-modes { margin: 12px 0 10px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header class="app-header">
+    <a href="index.html" class="back-btn">← 返回</a>
+    <h1>
+      <span class="header-logo-badge">
+        <img class="header-logo" src="rmb.png" alt="紅色小巴" />
+      </span>
+      Ansum 紅巴
+    </h1>
+    <div class="header-meta">
+      <div class="font-size-controls">
+        <button class="font-btn" @click="decreaseFontSize" title="縮小字型">−</button>
+        <button class="font-btn" @click="increaseFontSize" title="放大字型">+</button>
+      </div>
+      <span class="header-clock">{{ clockText }}</span>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="panel sidebar">
+      <div class="fav-section">
+        <div class="title"><span>⭐</span>我的最愛</div>
+        <div class="fav-slots">
+          <div v-for="(fav, i) in favourites" :key="i"
+               class="fav-slot" :class="fav ? 'filled' : 'empty'"
+               @click="onFavClick(i)">
+            <template v-if="fav">
+              <span class="fav-route">{{ fav.name }}</span>
+              <span class="fav-dest">{{ fav.od }}</span>
+              <button class="fav-remove" @click.stop="removeFavourite(i)">✕</button>
+            </template>
+            <template v-else>
+              <span class="fav-plus">+</span>
+              <span class="fav-hint">最愛</span>
+            </template>
+          </div>
+        </div>
+      </div>
+
+      <hr class="fav-divider" />
+
+      <div>
+        <div class="district-title">
+          <span>🚏 選擇地區</span>
+          <span v-if="regionName" class="chip-label">{{ regionName }}</span>
+        </div>
+        <div class="district-buttons">
+          <button v-for="d in districts" :key="d.id" class="district-btn"
+                  :class="{ active: regionId === d.id }" @click="onDistrictPick(d.id)">
+            {{ d.name }}
+          </button>
+        </div>
+      </div>
+
+      <!-- 搜尋列 -->
+      <div class="row" :class="(query.trim() || regionId || current) ? 'route-searched' : { landing: isLanding }">
+        <label>紅巴路線</label>
+        <input class="search-input" type="text" v-model="query"
+               placeholder="搜尋路線或地點" @keyup.enter="onSearch" />
+        <button class="search-btn" @click="onSearch" :disabled="loading">
+          {{ loading ? '載入中' : '查詢' }}
+        </button>
+        <button class="clear-btn" v-if="query.trim()" @click="clearSearch" title="清除">✕</button>
+      </div>
+
+      <!-- 其他交通工具 -->
+      <div v-if="isLanding" class="other-modes">
+        <div class="mode-section-title">可選擇其他交通工具</div>
+        <a href="index.html" class="mode-link">
+          <img class="mode-icon-img" src="bus.png" alt="巴士" />
+          <span class="mode-text">
+            <span class="mode-title">巴士路線</span>
+            <span class="mode-desc">九巴 / 城巴 / 嶼巴</span>
+          </span>
+          <span class="mode-arrow">→</span>
+        </a>
+        <a href="gmb.html" class="mode-link">
+          <img class="mode-icon-img" src="gmb.png" alt="專線小巴" />
+          <span class="mode-text">
+            <span class="mode-title">專線小巴</span>
+            <span class="mode-desc">港島 / 九龍 / 新界</span>
+          </span>
+          <span class="mode-arrow">→</span>
+        </a>
+      </div>
+
+      <div class="hint-line loading-hint" v-if="loading">載入紅巴資料中…</div>
+      <p v-if="error" class="error">{{ error }}</p>
+    </aside>
+
+    <main class="main-area">
+      <!-- ===== 路線詳請：桌面內嵌顯示，手機彈出（同一份 markup） ===== -->
+      <div class="detail-stack" v-if="current" :class="{ open: detailOpen }">
+        <div class="detail-sheet">
+          <div class="detail-sheet-head">
+            <span class="detail-sheet-title">{{ current.name }} — 路線詳細資料</span>
+            <button class="detail-sheet-close" @click="closeDetail()">✕</button>
+          </div>
+          <div class="detail-sheet-body">
+
+            <!-- 路線摘要 -->
+            <div class="detail-card">
+              <h2 class="route-title">{{ current.name }}</h2>
+              <div class="route-od">{{ current.od }}</div>
+              <div class="route-meta-row">
+                <span v-if="operatorName">營辦商：<b>{{ operatorName }}</b></span>
+                <span v-if="current.updated">資料更新：<b>{{ current.updated }}</b></span>
+                <span v-if="hotline">查詢電話：<b>{{ hotline }}</b></span>
+              </div>
+              <div class="chip-row">
+                <span v-for="t in current.tags" :key="t" class="tag-pill" :class="tagClass(t)">{{ t }}</span>
+              </div>
+              <div class="chip-row">
+                <button class="chip" :class="{ active: !isFavourite }" @click="toggleFavourite">☆ 加入最愛</button>
+                <span class="chip-label" v-if="isFavourite">已在我的最愛</span>
+              </div>
+            </div>
+
+            <div class="detail-card" v-if="current.variants && current.variants.length > 1">
+              <h3 class="card-title">🔁 服務時段／走線</h3>
+              <div class="chip-row">
+                <button v-for="(v, i) in current.variants" :key="i" class="chip"
+                        :class="{ active: variantIndex === i }"
+                        @click="pickDetailVariant(i)">
+                  {{ variantLabel(v, i) }}
+                </button>
+              </div>
+            </div>
+
+            <div class="detail-card" v-if="bounds.length > 1">
+              <h3 class="card-title">➡️ 行車方向</h3>
+              <div class="chip-row">
+                <button v-for="(b, i) in bounds" :key="i" class="chip"
+                        :class="{ active: boundIndex === i }" @click="boundIndex = i">
+                  {{ b.from || ('方向 ' + (i + 1)) }}
+                </button>
+              </div>
+            </div>
+
+            <div class="detail-card">
+              <h3 class="card-title">
+                💰 {{ currentBound.fareTitle || '收費表' }}
+                <small>{{ currentBound.from }}</small>
+              </h3>
+              <div class="fare-table" v-if="currentBound.fares && currentBound.fares.length">
+                <div v-for="(f, i) in currentBound.fares" :key="i" class="fare-row">
+                  <span class="fare-label">{{ f.label }}</span>
+                  <span class="fare-value">{{ formatFare(f) }}</span>
+                </div>
+              </div>
+              <div class="hint-line" v-else>此方向暫無收費資料</div>
+              <div class="fare-note" v-if="currentBound.fareNote">{{ currentBound.fareNote }}</div>
+              <div class="flag-row" v-if="currentBound.flags && currentBound.flags.length">
+                <span v-for="f in currentBound.flags" :key="f" class="flag">{{ f }}</span>
+              </div>
+            </div>
+
+            <div class="detail-card" v-if="currentBound.timetable && currentBound.timetable.length">
+              <h3 class="card-title">
+                🕒 {{ currentBound.timetableTitle || '時間表' }}
+                <small v-if="currentBound.timetableRef">{{ currentBound.timetableRef }}</small>
+              </h3>
+              <div class="tt-table">
+                <div v-for="(t, i) in currentBound.timetable" :key="i" class="tt-row">
+                  <span class="tt-day">{{ t.day }}</span>
+                  <span class="tt-time">{{ t.time }}</span>
+                  <span class="tt-headway" v-if="t.headway">{{ t.headway }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="detail-card" v-if="currentBound.routeing && currentBound.routeing.length">
+              <h3 class="card-title">
+                🗺️ {{ currentBound.routeingTitle || '行車路線' }}
+                <small>{{ currentBound.routeingSub }}</small>
+              </h3>
+              <div class="rt-table">
+                <div v-for="(r, i) in currentBound.routeing" :key="i" class="rt-row">
+                  <span class="rt-road">{{ r.road }}</span>
+                  <span class="rt-points">{{ pointsText(r.points) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="detail-card" v-if="currentBound.via || currentBound.reserve || notices.length">
+              <h3 class="card-title">ℹ️ 服務備註</h3>
+              <div class="notice" v-if="currentBound.via">路線：{{ currentBound.via }}</div>
+              <div class="notice" v-if="currentBound.reserve">{{ currentBound.reserve }}</div>
+              <div class="notice" v-for="(n, i) in notices" :key="'n' + i">{{ n }}</div>
+            </div>
+
+            <div class="detail-card">
+              <h3 class="card-title">📞 營辦商／資料來源</h3>
+              <div class="tt-table" v-if="current.operator && current.operator.length">
+                <div v-for="(o, i) in current.operator" :key="i" class="tt-row">
+                  <span class="tt-day">{{ o.label }}</span>
+                  <span class="tt-time">{{ o.value }}</span>
+                </div>
+              </div>
+              <div class="notice" style="margin-top:10px;">
+                紅色小巴由營辦商自行釐定服務時間、收費及行車路線，實際安排或與本資料有出入，上車前請以車頭收費牌為準。
+              </div>
+              <div class="notice">本路線不設實時到站（ETA）資料。</div>
+              <div class="source-line">
+                資料來源：<a :href="sourceUrl" target="_blank" rel="noopener">16seats.net 公共小巴路線指南</a>
+                （版權所有，僅供個人非商業參考）
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== 路線彈窗 =====
+       點地區卡（該區路線）或按查詢（搜尋結果）都用這一個全螢幕 modal，
+       兩者外框尺寸、位置與互動完全一致：置中的 720px sheet，蓋住整頁。
+       選任一路線即交棒給路線詳請。 -->
+  <div class="picker-stack" v-if="pickerDistrict || resultsOpen" @click.self="closePicker()">
+    <div class="picker-sheet">
+      <div class="picker-head">
+        <span class="picker-title">{{ pickerHeading }}</span>
+        <button class="picker-close" @click="closePicker()">✕</button>
+      </div>
+      <div class="picker-body">
+        <div class="results">
+          <div v-for="r in visibleRoutes" :key="r.id" class="result-item"
+               :class="{ active: current && current.id === r.id }" @click="selectRoute(r)">
+            <span class="result-name">{{ r.name }}</span>
+            <span class="result-od">{{ r.od }}</span>
+            <span class="result-tags" v-if="r.tags && r.tags.length">
+              <span v-for="t in r.tags" :key="t" class="tag-pill" :class="tagClass(t)">{{ t }}</span>
+            </span>
+          </div>
+        </div>
+        <div class="hint-line" v-if="!visibleRoutes.length">沒有符合的路線，請嘗試其他關鍵字或地區。</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ============================================================
+   本機檔案開啟防護
+   以 file:// 直接開啟時，瀏覽器基於安全理由會封鎖對本機
+   JSON 的 fetch（CORS），導致路線資料載入失敗。
+   ============================================================ */
+const IS_FILE_PROTOCOL = (location.protocol === "file:");
+function showFileProtocolNotice() {
+  if (!IS_FILE_PROTOCOL) return;
+  const mount = document.getElementById("app");
+  if (!mount) return;
+  const box = document.createElement("div");
+  box.setAttribute("role", "alert");
+  box.style.cssText = [
+    "position:fixed", "inset:0", "z-index:99999",
+    "display:flex", "align-items:center", "justify-content:center",
+    "padding:24px", "background:#f5f7fb",
+    "font-family:-apple-system,BlinkMacSystemFont,'PingFang HK','Microsoft JhengHei',Helvetica,Arial,sans-serif",
+    "color:#222", "text-align:left"
+  ].join(";");
+  box.innerHTML =
+    '<div style="max-width:620px;background:#fff;border-radius:14px;padding:26px 28px;' +
+    'box-shadow:0 4px 24px rgba(20,30,60,.14);line-height:1.75">' +
+      '<h2 style="margin:0 0 6px;font-size:20px;color:#c8102e">⚠️ 請勿直接開啟本檔案</h2>' +
+      '<p style="margin:0 0 14px;font-size:14px;color:#555">' +
+        '偵測到你是用 <code style="background:#f0f2f7;padding:2px 6px;border-radius:4px">file://</code> ' +
+        '直接開啟這個頁面。瀏覽器會基於安全理由封鎖本機資料檔的讀取，' +
+        '因此紅巴路線資料無法載入。' +
+      '</p>' +
+      '<p style="margin:0 0 8px;font-size:14px;font-weight:700;color:#c8102e">✅ 正確做法：用本機網頁伺服器開啟</p>' +
+      '<ol style="margin:0 0 16px;padding-left:20px;font-size:13.5px;color:#444">' +
+        '<li>在這個資料夾開啟終端機</li>' +
+        '<li>執行：<code style="background:#f0f2f7;padding:2px 6px;border-radius:4px">python -m http.server 8000</code></li>' +
+        '<li>瀏覽器前往 <a href="http://localhost:8000/rmb.html" style="color:#c8102e;font-weight:700">http://localhost:8000/rmb.html</a></li>' +
+      '</ol>' +
+      '<p style="margin:0;font-size:12.5px;color:#8b95a8">' +
+        '最簡單的方式：雙擊資料夾內的 <b>start-local.bat</b>（Windows），' +
+        '它會自動啟動伺服器並開啟瀏覽器。' +
+      '</p>' +
+    '</div>';
+  document.body.appendChild(box);
+}
+showFileProtocolNotice();
+
+/* ============================================================
+   資料層：紅色小巴路線目錄（rmb-routes.json）
+   由 tools/fetch-16seats.ps1 從 16seats.net 產生
+   ============================================================ */
+const DATA_URL = "rmb-routes.json";
+const DATA_CACHE_KEY = "hk-rmb-routes-v1";
+const DATA_CACHE_VERSION = 1;
+const DATA_CACHE_DAYS = 30;
+const SOURCE_URL = "https://www.16seats.net/chi/rmb/";
+
+function loadDataCache() {
+  try {
+    const raw = localStorage.getItem(DATA_CACHE_KEY);
+    if (!raw) return null;
+    const p = JSON.parse(raw);
+    if (!p || p.version !== DATA_CACHE_VERSION) return null;
+    if (Date.now() - (p.timestamp || 0) > DATA_CACHE_DAYS * 864e5) return null;
+    return p.data || null;
+  } catch (e) { return null; }
+}
+
+function saveDataCache(data) {
+  try {
+    localStorage.setItem(DATA_CACHE_KEY, JSON.stringify({
+      version: DATA_CACHE_VERSION,
+      timestamp: Date.now(),
+      data
+    }));
+  } catch (e) {}
+}
+
+async function fetchData() {
+  const cached = loadDataCache();
+  if (cached) return cached;
+  const res = await fetch(DATA_URL, { cache: "no-store" });
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  const doc = await res.json();
+  saveDataCache(doc);
+  return doc;
+}
+
+function normalizeDoc(doc) {
+  const routes = [];
+  const byId = {};
+  const raw = (doc && doc.routes) || {};
+  for (const id of Object.keys(raw)) {
+    const r = raw[id] || {};
+    const variants = Array.isArray(r.variants)
+      ? r.variants.filter(v => v && Array.isArray(v.bounds) && v.bounds.length)
+      : [];
+    const item = {
+      id,
+      name: r.name || id,
+      od: r.od || "",
+      tags: Array.isArray(r.tags) ? r.tags.filter(Boolean) : [],
+      districts: Array.isArray(r.districts) ? r.districts : [],
+      operator: Array.isArray(r.operator) ? r.operator : [],
+      notice: Array.isArray(r.notice) ? r.notice.filter(Boolean) : [],
+      updated: r.updated || "",
+      url: r.url || "",
+      variants,
+    };
+    item.hay = [item.name, item.od, id, item.tags.join(" ")].join(" ").toLowerCase();
+    routes.push(item);
+    byId[id] = item;
+  }
+
+  const districts = Array.isArray(doc && doc.districts) ? doc.districts.map(d => {
+    const ids = [];
+    for (const g of (d.groups || [])) {
+      for (const x of (g.routes || [])) {
+        if (ids.indexOf(x.id) === -1) ids.push(x.id);
+      }
+    }
+    return { id: d.id, name: d.name || d.id, title: d.title || "", routeIds: ids };
+  }) : [];
+
+  return { districtList: districts, routes, byId, source: (doc && doc.source) || SOURCE_URL };
+}
+
+/* ==================== 本地儲存（與 gmb.html 相同模式） ==================== */
+const FAV_STORAGE_KEY = "hk-rmb-favourites-v1";
+const FONT_SCALE_KEY = "hk-bus-font-scale";
+const FAV_COOKIE_DAYS = 365;
+const MAX_FAVOURITES = 6;
+const MIN_FONT_SCALE = 0.8;
+const MAX_FONT_SCALE = 1.6;
+
+function readCookie(name) {
+  try {
+    const pat = new RegExp("(?:^|; )" + name.replace(/([.$?*|{}()\[\]\\\/\+^])/g, "\\$1") + "=([^;]*)");
+    const m = document.cookie.match(pat);
+    return m ? decodeURIComponent(m[1]) : null;
+  } catch (e) { return null; }
+}
+
+function writeCookie(name, value, days) {
+  try {
+    const exp = new Date(Date.now() + days * 864e5).toUTCString();
+    document.cookie = name + "=" + encodeURIComponent(value) + "; expires=" + exp + "; path=/; SameSite=Lax";
+    return true;
+  } catch (e) { return false; }
+}
+
+function emptyFavArray() { return new Array(MAX_FAVOURITES).fill(null); }
+
+function parseFavArray(raw) {
+  if (!raw) return null;
+  try {
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) return null;
+    const out = emptyFavArray();
+    for (let i = 0; i < MAX_FAVOURITES && i < arr.length; i++) {
+      const x = arr[i];
+      if (x && typeof x === "object" && x.id) out[i] = x;
+    }
+    return out;
+  } catch (e) { return null; }
+}
+
+function loadFavourites() {
+  let ls = null;
+  try { ls = parseFavArray(localStorage.getItem(FAV_STORAGE_KEY)); } catch (e) {}
+  const ck = parseFavArray(readCookie(FAV_STORAGE_KEY));
+  const countLS = ls ? ls.filter(Boolean).length : 0;
+  const countCk = ck ? ck.filter(Boolean).length : 0;
+  const best = (ls && ck) ? (countLS >= countCk ? ls : ck) : (ls || ck || null);
+  if (!best) return emptyFavArray();
+  saveFavourites(best);
+  return best;
+}
+
+function saveFavourites(arr) {
+  try { localStorage.setItem(FAV_STORAGE_KEY, JSON.stringify(arr)); } catch (e) {}
+  writeCookie(FAV_STORAGE_KEY, JSON.stringify(arr), FAV_COOKIE_DAYS);
+}
+
+function loadFontScale() {
+  try {
+    const v = parseFloat(localStorage.getItem(FONT_SCALE_KEY));
+    if (isFinite(v) && v >= MIN_FONT_SCALE && v <= MAX_FONT_SCALE) return v;
+  } catch (e) {}
+  return 1;
+}
+
+function saveFontScale(v) {
+  try { localStorage.setItem(FONT_SCALE_KEY, String(v)); } catch (e) {}
+  writeCookie(FONT_SCALE_KEY, String(v), FAV_COOKIE_DAYS);
+}
+</script>
+
+<script>
+const { createApp, ref, computed, onMounted, onUnmounted } = Vue;
+
+createApp({
+  setup() {
+    const fontScale = ref(loadFontScale());
+    const clockText = ref(fmtClock(new Date()));
+    const loading = ref(true);
+    const error = ref("");
+    const allRoutes = ref([]);
+    const byId = ref({});
+    const districtList = ref([]);
+    const sourceUrl = ref(SOURCE_URL);
+
+    const regionId = ref("");
+    const query = ref("");
+    const current = ref(null);
+    const variantIndex = ref(0);
+    const boundIndex = ref(0);
+    const favourites = ref(loadFavourites());
+
+    /* Detail state. On desktop the detail renders inline; on mobile the same
+       markup becomes a popup, controlled by detailOpen. */
+    const detailOpen = ref(false);
+    /* District id whose route list is currently showing in the picker modal.
+       Store the ID, not the district object: assigning a plain (non-reactive)
+       object into a ref wraps it in a reactive proxy, and a computed that reads
+       a property off that proxy can fail to re-evaluate — which showed up as
+       「荃灣及葵青區：0 條」 until the popup was closed. A string id has none of
+       that ambiguity: visibleRoutes just looks the district up in districtList. */
+    const pickerDistrict = ref("");
+    /* True when the popup is showing SEARCH results (查詢 pressed) rather than a
+       district's route list. Both modes share the same popup markup and frame, so
+       tapping 查詢 behaves exactly like tapping a 地區 card. */
+    const resultsOpen = ref(false);
+    /* Which selection list opened the route now on screen: { district, results }.
+       The detail's ✕ uses it to step BACK to that list rather than closing
+       everything, so the user can pick another route without starting over. */
+    const detailBack = ref(null);
+    /* Below 900px the detail is a popup and the route list stays on screen. */
+    const isMobile = ref(window.matchMedia("(max-width: 900px)").matches);
+
+    const districts = computed(() => districtList.value);
+    const regionName = computed(() => {
+      const d = districtList.value.find(x => x.id === regionId.value);
+      return d ? d.name : "";
+    });
+    const isSearching = computed(() => query.value.trim().length > 0);
+
+    /* Landing = nothing typed, no district picked, no route open.
+       Including regionId keeps the 「可選擇其他交通工具」 block out of the way once
+       the user has chosen a district, so the route list sits right under the search. */
+    const isLanding = computed(() => !current.value && !isSearching.value && !loading.value && !regionId.value);
+
+    const visibleRoutes = computed(() => {
+      const q = query.value.trim().toLowerCase();
+      if (q) {
+        const tokens = q.split(/\s+/).filter(Boolean);
+        return allRoutes.value.filter(r => tokens.every(t => r.hay.indexOf(t) >= 0)).slice(0, 80);
+      }
+      const region = pickerDistrict.value || regionId.value;
+      if (!region) return [];
+      const d = districtList.value.find(x => x.id === region);
+      if (!d) return [];
+      return d.routeIds.map(id => byId.value[id]).filter(Boolean);
+    });
+
+    /* Popup heading. Mirrors the 「東區：6 條」 wording, using the district title
+       (catalog name) so the popup doesn't leak the search-mode 「搜尋結果」 label. */
+    const pickerTitle = computed(() => {
+      if (!pickerDistrict.value) return "";
+      const d = districtList.value.find(x => x.id === pickerDistrict.value);
+      if (!d) return "";
+      return (d.title || d.name) + "：" + visibleRoutes.value.length + " 條";
+    });
+
+    /* Search-mode heading for the popup. District mode uses pickerTitle. */
+    const statusText = computed(() => {
+      if (loading.value) return "";
+      return "搜尋結果 " + visibleRoutes.value.length + " 條";
+    });
+
+    /* District pick → district heading; 查詢 → search heading. */
+    const pickerHeading = computed(() =>
+      pickerDistrict.value ? pickerTitle.value : statusText.value
+    );
+
+    const currentVariant = computed(() => {
+      const c = current.value;
+      if (!c || !c.variants.length) return null;
+      const i = Math.min(variantIndex.value, c.variants.length - 1);
+      return c.variants[i];
+    });
+    const bounds = computed(() => {
+      const v = currentVariant.value;
+      return (v && Array.isArray(v.bounds)) ? v.bounds : [];
+    });
+    const currentBound = computed(() => {
+      const v = currentVariant.value;
+      if (!v || !v.bounds.length) return {};
+      const i = Math.min(boundIndex.value, v.bounds.length - 1);
+      return v.bounds[i] || {};
+    });
+    const notices = computed(() => (current.value ? current.value.notice : []));
+    const operatorName = computed(() => {
+      const c = current.value;
+      if (!c) return "";
+      const row = (c.operator || []).find(o => /營辦商/.test(o.label || ""));
+      return row ? row.value : "";
+    });
+    const hotline = computed(() => {
+      const c = current.value;
+      if (!c) return "";
+      const row = (c.operator || []).find(o => /查詢電話/.test(o.label || ""));
+      return row ? String(row.value).split("\n")[0] : "";
+    });
+    const isFavourite = computed(() => {
+      const c = current.value;
+      if (!c) return false;
+      return favourites.value.some(f => f && f.id === c.id);
+    });
+
+    function selectRoute(r) {
+      /* Picking from the picker commits the district it belongs to, so the
+         district card stays highlighted after the popup closes. In search mode
+         there is no district to commit — leave regionId alone. */
+      if (pickerDistrict.value) regionId.value = pickerDistrict.value;
+      /* Remember where this route was picked from, so the detail's ✕ can go BACK
+         to that selection list instead of dumping the user out to the start. */
+      detailBack.value = {
+        district: pickerDistrict.value,
+        results: resultsOpen.value,
+      };
+      pickerDistrict.value = "";
+      resultsOpen.value = false;
+      current.value = r;
+      variantIndex.value = 0;
+      boundIndex.value = 0;
+      error.value = "";
+      /* Desktop: the detail renders inline, no popup.
+         Mobile: pop the detail up, GMB-style. */
+      if (isMobile.value) {
+        updateModalMaxHeight();
+        detailOpen.value = true;
+      } else {
+        detailOpen.value = false;
+      }
+    }
+    function selectVariant(i) { variantIndex.value = i; boundIndex.value = 0; }
+    /* Tapping a district card opens that district's route list in the popup. */
+    function onDistrictPick(id) {
+      const d = districtList.value.find(x => x.id === id);
+      if (!d) return;
+      /* Clear the search box: a stale query would otherwise make visibleRoutes take
+         its search branch and show the wrong (or no) list. Also drop search mode so
+         the popup heading switches from 搜尋結果 to the district name. */
+      regionId.value = id;
+      query.value = "";
+      resultsOpen.value = false;
+      error.value = "";
+      updateModalMaxHeight();
+      pickerDistrict.value = id;
+    }
+    /* Closing the picker resets the page to its just-landed state — the same thing
+       the user sees on a fresh rmb.html load: no district chosen, empty search box,
+       no route open, and the 「可選擇其他交通工具」 block back in view. Leaving
+       regionId set here hid that block and left a large blank area below the panel. */
+    function closePicker() {
+      pickerDistrict.value = "";
+      resultsOpen.value = false;
+      regionId.value = "";
+      query.value = "";
+      current.value = null;
+      detailOpen.value = false;
+      error.value = "";
+    }
+    /* 查詢 (and Enter in the box) opens the same popup a district tap uses —
+       same markup, same frame, same tap-to-open-detail hand-off. Results are a
+       pure function of `query`, so this only needs to raise the flag. */
+    function onSearch() {
+      const q = query.value.trim();
+      if (!q) {                       /* empty query: nothing to show */
+        resultsOpen.value = false;
+        return;
+      }
+      error.value = "";
+      updateModalMaxHeight();
+      resultsOpen.value = true;
+    }
+
+    /* === DETAIL POPUP (mobile only — same pattern as gmb.html) === */
+    // Keep the popup inside the *visible* viewport (mobile URL bar / dvh fallback).
+    function updateModalMaxHeight() {
+      const vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+      const isSmall = window.matchMedia("(max-width: 600px)").matches;
+      const pad = isSmall ? 16 : 40;
+      document.documentElement.style.setProperty("--modal-max-h", Math.max(240, vh - pad) + "px");
+    }
+    /* The detail's ✕ goes BACK one step: reopen the selection popup the route was
+       picked from (the district list, or the search results) with the current route
+       still highlighted, so the user can pick another one. It only falls through to
+       a plain close when there is nothing to go back to (e.g. the route was opened
+       from a favourite, or the detail is inline on desktop). */
+    function closeDetail() {
+      detailOpen.value = false;
+      const back = detailBack.value;
+      detailBack.value = null;
+      if (!back) return;
+      if (isMobile.value && (back.district || back.results)) {
+        updateModalMaxHeight();
+        pickerDistrict.value = back.district || "";
+        resultsOpen.value = !!back.results;
+      }
+    }
+    function pickDetailVariant(i) { variantIndex.value = i; boundIndex.value = 0; }
+    function clearSearch() {
+      query.value = "";
+      /* Clearing the box removes the results it was driving, so drop the popup too. */
+      resultsOpen.value = false;
+    }
+    function onKeydown(e) {
+      if (e.key !== "Escape") return;
+      /* Innermost layer first: detail sheet, then the picker/results popup. */
+      if (detailOpen.value) closeDetail();
+      else if (pickerDistrict.value || resultsOpen.value) closePicker();
+    }
+
+    function variantLabel(v, i) {
+      const parts = [];
+      if (v && v.label) parts.push(v.label);
+      if (!parts.length && v) parts.push((v.orig || "?") + (v.dest ? " → " + v.dest : ""));
+      return parts.join(" ・ ") || ("走線 " + (i + 1));
+    }
+    function tagClass(t) {
+      if (!t) return "";
+      if (t.indexOf("通宵") >= 0) return "overnight";
+      if (t.indexOf("晨早") >= 0) return "morning";
+      if (t.indexOf("黃昏") >= 0) return "evening";
+      if (t.indexOf("特別") >= 0) return "special";
+      if (t.indexOf("循環") >= 0) return "circular";
+      return "";
+    }
+    function formatFare(f) {
+      if (!f) return "—";
+      if (f.amount === null || f.amount === undefined) return f.raw || "—";
+      const a = "$" + Number(f.amount).toFixed(1);
+      if (f.amountMax !== null && f.amountMax !== undefined && Number(f.amountMax) > Number(f.amount)) {
+        return a + " – $" + Number(f.amountMax).toFixed(1);
+      }
+      return a;
+    }
+    function isPrimaryFare(f) { return !!f && /全程收費/.test(f.label || ""); }
+    function pointsText(points) {
+      if (!points || !points.length) return "";
+      return points.join("\n");
+    }
+
+    function toggleFavourite() {
+      const c = current.value;
+      if (!c) return;
+      const arr = favourites.value.slice();
+      const idx = arr.findIndex(f => f && f.id === c.id);
+      if (idx >= 0) {
+        arr[idx] = null;
+      } else {
+        const slot = arr.findIndex(x => !x);
+        if (slot < 0) { error.value = "最愛已滿（6 個），請先移除一個"; return; }
+        arr[slot] = { id: c.id, name: c.name, od: c.od };
+      }
+      favourites.value = arr;
+      saveFavourites(arr);
+      error.value = "";
+    }
+    function removeFavourite(i) {
+      const arr = favourites.value.slice();
+      arr[i] = null;
+      favourites.value = arr;
+      saveFavourites(arr);
+    }
+    function onFavClick(i) {
+      const fav = favourites.value[i];
+      if (!fav) { error.value = "請先從下方選擇路線，再按「加入最愛」"; return; }
+      const r = byId.value[fav.id];
+      if (!r) { error.value = "此最愛路線已不在資料中"; return; }
+      /* Jumping straight to the route: no popup, just the detail. */
+      pickerDistrict.value = "";
+      resultsOpen.value = false;
+      if (r.districts.length) regionId.value = r.districts[0];
+      selectRoute(r);
+    }
+
+    function applyFontScale(v) { document.documentElement.style.setProperty("--font-scale", String(v)); }
+    function increaseFontSize() {
+      const v = Math.min(MAX_FONT_SCALE, Math.round((fontScale.value + 0.1) * 10) / 10);
+      fontScale.value = v; applyFontScale(v); saveFontScale(v);
+    }
+    function decreaseFontSize() {
+      const v = Math.max(MIN_FONT_SCALE, Math.round((fontScale.value - 0.1) * 10) / 10);
+      fontScale.value = v; applyFontScale(v); saveFontScale(v);
+    }
+    function fmtClock(d) {
+      const p = n => String(n).padStart(2, "0");
+      return p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds());
+    }
+
+    let timer = null;
+    let mq = null;
+    function onMqChange(e) {
+      isMobile.value = e.matches;
+      /* Leaving mobile → the popup no longer applies; desktop shows it inline. */
+      if (!e.matches) detailOpen.value = false;
+    }
+    onMounted(async () => {
+      applyFontScale(fontScale.value);
+      timer = setInterval(() => { clockText.value = fmtClock(new Date()); }, 1000);
+      mq = window.matchMedia("(max-width: 900px)");
+      isMobile.value = mq.matches;
+      if (mq.addEventListener) mq.addEventListener("change", onMqChange);
+      else if (mq.addListener) mq.addListener(onMqChange);
+      window.addEventListener("keydown", onKeydown);
+      window.addEventListener("resize", updateModalMaxHeight);
+      window.addEventListener("orientationchange", updateModalMaxHeight);
+      try {
+        const doc = await fetchData();
+        const norm = normalizeDoc(doc);
+        allRoutes.value = norm.routes;
+        byId.value = norm.byId;
+        districtList.value = norm.districtList;
+        if (norm.source) sourceUrl.value = norm.source;
+      } catch (e) {
+        error.value = "無法載入紅巴資料（" + e.message + "）：請確認 rmb-routes.json 已上傳至同一目錄。";
+      } finally {
+        loading.value = false;
+      }
+    });
+    onUnmounted(() => {
+      clearInterval(timer);
+      if (mq) {
+        if (mq.removeEventListener) mq.removeEventListener("change", onMqChange);
+        else if (mq.removeListener) mq.removeListener(onMqChange);
+      }
+      window.removeEventListener("keydown", onKeydown);
+      window.removeEventListener("resize", updateModalMaxHeight);
+      window.removeEventListener("orientationchange", updateModalMaxHeight);
+    });
+
+    return {
+      fontScale, clockText, loading, error, sourceUrl,
+      regionId, query, current, variantIndex, boundIndex, favourites,
+      detailOpen, isMobile, pickerDistrict, resultsOpen, detailBack,
+      districts, regionName, visibleRoutes, statusText, pickerTitle, pickerHeading,
+      isLanding, isSearching,
+      bounds, currentVariant, currentBound, notices, operatorName, hotline, isFavourite,
+      selectRoute, selectVariant, onDistrictPick, clearSearch, onSearch,
+      closeDetail, closePicker, pickDetailVariant,
+      variantLabel, tagClass, formatFare, isPrimaryFare, pointsText,
+      toggleFavourite, removeFavourite, onFavClick,
+      increaseFontSize, decreaseFontSize,
+    };
+  },
+}).mount("#app");
+</script>
+</body>
+</html>

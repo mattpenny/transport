@@ -1,4 +1,14 @@
 <!DOCTYPE html>
+<!--
+  Ansum 巴士 (Bus) — index.html
+  ================================================================
+  ⚠️ 維護注意：本頁用 Vue 3 的 **prod** 建置。
+     模板用到、但 setup() 的 return {} 沒有匯出的識別字，
+     在 prod 建置下**不會報錯、不會警告**，只會被靜默當成 undefined，
+     令 v-if 走錯分支（區塊消失／顯示錯誤），Console 全綠。
+     改完模板或 setup() 後，請在本專案根目錄執行：
+         python tools/check-bindings.py index.html gmb.html rmb.html
+-->
 <html lang="zh-HK">
 <head>
 <meta charset="UTF-8" />
@@ -55,6 +65,15 @@
     box-shadow: 0 0 0 2px rgba(255,255,255,0.28), 0 1px 4px rgba(0,0,0,0.3);
   }
   .header-logo { width: 24px; height: 24px; flex-shrink: 0; object-fit: contain; display: block; }
+  .back-btn {
+    background: rgba(255,255,255,0.18); color: white; border: none; border-radius: 8px;
+    padding: 6px 12px; font-size: calc(14px * var(--font-scale));
+    font-weight: 700; cursor: pointer; flex-shrink: 0;
+    display: flex; align-items: center; gap: 4px; white-space: nowrap;
+    font-family: inherit;
+  }
+  .back-btn:active { background: rgba(255,255,255,0.32); }
+  .header-left { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1 1 auto; }
   header.app-header p { margin: 0; font-size: calc(11px * var(--font-scale)); opacity: 0.75; flex-shrink: 0; }
   .header-meta { display: flex; align-items: center; gap: 12px; flex-shrink: 0; min-width: 0; }
   .header-clock {
@@ -79,6 +98,8 @@
     header.app-header p { display: none; }
     .header-clock { font-size: calc(13px * var(--font-scale)); }
     .font-btn { width: 26px; height: 26px; font-size: 14px; }
+    .back-btn { padding: 6px 10px; font-size: calc(13px * var(--font-scale)); }
+    .header-left { gap: 7px; }
   }
 
   /* === LAYOUT === */
@@ -143,17 +164,76 @@
   .row {
     display: flex; align-items: center; gap: 6px;
     margin-bottom: 10px; min-width: 0;
+    flex-wrap: wrap;            /* 手機版窄時讓按鈕換行 */
     transition: all 0.25s ease;
   }
   .row label { font-size: calc(13px * var(--font-scale)); color: #333; min-width: 60px; flex-shrink: 0; }
+  /* 輸入框要吃掉這一列剩下的所有寬度。
+     不要用 `flex: 1 1 0; width: 0`：那寫法在加上 height / box-sizing 之後，
+     桌機側欄被 label + 查詢 + 附近路線 佔滿時會直接塌成 ~32px。
+     用 min-width 給下限 + flex-basis auto，就不會再被壓扁。 */
   input[type="text"] {
-    flex: 1 1 0; min-width: 0; width: 0;
+    flex: 1 1 auto; min-width: 120px;
     padding: 8px 10px;
     border: 1px solid #ccd; border-radius: 6px;
     font-size: calc(16px * var(--font-scale)); background: white;
     transition: all 0.25s ease;
+    height: 36px; box-sizing: border-box;
+  }
+  /* 桌機：輸入框與「巴士路線」同一行。
+     側欄只有 340px，label + 輸入框 + 查詢 + 附近路線 要擠在同一行，
+     所以：label 用垂直書寫以外的緊湊字級、查詢也縮短、附近路線只用圖示，
+     把省下來的寬度全給輸入框（否則輸入框只剩 ~78px，打「12」就滿了）。 */
+  @media (min-width: 901px) {
+    .row { flex-wrap: nowrap; gap: 5px; }
+    .row label {
+      min-width: 0; flex: 0 0 auto; white-space: nowrap;
+      font-size: calc(12.5px * var(--font-scale));
+    }
+    .row input[type="text"] { min-width: 0; padding: 8px 8px; }
+    .row .search-btn {
+      padding: 8px 10px; flex-shrink: 0;
+      font-size: calc(12.5px * var(--font-scale));
+    }
+    .row .gps-btn {
+      width: 34px; height: 34px; padding: 0; flex-shrink: 0;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .row .gps-btn .gps-btn-text { display: none; }
+    .row .gps-btn .gps-btn-icon { display: block; }
+    .row.focused label { font-size: calc(15px * var(--font-scale)); min-width: 0; }
+    .row.focused input[type="text"] { padding: 12px 10px; }
+    .row.focused .search-btn { padding: 12px 12px; font-size: calc(13.5px * var(--font-scale)); }
+    .row.focused .gps-btn { width: 42px; height: auto; padding: 12px 0; }
   }
   input[type="text"]:focus { outline: 2px solid #1a3d7c; border-color: #1a3d7c; }
+
+  /* 點進輸入框即時放大（不必等使用者開始輸入）。
+     .row.landing 是「尚未搜尋且輸入框為空」的狀態，會加大整個搜尋列；
+     但使用者一點進輸入框（即使還沒打字）也應該立刻放大，所以用 :focus-within。
+     這裡列出與 .row.landing 相同的屬性，讓兩者視覺一致。 */
+  .row.focused { margin-bottom: 14px; gap: 8px; }
+  .row.focused label {
+    font-size: calc(22px * var(--font-scale)); font-weight: 800;
+    color: #1a3d7c; min-width: 104px; letter-spacing: 0.5px;
+  }
+  .row.focused input[type="text"] {
+    font-size: calc(18px * var(--font-scale));
+    padding: 13px 14px;
+    height: auto;
+    border: 2px solid #1a3d7c; border-radius: 10px;
+    box-shadow: 0 0 0 4px rgba(26,61,124,0.10);
+    font-weight: 600;
+  }
+  .row.focused .search-btn,
+  .row.focused .gps-btn { padding: 13px 18px; font-size: calc(15px * var(--font-scale)); border-radius: 10px; }
+
+  /* 收合必須延遲到「指標真的離開整個搜尋列」之後。
+     否則：使用者焦點在輸入框時按下「查詢」→ input blur → .focused 移除 →
+     整個搜尋列在同一瞬間縮小 → 按鈕在 mousedown 與 mouseup 之間位移 →
+     瀏覽器判定點擊落在不同元素，click 事件整個被吃掉（查詢完全沒反應）。 */
+  .row { --row-collapse-delay: 0s; }
+  .row.unfocusing { transition-delay: var(--row-collapse-delay); }
 
   .row.landing { margin-bottom: 14px; gap: 8px; }
   .row.landing label {
@@ -174,6 +254,76 @@
     -webkit-animation: placeholderBlink 2.4s ease-in-out infinite;
   }
   @keyframes placeholderBlink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  /* === 桌機：搜尋列的寬度預算（必須放在所有 .row.landing 規則之後） ===
+     側欄只有 340px，一列要擠下「巴士路線」+ 輸入框 + 查詢 + 附近路線 四個元素。
+     .row.landing（未搜尋且輸入框為空）與 .row.focused（點進輸入框）都會把
+     label 撑到 104px / 22px 並把查詢按鈕加大；這些規則定義在上面，
+     而且與上面那段 min-width:901px 的 media query「同優先序、但更晚」，
+     所以上面的覆寫完全沒有效果（輸入框實測只剩 80px，打「12」就滿）。
+     解法：把桌機覆寫整段搬到這裡（所有 .row.landing 之後），
+     優先序相同時後者勝出，輸入框就能拿到列內剩下的全部寬度。
+     注意 flex 不可用 `1 1 0; width: 0`：那是先前把輸入框壓成 32px 的元凶。 */
+  @media (min-width: 901px) {
+    .row,
+    .row.landing { flex-wrap: nowrap; gap: 5px; margin-bottom: 14px; }
+
+    .row label,
+    .row.landing label,
+    .row.focused label {
+      flex: 0 0 auto; flex-shrink: 0; min-width: 0; white-space: nowrap;
+      letter-spacing: 0; font-size: calc(12.5px * var(--font-scale));
+    }
+
+    .row input[type="text"],
+    .row.landing input[type="text"],
+    .row.focused input[type="text"] {
+      flex: 1 1 auto; width: auto; min-width: 0;
+      padding: 9px 9px; height: 36px; font-size: calc(14px * var(--font-scale));
+    }
+
+    .row .search-btn,
+    .row.landing .search-btn,
+    .row.focused .search-btn {
+      flex-shrink: 0; padding: 9px 11px; border-radius: 6px;
+      font-size: calc(12.5px * var(--font-scale));
+    }
+
+    /* 附近路線在桌機縮成純圖示方塊，把寬度讓給輸入框 */
+    .row .gps-btn,
+    .row.landing .gps-btn,
+    .row.focused .gps-btn {
+      flex-shrink: 0; margin-left: 0;
+      width: 36px; height: 36px; padding: 0; border-radius: 8px;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .row .gps-btn .gps-btn-text,
+    .row.landing .gps-btn .gps-btn-text,
+    .row.focused .gps-btn .gps-btn-text { display: none; }
+    .row .gps-btn .gps-btn-icon,
+    .row.landing .gps-btn .gps-btn-icon,
+    .row.focused .gps-btn .gps-btn-icon { display: block; }
+
+    /* 點進輸入框要「即時放大」（使用者原始需求），桌機也要保留。
+       放在這個區塊的最後，才會蓋掉上面為.landing 所做的壓縮。
+       高度/字級放大但寬度仍靠 flex:1 1 auto 自動撐滿，所以不會再塌掉。 */
+    .row.focused { gap: 8px; margin-bottom: 14px; }
+    .row.focused label {
+      font-size: calc(15px * var(--font-scale)); font-weight: 800;
+      color: #1a3d7c; letter-spacing: 0; min-width: 0;
+    }
+    .row.focused input[type="text"] {
+      height: 48px; padding: 13px 10px;
+      font-size: max(16px, calc(16px * var(--font-scale)));
+      border: 2px solid #1a3d7c; border-radius: 10px;
+      box-shadow: 0 0 0 4px rgba(26,61,124,0.10); font-weight: 600;
+    }
+    .row.focused .search-btn {
+      padding: 13px 10px; border-radius: 10px;
+      font-size: calc(13px * var(--font-scale));
+    }
+    .row.focused .gps-btn { width: 46px; height: 46px; border-radius: 10px; }
+  }
 
   /* === COMPANY BUTTONS === */
   .company-label { font-size: calc(13px * var(--font-scale)); color: #333; margin-bottom: 6px; }
@@ -210,19 +360,24 @@
   .mode-link:hover { background: #eaf1ff; border-color: #1a3d7c; }
   .mode-link:active { transform: scale(0.98); }
   .mode-link .mode-icon { font-size: 26px; flex-shrink: 0; line-height: 1; }
+  .mode-link .mode-icon-img {
+    width: 46px; height: 30px; flex-shrink: 0;
+    object-fit: contain; display: block;
+  }
   .mode-link .mode-text { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
   .mode-link .mode-title { font-size: calc(15px * var(--font-scale)); font-weight: 700; color: #1a3d7c; }
   .mode-link .mode-desc { font-size: calc(11px * var(--font-scale)); color: #888; }
   .mode-link .mode-arrow { font-size: 18px; color: #1a3d7c; flex-shrink: 0; font-weight: 700; }
 
+  /* Section heading — matches the 「巴士路線」 label (.row.landing label) */
   .mode-section-title {
-  font-size: calc(14px * var(--font-scale));
-  color: #555;
-  font-weight: 700;
-  text-align: center;
-  margin: 0 0 10px;
-  letter-spacing: 0.5px;
-}
+    font-size: calc(22px * var(--font-scale));
+    font-weight: 800;
+    color: #1a3d7c;
+    text-align: center;
+    margin: 0 0 10px;
+    letter-spacing: 0.5px;
+  }
   
   h3 { margin: 0 0 8px; font-size: calc(14px * var(--font-scale)); }
   h3 small { color: #666; font-weight: normal; font-size: calc(12px * var(--font-scale)); }
@@ -394,19 +549,239 @@
     .stop-list { max-height: 60vh; }
 
     .row label { min-width: 60px; }
-    .row input[type="text"] { font-size: max(16px, calc(16px * var(--font-scale))); padding: 10px 12px; flex: 1 1 0; min-width: 0; width: 0; }
+    .row input[type="text"] { font-size: max(16px, calc(16px * var(--font-scale))); padding: 10px 12px; flex: 1 1 auto; min-width: 120px; width: auto; }
     .row .search-btn { padding: 11px 14px; font-size: calc(14px * var(--font-scale)); border-radius: 8px; flex-shrink: 0; }
+    /* 手機版：點進輸入框同樣即時放大 */
+    .row.focused { flex-wrap: wrap; }
+    .row.focused label { font-size: calc(19px * var(--font-scale)); min-width: 88px; }
+    .row.focused input[type="text"] { font-size: max(16px, calc(18px * var(--font-scale))); padding: 12px 12px; }
+    .row.focused .search-btn,
+    .row.focused .gps-btn { padding: 12px 14px; font-size: calc(14px * var(--font-scale)); }
 
     .row.landing label { font-size: calc(19px * var(--font-scale)); min-width: 88px; }
+    .mode-section-title { font-size: calc(19px * var(--font-scale)); }
     .row.landing input[type="text"] { font-size: max(16px, calc(16px * var(--font-scale))); padding: 12px 12px; }
     .row.landing .search-btn { padding: 12px 14px; font-size: calc(14px * var(--font-scale)); }
 
     .other-modes { margin: 12px 0 10px; }
   }
 
-  /* === MAP OVERLAY === */
-  .map-overlay { display: none; }
+  /* === 平板 / 窄視窗（601–900px）：四個元素仍然同一行 ===
+     這個區間版面已切成單欄，側欄寬度 = 視窗寬 - 24px（最多 ~876px），
+     空間其實非常充裕。但 .row 沿用基礎規則的 flex-wrap: wrap，
+     而「附近路線」帶著文字標籤（~86px），在 600~900px 就會被推到第二行
+     —— 使用者回報的截圖（視窗 ~610px）就是這個情況。
+     這裡把 wrap 關掉、保留文字標籤，全部擠在同一行；輸入框吃掉剩餘寬度。
+     手機（≤600px）才讓它換行，見下方區塊。 */
+  @media (min-width: 601px) and (max-width: 900px) {
+    .row,
+    .row.landing,
+    .row.focused { flex-wrap: nowrap; gap: 8px; }
+    .row label,
+    .row.landing label,
+    .row.focused label {
+      flex: 0 0 auto; flex-shrink: 0; min-width: 0; white-space: nowrap;
+    }
+    .row input[type="text"],
+    .row.landing input[type="text"],
+    .row.focused input[type="text"] {
+      flex: 1 1 auto; width: auto; min-width: 120px; margin-left: 0;
+    }
+    .row .search-btn,
+    .row.landing .search-btn,
+    .row.focused .search-btn { flex-shrink: 0; }
+    /* 附近路線保留文字標籤（此區間寬度足夠），不要只留圖示 */
+    .row .gps-btn,
+    .row.landing .gps-btn,
+    .row.focused .gps-btn {
+      flex-shrink: 0; margin-left: 0; width: auto; height: auto;
+    }
+    .row .gps-btn .gps-btn-text,
+    .row.landing .gps-btn .gps-btn-text,
+    .row.focused .gps-btn .gps-btn-text { display: inline; }
+    .row .gps-btn .gps-btn-icon,
+    .row.landing .gps-btn .gps-btn-icon,
+    .row.focused .gps-btn .gps-btn-icon { display: none; }
+  }
+
+  /* === GPS NEARBY SEARCH === */
+  .gps-btn {
+    margin-left: 8px; flex-shrink: 0;
+    padding: 9px 14px; border-radius: 8px;
+    border: 1px solid #1a3d7c; background: #fff; color: #1a3d7c;
+    font-size: calc(14px * var(--font-scale)); font-weight: 600;
+    cursor: pointer; white-space: nowrap;
+  }
+  .gps-btn:hover:not(:disabled) { background: #eef3fb; }
+  .gps-btn:disabled { opacity: 0.6; cursor: default; }
+  /* 桌機版把「附近路線」縮成圖示（見上方 media query），手機版維持文字 */
+  .gps-btn .gps-btn-icon { display: none; }
+  .gps-btn .gps-btn-icon svg { width: 18px; height: 18px; display: block; }
+  .gps-btn .gps-btn-text { display: inline; }
+
+  /* 桌機：側欄只留一個可點的提示列，真正的清單在右側主面板彈出 */
+  .gps-chip {
+    display: flex; align-items: center; gap: 8px;
+    margin: 10px 0 12px; padding: 10px 12px;
+    border: 1px solid #1a3d7c; border-radius: 10px;
+    background: #eef3fb; cursor: pointer;
+    flex-shrink: 0;                 /* 側欄是 column flex，不加會被壓扁 */
+    transition: background 0.15s;
+  }
+  .gps-chip:hover { background: #e2ebf9; }
+  .gps-chip .gps-chip-title {
+    font-weight: 700; color: #1a3d7c;
+    font-size: calc(13.5px * var(--font-scale)); flex-shrink: 0;
+  }
+  .gps-chip .gps-chip-sub {
+    flex: 1 1 auto; min-width: 0; color: #5a6a85;
+    font-size: calc(12px * var(--font-scale));
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .gps-chip .gps-chip-open {
+    flex-shrink: 0; color: #1a3d7c; font-weight: 700;
+    font-size: calc(12.5px * var(--font-scale));
+  }
+  .gps-chip .gps-clear {
+    flex-shrink: 0; width: 24px; height: 24px; border-radius: 6px;
+    border: none; background: rgba(26,61,124,0.12); color: #1a3d7c;
+    font-size: 13px; cursor: pointer; line-height: 1;
+  }
+  .gps-chip .gps-clear:hover { background: rgba(26,61,124,0.22); }
+
+  /* 桌機版彈窗：覆蓋在右側地圖面板上（手機版用 .gps-overlay，兩者互斥）。
+     用 Teleport 掛到 body，位置由 JS 量測右側面板的矩形後以 inline style 指定
+     （gpsPopupStyle）。這樣做是因為若留在 .map-wrap 內部，會受到祖先
+     overflow:hidden / 圓角裁切，而且主面板是 flex item，彈窗無法真正覆蓋整個右側區域。 */
+  .gps-modal { display: none; }
+  @media (min-width: 901px) {
+    .gps-modal {
+      display: flex; position: fixed;
+      z-index: 1200;
+      background: rgba(23,32,48,0.42);
+      align-items: center; justify-content: center;
+      padding: 20px;
+      border-radius: 12px;
+    }
+    .gps-modal-sheet {
+      width: 100%; max-width: 520px;
+      max-height: 100%;
+      background: #fff; border-radius: 14px;
+      overflow: hidden; display: flex; flex-direction: column;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+    }
+    .gps-modal-head {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 16px; background: #1a3d7c; color: #fff; flex-shrink: 0;
+    }
+    .gps-modal-titles { flex: 1 1 auto; min-width: 0; }
+    .gps-modal-title { font-size: calc(15px * var(--font-scale)); font-weight: 700; }
+    .gps-modal-sub { font-size: calc(12px * var(--font-scale)); opacity: 0.85; margin-top: 2px; }
+    .gps-modal-close {
+      flex-shrink: 0; width: 32px; height: 32px; border-radius: 8px;
+      border: none; background: rgba(255,255,255,0.18); color: #fff;
+      font-size: 16px; cursor: pointer; line-height: 1;
+    }
+    .gps-modal-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+    .gps-modal-body .gps-list { max-height: none; }
+  }
+  .gps-error {
+    margin: 8px 0; padding: 9px 12px; border-radius: 8px;
+    background: #fdecea; color: #b3261e;
+    font-size: calc(13px * var(--font-scale));
+  }
+  .gps-panel {
+    margin: 10px 0 12px; border: 1px solid #d5dbe6; border-radius: 10px;
+    background: #f7f9fc; overflow: hidden;
+    /* 側欄是 column flex 容器（.panel 的 display:flex; flex-direction:column），
+       所以每一個直接子元素都是 flex item 且預設 flex-shrink:1。
+       沒有這一行的話，面板會在側欄變矮時被壓成 2~3px，
+       但它的內容（.gps-list 219px）仍然照原尺寸排版並溢出，
+       被 .panel 的 overflow:hidden 切掉 —— 結果就是「看得到標題、看不到任何路線」。
+       專案裡同類的坑在別處也用 flex-shrink: 0 解決過。 */
+    flex-shrink: 0;
+  }
+  .gps-head {
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 12px; background: #1a3d7c; color: #fff;
+  }
+  .gps-head .gps-title { font-weight: 700; font-size: calc(14px * var(--font-scale)); }
+  .gps-head .gps-sub { flex: 1 1 auto; font-size: calc(12px * var(--font-scale)); opacity: 0.85; }
+  .gps-head .gps-clear {
+    flex-shrink: 0; width: 26px; height: 26px; border-radius: 6px;
+    border: none; background: rgba(255,255,255,0.18); color: #fff;
+    font-size: 14px; cursor: pointer; line-height: 1;
+  }
+  .gps-list { list-style: none; margin: 0; padding: 0; max-height: 340px; overflow-y: auto; }
+  .gps-list li {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; cursor: pointer;
+    border-bottom: 1px solid #e6ebf3; flex-shrink: 0;
+  }
+  .gps-list li:last-child { border-bottom: none; }
+  .gps-list li:hover { background: #eef3fb; }
+  .gps-list .gps-route {
+    flex-shrink: 0; min-width: 52px; text-align: center;
+    padding: 4px 8px; border-radius: 6px;
+    background: #1a3d7c; color: #fff;
+    font-size: calc(14px * var(--font-scale)); font-weight: 700;
+  }
+  .gps-list .gps-info { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .gps-list .gps-dir {
+    font-size: calc(13px * var(--font-scale)); color: #16233a;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .gps-list .gps-stop {
+    font-size: calc(11.5px * var(--font-scale)); color: #5a6a85;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .gps-list .gps-dist { flex-shrink: 0; font-size: calc(12px * var(--font-scale)); color: #1a3d7c; font-weight: 600; }
+  .place-group + .place-group { border-top: 1px solid #d5dbe6; }
+  .place-group-title {
+    padding: 6px 12px; background: #e8eef8; color: #1a3d7c;
+    font-size: calc(12.5px * var(--font-scale)); font-weight: 700;
+    position: sticky; top: 0; z-index: 1;
+  }
   @media (max-width: 900px) {
+    .row.landing { flex-wrap: wrap; }
+    .gps-btn { margin-left: 0; }
+    .gps-panel { display: none; }
+    .gps-chip { display: none; }   /* 手機版改用全螢幕 .gps-overlay */
+  }
+  .gps-overlay { display: none; }
+  @media (max-width: 900px) {
+    .gps-overlay {
+      display: flex; position: fixed;
+      top: 0; right: 0; bottom: 0; left: 0;
+      z-index: 3500;
+      background: rgba(0,0,0,0.55);
+      align-items: center; justify-content: center;
+      padding: 20px;
+      padding-bottom: max(20px, env(safe-area-inset-bottom));
+    }
+    .gps-sheet {
+      width: 100%; max-width: 480px;
+      max-height: var(--modal-max-h, 80vh);
+      background: white; border-radius: 16px;
+      overflow: hidden; display: flex; flex-direction: column;
+    }
+    .gps-sheet-header {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 12px 16px; background: #1a3d7c; color: white; flex-shrink: 0;
+    }
+    .gps-sheet-header .title { font-size: calc(15px * var(--font-scale)); font-weight: 700; }
+    .gps-sheet-header .sub { font-size: calc(12px * var(--font-scale)); opacity: 0.85; margin-top: 2px; }
+    .gps-sheet-header .close-btn {
+      flex-shrink: 0; width: 34px; height: 34px; border-radius: 8px;
+      border: none; background: rgba(255,255,255,0.18); color: white;
+      font-size: 18px; cursor: pointer;
+    }
+    .gps-sheet-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+    .gps-sheet-body .gps-list { max-height: none; }
+  }
+
+  /* === MAP OVERLAY === */
+  .map-overlay { display: none; }  @media (max-width: 900px) {
     .map-overlay {
       display: flex; position: fixed;
       top: 0; right: 0; bottom: 0; left: 0;
@@ -458,12 +833,17 @@
 
 <div id="app">
   <header class="app-header">
-    <h1>
-      <span class="header-logo-badge">
-        <img class="header-logo" src="bus.png" alt="巴士" />
-      </span>
-      Ansum Bus
-    </h1>
+    <div class="header-left">
+      <button v-if="!isLanding" class="back-btn" @click="goToLanding" title="返回主頁">
+        ← 返回
+      </button>
+      <h1>
+        <span class="header-logo-badge">
+          <img class="header-logo" src="bus.png" alt="巴士" />
+        </span>
+        Ansum Bus
+      </h1>
+    </div>
     <div class="header-meta">
       <div class="font-size-controls">
         <button class="font-btn" @click="decreaseFontSize" title="縮小字型">−</button>
@@ -516,33 +896,84 @@
         </div>
       </div>
 
-      <div class="row" :class="{ landing: isLanding }">
+      <div class="row" ref="searchRowRef"
+           :class="{ landing: isLanding, focused: searchFocused }"
+           @mouseleave="onSearchRowPointerLeave">
         <label>巴士路線</label>
         <input type="text" v-model.trim="routeInput"
-               placeholder="請輸入巴士號碼"
+               placeholder="巴士號碼或地點（如 旺角）"
+               @focus="onSearchRowFocus"
+               @blur="onSearchRowBlur"
                @keyup.enter="onSearch" />
         <button class="search-btn" @click="onSearch" :disabled="mobileSearching">
           {{ mobileSearching ? '搜尋中' : '查詢' }}
         </button>
+        <button class="gps-btn" @click="nearbySearch" :disabled="gpsLoading"
+                :title="'根據目前位置搜尋附近巴士路線'">
+          <span class="gps-btn-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z" />
+              <circle cx="12" cy="10" r="2.6" />
+            </svg>
+          </span>
+          <span class="gps-btn-text">{{ gpsLoading ? '定位中' : '附近路線' }}</span>
+        </button>
       </div>
 
       <div v-if="mobileSearching" class="searching-hint">正在搜尋路線…</div>
+      <div v-if="placeLoading" class="searching-hint">正在搜尋地點…</div>
+
+      <div v-if="gpsError" class="gps-error">{{ gpsError }}</div>
+
+      <div v-if="placeResults && placeRouteRows.length" class="gps-panel">
+        <div class="gps-head">
+          <span class="gps-title">「{{ placeQuery }}」附近路線</span>
+          <span class="gps-sub">{{ placeResults.matchedStops }} 個車站 · {{ placeRouteRows.length }} 條</span>
+          <button class="gps-clear" @click="clearPlace" title="清除地點搜尋結果">✕</button>
+        </div>
+        <div v-for="g in placeGroups" :key="'pg-' + g.id" class="place-group">
+          <div class="place-group-title">{{ g.label }}</div>
+          <ul class="gps-list">
+            <li v-for="item in g.rows" :key="'p-' + g.id + item.routeId + item.bound"
+                @click="placePickRoute(item)">
+              <span class="gps-route">{{ item.route }}</span>
+              <span class="gps-info">
+                <span class="gps-dir">{{ item.directionLabel }}</span>
+                <span class="gps-stop">{{ item.stopName }}</span>
+              </span>
+              <span class="gps-dist">{{ item.stopCount }} 站</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 桌機：附近路線結果改在右側主面板彈出，側欄只留一個提示列 -->
+      <div v-if="gpsResults && gpsRouteRows.length" class="gps-chip" @click="gpsReopen">
+        <span class="gps-chip-title">附近路線</span>
+        <span class="gps-chip-sub">
+          {{ gpsResults.coarse ? '最近的車站' : '半徑 ' + formatDistance(gpsResults.radius) + ' 內' }}
+          · {{ gpsRouteRows.length }} 條
+        </span>
+        <span class="gps-chip-open">查看</span>
+        <button class="gps-clear" @click.stop="clearGps" title="清除附近路線結果">✕</button>
+      </div>
 
       <div v-if="!searched" class="other-modes">
   <div class="mode-section-title">可選擇其他交通工具</div>
-  <a href="gmb.html" class="mode-link">
-    <span class="mode-icon">🚐</span>
+  <a href="gmb.html" class="mode-link" @click="clearGps">
+    <img class="mode-icon-img" src="gmb.png" alt="專線小巴" />
     <span class="mode-text">
       <span class="mode-title">專線小巴</span>
       <span class="mode-desc">港島 / 九龍 / 新界</span>
     </span>
     <span class="mode-arrow">→</span>
   </a>
-  <a href="ferry.html" class="mode-link">
-    <span class="mode-icon">⛴️</span>
+  <a href="rmb.html" class="mode-link" @click="clearGps">
+    <img class="mode-icon-img" src="rmb.png" alt="紅色小巴" />
     <span class="mode-text">
-      <span class="mode-title">渡輪</span>
-      <span class="mode-desc">新渡輪航線</span>
+      <span class="mode-title">紅色小巴</span>
+      <span class="mode-desc">公共小巴路線及收費</span>
     </span>
     <span class="mode-arrow">→</span>
   </a>
@@ -608,6 +1039,7 @@
           <button class="map-zoom-btn" @click.stop="zoomIn">+</button>
           <button class="map-zoom-btn" @click.stop="zoomOut">−</button>
         </div>
+
       </div>
 
       <div class="panel eta-box">
@@ -709,10 +1141,144 @@
       </div>
     </div>
   </Teleport>
+
+  <Teleport to="body">
+    <div v-if="placeOpen && placeRouteRows.length" class="gps-overlay" @click.self="closePlace">
+      <div class="gps-sheet">
+        <div class="gps-sheet-header">
+          <div>
+            <div class="title">「{{ placeQuery }}」附近路線</div>
+            <div class="sub">{{ placeResults.matchedStops }} 個車站 · {{ placeRouteRows.length }} 條</div>
+          </div>
+          <button class="close-btn" @click="closePlace">✕</button>
+        </div>
+        <div class="gps-sheet-body">
+          <div v-for="g in placeGroups" :key="'pmg-' + g.id" class="place-group">
+            <div class="place-group-title">{{ g.label }}</div>
+            <ul class="gps-list">
+              <li v-for="item in g.rows" :key="'pm-' + g.id + item.routeId + item.bound"
+                  @click="placePickRoute(item)">
+                <span class="gps-route">{{ item.route }}</span>
+                <span class="gps-info">
+                  <span class="gps-dir">{{ item.directionLabel }}</span>
+                  <span class="gps-stop">{{ item.stopName }}</span>
+                </span>
+                <span class="gps-dist">{{ item.stopCount }} 站</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </Teleport>
+
+  <Teleport to="body">
+    <div v-if="gpsResults && gpsRouteRows.length && gpsPopupOpen"
+         class="gps-modal" :style="gpsPopupStyle" @click.self="gpsPopupOpen = false">
+      <div class="gps-modal-sheet">
+        <div class="gps-modal-head">
+          <div class="gps-modal-titles">
+            <div class="gps-modal-title">附近路線</div>
+            <div class="gps-modal-sub">
+              {{ gpsResults.coarse ? '最近的車站' : '半徑 ' + formatDistance(gpsResults.radius) + ' 內' }}
+              · {{ gpsRouteRows.length }} 條
+            </div>
+          </div>
+          <button class="gps-modal-close" @click="gpsPopupOpen = false" aria-label="關閉">✕</button>
+        </div>
+        <div class="gps-modal-body">
+          <ul class="gps-list">
+            <li v-for="item in gpsRouteRows" :key="'dm-' + item.routeId + item.company"
+                @click="gpsPickRoute(item)">
+              <span class="gps-route">{{ item.route }}</span>
+              <span class="gps-info">
+                <span class="gps-dir">{{ item.directionLabel }}</span>
+                <span class="gps-stop">{{ item.companyLabel }} · {{ item.stopName }}</span>
+              </span>
+              <span class="gps-dist">{{ item.distText }}</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </Teleport>
+
+  <Teleport to="body">
+    <div v-if="gpsOpen && gpsRouteRows.length" class="gps-overlay" @click.self="closeGps">
+      <div class="gps-sheet">
+        <div class="gps-sheet-header">
+          <div>
+            <div class="title">附近路線</div>
+            <div class="sub">
+              {{ gpsResults.coarse ? '最近的車站' : '半徑 ' + formatDistance(gpsResults.radius) + ' 內' }}
+              · {{ gpsRouteRows.length }} 條
+            </div>
+          </div>
+          <button class="close-btn" @click="closeGps">✕</button>
+        </div>
+        <div class="gps-sheet-body">
+          <ul class="gps-list">
+            <li v-for="item in gpsRouteRows" :key="'m-' + item.routeId + item.company"
+                @click="gpsPickRoute(item)">
+              <span class="gps-route">{{ item.route }}</span>
+              <span class="gps-info">
+                <span class="gps-dir">{{ item.directionLabel }}</span>
+                <span class="gps-stop">{{ item.companyLabel }} · {{ item.stopName }}</span>
+              </span>
+              <span class="gps-dist">{{ item.distText }}</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </Teleport>
 </div>
 
 <script>
 const { createApp, ref, computed, onMounted, onUnmounted, nextTick } = Vue;
+
+/* ==================== 本機檔案開啟防護 ====================
+   以 file:// 直接開啟時，瀏覽器基於安全理由會封鎖對本機
+   JSON 的 fetch（CORS），導致票價等資料載入失敗。
+   這裡提早偵測並顯示清楚的操作指示。
+   ======================================================== */
+const IS_FILE_PROTOCOL = (location.protocol === "file:");
+function showFileProtocolNotice() {
+  if (!IS_FILE_PROTOCOL) return;
+  const mount = document.getElementById("app");
+  if (!mount) return;
+  const box = document.createElement("div");
+  box.setAttribute("role", "alert");
+  box.style.cssText = [
+    "position:fixed", "inset:0", "z-index:99999",
+    "display:flex", "align-items:center", "justify-content:center",
+    "padding:24px", "background:#f5f7fb",
+    "font-family:-apple-system,BlinkMacSystemFont,'PingFang HK','Microsoft JhengHei',Helvetica,Arial,sans-serif",
+    "color:#222", "text-align:left"
+  ].join(";");
+  box.innerHTML =
+    '<div style="max-width:620px;background:#fff;border-radius:14px;padding:26px 28px;' +
+    'box-shadow:0 4px 24px rgba(20,30,60,.14);line-height:1.75">' +
+      '<h2 style="margin:0 0 6px;font-size:20px;color:#0d5e3a">⚠️ 請勿直接開啟本檔案</h2>' +
+      '<p style="margin:0 0 14px;font-size:14px;color:#555">' +
+        '偵測到你是用 <code style="background:#f0f2f7;padding:2px 6px;border-radius:4px">file://</code> ' +
+        '直接開啟這個頁面。瀏覽器會基於安全理由封鎖本機資料檔的讀取，' +
+        '因此票價與路線資料無法載入。' +
+      '</p>' +
+      '<p style="margin:0 0 8px;font-size:14px;font-weight:700;color:#0d5e3a">✅ 正確做法：用本機網頁伺服器開啟</p>' +
+      '<ol style="margin:0 0 16px;padding-left:20px;font-size:13.5px;color:#444">' +
+        '<li>在這個資料夾開啟終端機</li>' +
+        '<li>執行：<code style="background:#f0f2f7;padding:2px 6px;border-radius:4px">python -m http.server 8000</code></li>' +
+        '<li>瀏覽器前往 <a href="http://localhost:8000/index.html" style="color:#0d5e3a;font-weight:700">http://localhost:8000/index.html</a></li>' +
+      '</ol>' +
+      '<p style="margin:0;font-size:12.5px;color:#8b95a8">' +
+        '最簡單的方式：雙擊資料夾內的 <b>start-local.bat</b>（Windows），' +
+        '它會自動啟動伺服器並開啟瀏覽器。' +
+      '</p>' +
+    '</div>';
+  document.body.appendChild(box);
+}
+showFileProtocolNotice();
 
 /* ========== 工具函式 ========== */
 function dbgError(label, err) { console.error(`❌ ${label}：${err && err.message ? err.message : err}`); }
@@ -868,12 +1434,13 @@ async function fetchNlbEta(routeId, stopId) {
 }
 
 /* ========== 票價 API ========== */
-const FARE_CACHE_KEY = "hk-bus-fare-data-v3";
-const FARE_CACHE_VERSION = 3;
+const FARE_CACHE_KEY = "hk-bus-fare-data-v5";
+const FARE_CACHE_VERSION = 5;
 const FARE_CACHE_DAYS = 7;
-const FARE_URL_PRIMARY = "https://data.hkbus.app/routeFareList.min.json";
-const FARE_URL_FALLBACK = "https://hkbus.github.io/hk-bus-crawling/routeFareList.min.json";
+const FARE_URL_PRIMARY = "routeFareList.min.json";
+const FARE_URL_FALLBACK = "routeFareList.min.json";
 let fareDb = null, fareDbLoading = null;
+let holidaysList = null;
 
 function loadFareCache() {
   try {
@@ -906,16 +1473,53 @@ function buildFareIndex(raw) {
         if (Array.isArray(a)) stopsMap[k] = a.map(s => String(s));
       }
     }
-    index[id] = { route: String(e.route || ""), serviceType: String(e.serviceType || "1"), companyList: coList, fares, faresHoliday: faresH, stopsMap };
+    index[id] = { route: String(e.route || ""), serviceType: String(e.serviceType || "1"), companyList: coList, bound: (e.bound && (e.bound.kmb || e.bound.ctb || e.bound.nlb || e.bound.gmb)) || "", fares, faresHoliday: faresH, stopsMap };
   }
   return index;
 }
+
+/* 只取車站座標部分（供舊快取或缺 geo 索引時補載） */
+let geoNeedsFetch = true;
+let geoFetchPromise = null;
+async function loadGeoFromFile() {
+  if (geoIndex) return geoIndex;
+  if (geoFetchPromise) return geoFetchPromise;
+  geoFetchPromise = (async () => {
+    for (const url of [FARE_URL_PRIMARY, FARE_URL_FALLBACK]) {
+      try {
+        const res = await fetch(url, { cache: "no-store" });
+        if (!res.ok) continue;
+        const raw = await res.json();
+        const geo = buildGeoIndex(fareDb, raw && raw.stopList, raw && raw.stopMap);
+        if (!geo || !geo.stops.length) continue;
+        geoIndex = geo;
+        saveGeoStopCache(geo);
+        return geoIndex;
+      } catch (e) {}
+    }
+    return null;
+  })();
+  try { return await geoFetchPromise; } finally { geoFetchPromise = null; }
+}
+
 async function fetchFareDb() {
   if (fareDb) return fareDb;
   if (fareDbLoading) return fareDbLoading;
   fareDbLoading = (async () => {
     const cached = loadFareCache();
-    if (cached) { fareDb = cached; return fareDb; }
+    if (cached) {
+      if (cached.index) {
+        fareDb = cached.index; holidaysList = cached.holidays || null;
+        geoIndex = buildGeoIndex(cached.index, cached.stopList || null, cached.stopMap || null);
+      }
+      else { fareDb = cached; }
+      /* Older cache entries predate the geo work and carry no stopList/stopMap.
+         Re-fetch the full file so nearby-route search still works, but keep
+         serving the (already loaded) fare index meanwhile. */
+      if (!geoIndex) geoIndex = loadGeoStopCache();
+      if (!geoIndex && geoNeedsFetch) { geoNeedsFetch = false; try { await loadGeoFromFile(); } catch (e) {} }
+      return fareDb;
+    }
     for (const url of [FARE_URL_PRIMARY, FARE_URL_FALLBACK]) {
       try {
         const res = await fetch(url, { cache: "no-store" });
@@ -923,14 +1527,261 @@ async function fetchFareDb() {
         const raw = await res.json();
         const idx = buildFareIndex(raw);
         if (!Object.keys(idx).length) continue;
-        fareDb = idx; saveFareCache(idx); return fareDb;
+        const hols = Array.isArray(raw && raw.holidays) ? raw.holidays : null;
+        fareDb = idx; holidaysList = hols;
+        geoIndex = buildGeoIndex(idx, raw && raw.stopList, raw && raw.stopMap);
+        saveFareCache({ index: idx, holidays: hols, stopList: raw && raw.stopList, stopMap: raw && raw.stopMap });
+        geoNeedsFetch = false;
+        return fareDb;
       } catch (e) {}
     }
     return null;
   })();
   try { return await fareDbLoading; } finally { fareDbLoading = null; }
 }
-function isTodayHoliday() { return new Date().getDay() === 0; }
+
+/* ========== GPS 附近路線搜尋 ==========
+ * 資料來源：routeFareList.min.json 的 stopList（15,267 個車站，含 WGS84 座標）
+ * 與 stopMap（internalId → [[公司, 公司車站編號], …]）。
+ * 由於 routeList[].stops 用的是「公司車站編號」，必須反轉 stopMap 才能對得上，
+ * 故建立 companyId + 公司車站編號 → internalId 的反向索引。
+ */
+const GEO_STOP_CACHE_KEY = "hk-bus-geo-stops-v2";
+let geoIndex = null;               // { stops: [{id,name,lat,lng,byCompany}], rev: {company:{companyId:internalId}}, routeStopIdx }
+let geoIndexLoading = null;
+const GEO_RADII = [400, 800, 1500]; // 由近至遠自動放寬的半徑（米）
+const GEO_MAX_RESULTS = 12;
+
+/* 反向索引：公司車站編號 → internalId，附帶該站的座標與名稱 */
+function buildGeoIndex(fareIndex, stopList, stopMap) {
+  if (!stopList || !stopMap) return null;
+  const rev = {};
+  for (const internalId of Object.keys(stopMap)) {
+    const pairs = stopMap[internalId];
+    if (!Array.isArray(pairs)) continue;
+    for (const p of pairs) {
+      if (!Array.isArray(p) || p.length < 2) continue;
+      const co = String(p[0]).toLowerCase();
+      (rev[co] || (rev[co] = {}))[String(p[1])] = internalId;
+    }
+  }
+  const stops = [];
+  for (const internalId of Object.keys(stopList)) {
+    const s = stopList[internalId];
+    if (!s || !s.location) continue;
+    const lat = parseFloat(s.location.lat), lng = parseFloat(s.location.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+    const name = s.name || {};
+    stops.push({ id: internalId, name: name.zh || name.en || "", en: name.en || "", lat, lng, byCompany: stopMap[internalId] || [] });
+  }
+  /* 路線索引：internalId → [{ route, bound, serviceType, company }]。
+     注意 routeList 的 key 是自家格式（如 "1+1+CHUK YUEN ESTATE+STAR FERRY"），
+     與 index.html 內 allRoutes 用 route+bound+serviceType 組成 key 不同，
+     所以這裡直接輸出可對接的欄位，不要輸出 key。 */
+  const routeStopIdx = {};
+  if (fareIndex) {
+    for (const routeId of Object.keys(fareIndex)) {
+      const e = fareIndex[routeId];
+      if (!e || !e.stopsMap) continue;
+      for (const co of Object.keys(e.stopsMap)) {
+        const ids = e.stopsMap[co];
+        if (!Array.isArray(ids)) continue;
+        for (const cid of ids) {
+          const internalId = rev[co] && rev[co][String(cid)];
+          if (!internalId) continue;
+          (routeStopIdx[internalId] || (routeStopIdx[internalId] = [])).push({
+            routeId,
+            route: e.route,
+            bound: e.bound || "",
+            serviceType: e.serviceType || "1",
+            company: co,
+          });
+        }
+      }
+    }
+  }
+  return { stops, rev, routeStopIdx };
+}
+
+function haversineMeters(lat1, lng1, lat2, lng2) {
+  const R = 6371000, toRad = Math.PI / 180;
+  const dLat = (lat2 - lat1) * toRad, dLng = (lng2 - lng1) * toRad;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * toRad) * Math.cos(lat2 * toRad) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(a)));
+}
+
+function loadGeoStopCache() {
+  try {
+    const raw = localStorage.getItem(GEO_STOP_CACHE_KEY);
+    if (!raw) return null;
+    const p = JSON.parse(raw);
+    if (!p || !p.stops || !p.rev || !p.routeStopIdx) return null;
+    return p;
+  } catch (e) { return null; }
+}
+function saveGeoStopCache(geo) {
+  /* 只快取靜態資料（stops / rev / routeStopIdx），不含使用者位置 */
+  try { localStorage.setItem(GEO_STOP_CACHE_KEY, JSON.stringify(geo)); } catch (e) {}
+}
+
+/* 由 JSON 建構完整的 geo 索引（供 gmb.html 之類的獨立頁面重用） */
+function ensureGeoIndex(raw) {
+  const fareIndex = buildFareIndex(raw);
+  return buildGeoIndex(fareIndex, raw && raw.stopList, raw && raw.stopMap);
+}
+
+/* ===== 地點名稱搜尋 =====
+ * 使用者在輸入框打「旺角」這類地名時，改成用車站名稱找路線。
+ * 一個地名通常對應很多個車站（旺角有 113 個），所以：
+ *   1. 先挑出名稱相符的車站（中文名優先，其次英文名）
+ *   2. 取得這些車站服務的路線，依「命中幾個相符車站」排序
+ *   3. 距離以相符車站群的幾何中心為參考點計算
+ */
+const PLACE_MIN_LEN = 2;
+const PLACE_MAX_STOPS = 400;
+
+/* 判斷輸入像不像路線號碼（數字為主，可能帶字母／尾碼），不像就是地名 */
+function looksLikeRouteNumber(q) {
+  const s = String(q || "").trim();
+  if (!s) return false;
+  /* 純數字、或數字+字母（1A / N691 / 962X / A21），且長度短 */
+  return /^[A-Z]{0,2}\d{1,4}[A-Z]?$/i.test(s.replace(/\s+/g, ""));
+}
+
+/* 找出名稱符合 q 的車站；回傳 [{stop, score}]，score 越小越優先 */
+function findStopsByName(geo, q) {
+  const out = [];
+  if (!geo || !geo.stops || !geo.stops.length) return out;
+  const qq = String(q || "").trim();
+  if (!qq) return out;
+  const qLower = qq.toLowerCase();
+  for (const s of geo.stops) {
+    const zh = s.name || "";
+    const en = (s.en || "").toLowerCase();
+    let score = -1;
+    if (zh === qq) score = 0;
+    else if (zh.startsWith(qq)) score = 1;
+    else if (zh.includes(qq)) score = 2;
+    else if (en === qLower) score = 3;
+    else if (en.startsWith(qLower)) score = 4;
+    else if (en.includes(qLower)) score = 5;
+    if (score >= 0) out.push({ stop: s, score });
+    if (out.length >= PLACE_MAX_STOPS) break;
+  }
+  out.sort((a, b) => a.score - b.score);
+  return out;
+}
+
+/* 以地名搜尋可乘搭的路線：路線按「服務幾個相符車站」排序 */
+function findRoutesByPlaceName(geo, q, opts = {}) {
+  const out = { routes: [], stops: [], center: null, matchedStops: 0 };
+  const hits = findStopsByName(geo, q);
+  if (!hits.length) return out;
+  out.matchedStops = hits.length;
+
+  /* 參考點：相符車站群的座標中位數，避免極端值拉扯 */
+  const lats = hits.map(h => h.stop.lat).sort((a, b) => a - b);
+  const lngs = hits.map(h => h.stop.lng).sort((a, b) => a - b);
+  const mid = (arr) => arr.length % 2
+    ? arr[(arr.length - 1) / 2]
+    : (arr[arr.length / 2 - 1] + arr[arr.length / 2]) / 2;
+  out.center = { lat: mid(lats), lng: mid(lngs) };
+
+  const matchedIds = new Set(hits.map(h => h.stop.id));
+  out.stops = hits.map(h => ({
+    id: h.stop.id, name: h.stop.name, en: h.stop.en,
+    lat: h.stop.lat, lng: h.stop.lng,
+    dist: haversineMeters(out.center.lat, out.center.lng, h.stop.lat, h.stop.lng),
+  }));
+
+  const byRoute = new Map();
+  for (const h of hits) {
+    const served = (geo.routeStopIdx || {})[h.stop.id] || [];
+    for (const r of served) {
+      const k = r.route + "+" + r.bound + "+" + r.serviceType;
+      let cur = byRoute.get(k);
+      if (!cur) {
+        cur = {
+          routeId: r.routeId, route: r.route, bound: r.bound,
+          serviceType: r.serviceType, company: r.company,
+          stopCount: 0, stopName: h.stop.name, bestScore: h.score,
+        };
+        byRoute.set(k, cur);
+      }
+      cur.stopCount++;
+      if (h.score < cur.bestScore) { cur.bestScore = h.score; cur.stopName = h.stop.name; }
+    }
+  }
+  const routes = [...byRoute.values()].sort((a, b) =>
+    (b.stopCount - a.stopCount) || (a.bestScore - b.bestScore));
+  out.routes = routes.slice(0, opts.maxResults || GEO_MAX_RESULTS);
+  return out;
+}
+
+/* 以座標為中心，由內至外放寬半徑，回傳可乘搭的路線（附最近車站與距離） */
+function findNearbyRoutes(geo, lat, lng, opts = {}) {
+  const out = { routes: [], stops: [], radius: GEO_RADII[GEO_RADII.length - 1], coarse: false };
+  if (!geo || !geo.stops || !geo.stops.length) return out;
+  const maxResults = opts.maxResults || GEO_MAX_RESULTS;
+  const radii = opts.radii || GEO_RADII;
+  let near = [];
+  let usedRadius = radii[radii.length - 1];
+  for (const r of radii) {
+    usedRadius = r;
+    near = [];
+    for (const s of geo.stops) {
+      const d = haversineMeters(lat, lng, s.lat, s.lng);
+      if (d <= r) near.push({ stop: s, dist: d });
+    }
+    if (near.length) break;
+  }
+  /* 方圓 1.5 公里仍無站（例如身處郊野），退而取最近的 5 個站作參考 */
+  if (!near.length) {
+    const all = geo.stops.map(s => ({ stop: s, dist: haversineMeters(lat, lng, s.lat, s.lng) }));
+    all.sort((a, b) => a.dist - b.dist);
+    near = all.slice(0, 5); out.coarse = true;
+  }
+  out.radius = usedRadius;
+  out.stops = near.map(x => ({ id: x.stop.id, name: x.stop.name, en: x.stop.en, lat: x.stop.lat, lng: x.stop.lng, dist: x.dist }));
+
+  /* 車站 → 路線（只取 800 米內，避免「最近站」很遠時把全港路線都拉進來） */
+  const byRoute = new Map();
+  const joinRadius = out.coarse ? 0 : radii[Math.min(1, radii.length - 1)];
+  for (const x of near) {
+    if (!out.coarse && x.dist > joinRadius) continue;
+    const hits = (geo.routeStopIdx || {})[x.stop.id] || [];
+    for (const h of hits) {
+      const k = h.route + "+" + h.bound + "+" + h.serviceType;
+      let cur = byRoute.get(k);
+      if (!cur) {
+        cur = {
+          routeId: h.routeId, route: h.route, bound: h.bound,
+          serviceType: h.serviceType, company: h.company,
+          dist: x.dist, stopName: x.stop.name, stopCount: 0,
+        };
+        byRoute.set(k, cur);
+      }
+      cur.stopCount++;
+      if (x.dist < cur.dist) { cur.dist = x.dist; cur.stopName = x.stop.name; }
+    }
+  }
+  const routes = [...byRoute.values()].sort((a, b) => (b.stopCount - a.stopCount) || (a.dist - b.dist));
+  out.routes = routes.slice(0, maxResults);
+  return out;
+}
+
+
+function isTodayHoliday() {
+  if (holidaysList && Array.isArray(holidaysList) && holidaysList.length) {
+    const d = new Date();
+    const ymd = "" + d.getFullYear() +
+      String(d.getMonth() + 1).padStart(2, "0") +
+      String(d.getDate()).padStart(2, "0");
+    return holidaysList.includes(ymd);
+  }
+  return new Date().getDay() === 0;
+}
 function lookupFareEntry(routeNum, companyId, serviceType) {
   if (!fareDb) return null;
   const num = String(routeNum || "").toUpperCase();
@@ -1067,6 +1918,37 @@ createApp({
     const routeInput = ref("");
     const lastSearched = ref("");
     const searched = ref(false);
+    /* 輸入框一被點進（即使還沒打字）就即時放大；對應 .row.focused。
+     * 收合時機見 onSearchRowBlur()：不能一 blur 就收，否則會吃掉「查詢」的點擊。 */
+    const searchFocused = ref(false);
+    const searchRowRef = ref(null);
+    let searchCollapseTimer = null;
+
+    /* 失焦（例如按下「查詢」）時先不要收合，等指標離開整個搜尋列再說。
+     * 若一 blur 就縮小，按鈕會在 mousedown 與 mouseup 之間位移，
+     * 瀏覽器便判定點擊沒有落在同一元素，click 事件被整個丟棄。 */
+    function onSearchRowFocus() {
+      if (searchCollapseTimer) { clearTimeout(searchCollapseTimer); searchCollapseTimer = null; }
+      searchFocused.value = true;
+    }
+    function onSearchRowBlur() {
+      if (searchCollapseTimer) clearTimeout(searchCollapseTimer);
+      searchCollapseTimer = setTimeout(() => {
+        searchCollapseTimer = null;
+        /* 焦點又回到搜尋列（例如 Tab 回來）→ 維持放大 */
+        const row = searchRowRef.value;
+        if (row && row.contains(document.activeElement)) return;
+        /* 指標仍在搜尋列內（例如正要放開滑鼠點「查詢」）→ 延後收合 */
+        if (row && row.matches(":hover")) return;
+        searchFocused.value = false;
+      }, 220);
+    }
+    function onSearchRowPointerLeave() {
+      if (!searchFocused.value) return;
+      const row = searchRowRef.value;
+      if (row && row.contains(document.activeElement)) return;
+      searchFocused.value = false;
+    }
     const routeKey = ref("");
     const selectedDirectionLabel = ref("");
     const stops = ref([]);
@@ -1087,6 +1969,30 @@ createApp({
     const favExpanded = ref(true);
     const favourites = ref(loadFavourites());
     const currentFareEntry = ref(null);
+    /* GPS 附近路線搜尋 */
+    const gpsLoading = ref(false);
+    const gpsResults = ref(null);      // null = 未搜尋；{ routes, stops, radius, coarse, coords }
+    const gpsError = ref("");
+    const gpsOpen = ref(false);        // 手機版彈出層（全螢幕）
+    const gpsPopupOpen = ref(false);   // 桌機版彈窗（覆蓋右側地圖面板）
+    const gpsCoords = ref(null);       // { lat, lng, accuracy }
+    /* 桌機版彈窗要「蓋在右側地圖面板上」。
+       彈窗用 Teleport 掛到 body，因此不能靠 CSS 定位到面板，
+       必須量測面板矩形後以 inline style 指定（見 gpsPopupStyle）。 */
+    const mapPanelRect = ref(null);     // { x, y, w, h }
+    const gpsPopupStyle = computed(() => {
+      const r = mapPanelRect.value;
+      if (!r) return {};
+      return {
+        top: r.y + "px", left: r.x + "px",
+        width: r.w + "px", height: r.h + "px",
+      };
+    });
+    /* 地名搜尋（在輸入框打「旺角」之類） */
+    const placeLoading = ref(false);
+    const placeResults = ref(null);    // { routes, stops, center, matchedStops }
+    const placeQuery = ref("");
+    const placeOpen = ref(false);
 
     const isLanding = computed(() => !searched.value && !routeInput.value.trim() && !stops.value.length);
     const isHoliday = computed(() => isTodayHoliday());
@@ -1172,6 +2078,9 @@ createApp({
       const q = (routeInput.value || "").trim();
       if (!q) return;
       collapseFavourites();
+      clearGps(); clearPlace();
+      /* 看起來不像路線號碼 → 當作地名搜尋（例如「旺角」「銅鑼灣」） */
+      if (!looksLikeRouteNumber(q)) { await placeSearch(q); return; }
       if (!isMobile.value) { searchRoute(q); return; }
       const qU = q.toUpperCase();
       mobileSearching.value = true; error.value = "";
@@ -1187,6 +2096,9 @@ createApp({
           routeKey.value = ""; selectedDirectionLabel.value = "";
           stops.value = []; selectedStop.value = null; etas.value = [];
           dataAge.value = null; countdown.value = null; currentFareEntry.value = null;
+          /* 找不到這個路線號碼時，再試一次地名搜尋（例如輸入「旺角」） */
+          mobileSearching.value = false;
+          await placeSearch(q);
           return;
         }
         if (matches.length === 1) {
@@ -1211,11 +2123,283 @@ createApp({
     }
     function closeCompanyPicker() { showCompanyPicker.value = false; pickerCompanyIds.value = []; }
 
+    /* ===== GPS 附近路線搜尋 ===== */
+    function getPosition() {
+      return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) { reject(new Error("此瀏覽器不支援定位")); return; }
+        navigator.geolocation.getCurrentPosition(
+          p => resolve({ lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy }),
+          err => {
+            const msg = err && err.code === 1 ? "已拒絕定位權限，請在瀏覽器允許位置存取後再試"
+              : err && err.code === 3 ? "定位逾時，請再試一次"
+              : "無法取得目前位置";
+            reject(new Error(msg));
+          },
+          { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }
+        );
+      });
+    }
+
+    async function nearbySearch() {
+      collapseFavourites();
+      gpsLoading.value = true; gpsError.value = ""; gpsResults.value = null;
+      try {
+        const dbPromise = fetchFareDb();
+        const coords = await getPosition();
+        gpsCoords.value = coords;
+        await dbPromise;
+        if (!geoIndex) geoIndex = loadGeoStopCache();
+        if (!geoIndex) throw new Error("車站資料尚未載入，請稍後再試");
+        const res = findNearbyRoutes(geoIndex, coords.lat, coords.lng);
+        if (!res.routes.length) throw new Error("附近 1.5 公里內找不到巴士路線");
+        gpsResults.value = { ...res, coords };
+        /* 手機：全螢幕彈出層；桌機：在右側主面板彈窗 */
+        if (isMobile.value) gpsOpen.value = true;
+        else { measureMapPanel(); gpsPopupOpen.value = true; }
+      } catch (e) {
+        gpsError.value = e.message || "定位失敗";
+      } finally {
+        gpsLoading.value = false;
+      }
+    }
+
+    /* 點選 GPS 結果 → 切到該公司並直接開啟該路線（沿用原有方向選擇流程） */
+    async function gpsPickRoute(item) {
+      if (!item) return;
+      const co = String(item.company || "").toUpperCase();
+      const target = co === "LWB" ? "KMB" : co;
+      gpsOpen.value = false;
+      gpsPopupOpen.value = false;
+      try {
+        if (company.value !== target) { company.value = target; await loadRoutes(); }
+        routeInput.value = item.route;
+        await searchRoute(item.route, item.directionKey || null);
+      } catch (e) { error.value = "無法開啟路線：" + e.message; }
+    }
+
+    function closeGps() { gpsOpen.value = false; gpsPopupOpen.value = false; }
+
+    /* 量測右側地圖面板的矩形，讓桌機版彈窗精準覆蓋它。
+       面板在手機版是 display:none，量到 0 就直接不設矩形（此時也不會開彈窗）。 */
+    function measureMapPanel() {
+      const el = document.querySelector(".map-wrap-desktop");
+      if (!el) { mapPanelRect.value = null; return; }
+      const r = el.getBoundingClientRect();
+      if (r.width < 1 || r.height < 1) { mapPanelRect.value = null; return; }
+      mapPanelRect.value = { x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height) };
+    }
+    function gpsReopen() {
+      if (isMobile.value) return;
+      measureMapPanel();
+      gpsPopupOpen.value = true;
+    }
+    function clearGps() {
+      gpsOpen.value = false; gpsPopupOpen.value = false;
+      gpsResults.value = null; gpsCoords.value = null; gpsError.value = "";
+    }
+    /* 視窗尺寸改變時重新量測，避免彈窗與地圖面板錯位 */
+    function onWinResize() { if (gpsPopupOpen.value) measureMapPanel(); }
+
+    /* Esc 關閉桌機版附近路線彈窗（與其他彈窗行為一致） */
+    function onDocKeydown(e) {
+      if (e.key !== "Escape") return;
+      if (gpsPopupOpen.value) { gpsPopupOpen.value = false; e.preventDefault(); return; }
+      if (gpsOpen.value) { gpsOpen.value = false; e.preventDefault(); }
+    }
+
+    /* 將 GPS 結果的 routeId 轉成可顯示的路線資料（含方向標籤）
+     * geo 索引輸出 route + bound + serviceType，與 allRoutes 建 key 的方式一致；
+     * 同一條路線可能在兩個方向都有站，所以兩者都要能對上。 */
+    const gpsRouteRows = computed(() => {
+      const res = gpsResults.value;
+      if (!res || !res.routes) return [];
+      if (!allRoutes.value.length) return [];
+      const byKey = new Map();
+      for (const r of allRoutes.value) {
+        const key = r.isNlb
+          ? "NLB+" + r.routeId
+          : r.route + "+" + r.direction + "+" + (r.serviceType || "1");
+        if (!byKey.has(key)) byKey.set(key, r);
+      }
+      const rows = [];
+      for (const item of res.routes) {
+        const co = String(item.company || "").toUpperCase();
+        /* 只看目前公司（LWB 併入 KMB），換公司時 allRoutes 會重新載入 */
+        const target = co === "LWB" ? "KMB" : co;
+        if (target && target !== company.value) continue;
+        const key = (co === "nlb" || target === "NLB")
+          ? "NLB+" + item.routeId
+          : item.route + "+" + item.bound + "+" + item.serviceType;
+        const r = byKey.get(key);
+        if (!r) continue;
+        rows.push({
+          ...item,
+          route: r.route,
+          companyLabel: (companies.find(c => c.id === target) || {}).name || target,
+          directionLabel: `${r.orig_tc} → ${r.dest_tc}`,
+          directionKey: key,
+          distText: formatDistance(item.dist),
+        });
+      }
+      return rows;
+    });
+
+    /* ===== 地名搜尋 =====
+     * 在輸入框打「旺角」這類地名時，列出服務該地點的路線。
+     * 地名結果橫跨多間公司，所以這裡不只看目前選取的公司，而是把所有公司的
+     * 路線清單都載入後一起 join（GPS 附近搜尋則維持只顯示目前公司）。 */
+    const placeLists = ref({});        // { KMB: [...], CTB: [...], NLB: [...] }
+    const placeListsLoading = ref(false);
+
+    async function loadAllRouteLists() {
+      if (placeListsLoading.value) return placeLists.value;
+      placeListsLoading.value = true;
+      try {
+        const [kmb, ctb, nlb] = await Promise.all([
+          loadRouteListFor("KMB").catch(() => []),
+          loadRouteListFor("CTB").catch(() => []),
+          loadRouteListFor("NLB").catch(() => []),
+        ]);
+        placeLists.value = { KMB: kmb || [], CTB: ctb || [], NLB: nlb || [] };
+      } finally {
+        placeListsLoading.value = false;
+      }
+      return placeLists.value;
+    }
+
+    async function placeSearch(q) {
+      const query = String(q || "").trim();
+      if (!query) return;
+      placeLoading.value = true; placeResults.value = null; placeQuery.value = query;
+      try {
+        const dbPromise = fetchFareDb();
+        await dbPromise;
+        if (!geoIndex) geoIndex = loadGeoStopCache();
+        if (!geoIndex && geoNeedsFetch) { geoNeedsFetch = false; geoIndex = await loadGeoFromFile(); }
+        if (!geoIndex) throw new Error("車站資料尚未載入，請稍後再試");
+        await loadAllRouteLists();
+        const res = findRoutesByPlaceName(geoIndex, query);
+        if (!res.routes.length) {
+          error.value = `找不到地點「${query}」的巴士路線`;
+          placeResults.value = null;
+          return;
+        }
+        error.value = "";
+        placeResults.value = res;
+        if (isMobile.value) placeOpen.value = true;
+      } catch (e) {
+        error.value = "地點搜尋失敗：" + (e.message || "未知錯誤");
+      } finally {
+        placeLoading.value = false;
+      }
+    }
+
+    /* 把地名結果對上各公司的路線資料，換成可顯示的列。
+     * bound 可能是複合值（例如 "IO"），故比對時允許雙向包含。 */
+    function placeRowsFor(companyId) {
+      const res = placeResults.value;
+      if (!res || !res.routes) return [];
+      const list = (placeLists.value || {})[companyId];
+      if (!list || !list.length) return [];
+      const byKey = new Map();
+      for (const r of list) {
+        const key = r.isNlb
+          ? "NLB+" + r.routeId
+          : r.route + "+" + r.direction + "+" + (r.serviceType || "1");
+        if (!byKey.has(key)) byKey.set(key, r);
+      }
+      const rows = [];
+      for (const item of res.routes) {
+        const co = String(item.company || "").toUpperCase();
+        const target = co === "LWB" ? "KMB" : co;
+        if (target !== companyId) continue;
+        if (target === "GMB") continue;            // 小巴請到小巴頁（本頁無資料）
+        const key = target === "NLB"
+          ? "NLB+" + item.routeId
+          : item.route + "+" + item.bound + "+" + item.serviceType;
+        let r = byKey.get(key);
+        if (!r) {
+          /* 複合方向（如 "IO"）或服務類型差異：退回只比對路線號碼＋方向 */
+          const cands = list.filter(x =>
+            x.route === item.route &&
+            String(x.direction || "").toUpperCase()
+              .includes(String(item.bound || "").toUpperCase().slice(-1)));
+          r = cands[0];
+        }
+        if (!r) continue;
+        rows.push({
+          ...item,
+          route: r.route,
+          companyLabel: (companies.find(c => c.id === target) || {}).name || target,
+          directionLabel: `${r.orig_tc} → ${r.dest_tc}`,
+          directionKey: r.isNlb
+            ? "NLB+" + r.routeId
+            : r.route + "+" + r.direction + "+" + (r.serviceType || "1"),
+          company: target,
+          stopText: `${item.stopCount} 個${placeQuery.value}車站`,
+        });
+      }
+      return rows;
+    }
+
+    /* 地名結果依公司分組，讓使用者一眼看出哪間公司有車到該地點 */
+    const placeGroups = computed(() => {
+      if (!placeResults.value) return [];
+      const out = [];
+      for (const id of ["KMB", "CTB", "NLB"]) {
+        const rows = placeRowsFor(id);
+        if (rows.length) {
+          out.push({
+            id,
+            label: (companies.find(c => c.id === id) || {}).name || id,
+            rows,
+          });
+        }
+      }
+      return out;
+    });
+
+    const placeRouteRows = computed(() => placeGroups.value.flatMap(g => g.rows));
+
+    async function placePickRoute(item) {
+      if (!item) return;
+      const target = item.company || "KMB";
+      placeOpen.value = false;
+      try {
+        if (company.value !== target) { company.value = target; await loadRoutes(); }
+        routeInput.value = item.route;
+        await searchRoute(item.route, item.directionKey || null);
+      } catch (e) { error.value = "無法開啟路線：" + e.message; }
+    }
+
+    function closePlace() { placeOpen.value = false; }
+    function clearPlace() { placeOpen.value = false; placeResults.value = null; placeQuery.value = ""; }
+
     function clearDirection() {
       routeKey.value = ""; selectedDirectionLabel.value = "";
       pickingDirection.value = true;
       stops.value = []; selectedStop.value = null; etas.value = [];
       dataAge.value = null; countdown.value = null; currentFareEntry.value = null;
+    }
+
+    /* 返回主頁：清空搜尋狀態，回到初始 landing 畫面 */
+    function goToLanding() {
+      routeInput.value = "";
+      lastSearched.value = "";
+      searched.value = false;
+      routeKey.value = ""; selectedDirectionLabel.value = "";
+      pickingDirection.value = false;
+      stops.value = []; selectedStop.value = null; etas.value = [];
+      dataAge.value = null; countdown.value = null;
+      currentFareEntry.value = null;
+      loadingStops.value = false; refreshing.value = false;
+      mapExpanded.value = false;
+      error.value = "";
+      gpsOpen.value = false; gpsPopupOpen.value = false; gpsError.value = "";
+      placeOpen.value = false; placeResults.value = null; placeQuery.value = "";
+      /* 清空地圖圖層（matchedRoutes 為 computed，重置 searched 後即自動清空） */
+      clearMapLayers();
+      window.scrollTo(0, 0);
     }
 
     async function loadFare() {
@@ -1473,7 +2657,21 @@ createApp({
     function busPinSvg({ pinColor, pulse, scale }) {
       const pinW = 32 * scale, pinH = 40 * scale;
       const busW = 34 * scale, busH = 22 * scale;
-      return `<div style="width:${44*scale}px;height:${52*scale}px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;filter:drop-shadow(0 2px 3px rgba(0,0,0,0.35));${pulse?"animation:busPulse 1.2s infinite;":""}"><svg viewBox="0 0 32 40" width="${pinW}" height="${pinH}"><path d="M16 0 C7.2 0 0 7.2 0 16 c0 11 16 24 16 24 s16 -13 16 -24 c0 -8.8 -7.2 -16 -16 -16 z" fill="${pinColor}" stroke="#1a1a1a" stroke-width="2"/><circle cx="16" cy="16" r="5.5" fill="#fff" stroke="#1a1a1a" stroke-width="1.6"/><circle cx="16" cy="16" r="2" fill="#1a1a1a"/></svg><svg viewBox="0 0 32 20" width="${busW}" height="${busH}" style="margin-top:${-6*scale}px"><rect x="1" y="2" width="30" height="14" rx="3" fill="#f5b800" stroke="#1a1a1a" stroke-width="1.6"/><circle cx="8" cy="17" r="2.4" fill="#1a1a1a"/><circle cx="24" cy="17" r="2.4" fill="#1a1a1a"/></svg></div>`;
+      /* 巴士圖示造型對應 bus.png：紅色車身、黑邊、淺藍車窗、藍色車門、深色車輪配黃色輪轂、黃色車頭燈 */
+      const busSvg = `<svg viewBox="0 0 32 20" width="${busW}" height="${busH}" style="margin-top:${-6*scale}px">`
+        + `<rect x="1.5" y="2" width="29" height="13" rx="2.5" fill="#d81f26" stroke="#111" stroke-width="1.5"/>`
+        + `<rect x="3.6" y="4.2" width="5.4" height="3.4" rx="0.8" fill="#7fb3e8"/>`
+        + `<rect x="10.2" y="4.2" width="9.4" height="3.4" rx="0.8" fill="#7fb3e8"/>`
+        + `<rect x="20.8" y="4.2" width="6.4" height="3.4" rx="0.8" fill="#7fb3e8"/>`
+        + `<rect x="6.1" y="8.4" width="3.4" height="6.6" rx="0.6" fill="#b9d3f2" stroke="#111" stroke-width="0.7"/>`
+        + `<circle cx="29.2" cy="11.4" r="1.1" fill="#f7c948" stroke="#111" stroke-width="0.6"/>`
+        + `<circle cx="2.8" cy="11.4" r="1.1" fill="#f7c948" stroke="#111" stroke-width="0.6"/>`
+        + `<circle cx="8.4" cy="15.6" r="3" fill="#2b2b2b" stroke="#111" stroke-width="1"/>`
+        + `<circle cx="8.4" cy="15.6" r="1.05" fill="#f7c948" stroke="#111" stroke-width="0.5"/>`
+        + `<circle cx="23.6" cy="15.6" r="3" fill="#2b2b2b" stroke="#111" stroke-width="1"/>`
+        + `<circle cx="23.6" cy="15.6" r="1.05" fill="#f7c948" stroke="#111" stroke-width="0.5"/>`
+        + `</svg>`;
+      return `<div style="width:${44*scale}px;height:${52*scale}px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;filter:drop-shadow(0 2px 3px rgba(0,0,0,0.35));${pulse?"animation:busPulse 1.2s infinite;":""}"><svg viewBox="0 0 32 40" width="${pinW}" height="${pinH}"><path d="M16 0 C7.2 0 0 7.2 0 16 c0 11 16 24 16 24 s16 -13 16 -24 c0 -8.8 -7.2 -16 -16 -16 z" fill="${pinColor}" stroke="#1a1a1a" stroke-width="2"/><circle cx="16" cy="16" r="5.5" fill="#fff" stroke="#1a1a1a" stroke-width="1.6"/><circle cx="16" cy="16" r="2" fill="#1a1a1a"/></svg>${busSvg}</div>`;
     }
     const BUS_PIN_DEFAULT = L.divIcon({ className: "bus-pin-default", html: busPinSvg({ pinColor: "#1a3d7c", pulse: false, scale: 0.5 }), iconSize: [22,26], iconAnchor: [11,26] });
     const BUS_PIN_SELECTED = L.divIcon({ className: "bus-pin-selected", html: busPinSvg({ pinColor: "#e53935", pulse: true, scale: 1 }), iconSize: [44,52], iconAnchor: [22,52] });
@@ -1482,6 +2680,19 @@ createApp({
     function makeStopLabelIcon(name, selected) {
       const safe = String(name).replace(/</g, "&lt;").replace(/>/g, "&gt;");
       return L.divIcon({ className: "stop-name-label-wrap", html: `<div class="stop-name-label${selected?" selected":""}">${safe}</div>`, iconSize: [0,0], iconAnchor: [0,0] });
+    }
+
+    /* 清除地圖上的巴士站標記、標籤、路線線條與定位標記（供 goToLanding 等使用） */
+    function clearMapLayers() {
+      if (isMapUsable(activeMap)) {
+        try {
+          activeMarkers.forEach(({ marker }) => activeMap.removeLayer(marker));
+          activeLabels.forEach(l => activeMap.removeLayer(l));
+          if (activeRouteLine) { activeMap.removeLayer(activeRouteLine); activeRouteLine = null; }
+          if (activeUserMarker) { activeMap.removeLayer(activeUserMarker); activeUserMarker = null; }
+        } catch (e) {}
+      }
+      activeMarkers = []; activeLabels = [];
     }
 
     function drawOnActiveMap() {
@@ -1636,6 +2847,8 @@ createApp({
       window.addEventListener("beforeunload", saveFavouritesOnExit);
       window.addEventListener("pagehide", saveFavouritesOnExit);
       document.addEventListener("visibilitychange", handleVisibility);
+      document.addEventListener("keydown", onDocKeydown);
+      window.addEventListener("resize", onWinResize);
       tickTimer = setInterval(tick, 1000);
     });
     onUnmounted(() => {
@@ -1645,11 +2858,14 @@ createApp({
       window.removeEventListener("beforeunload", saveFavouritesOnExit);
       window.removeEventListener("pagehide", saveFavouritesOnExit);
       document.removeEventListener("visibilitychange", handleVisibility);
+      document.removeEventListener("keydown", onDocKeydown);
+      window.removeEventListener("resize", onWinResize);
     });
 
     return {
       fontScale, increaseFontSize, decreaseFontSize,
-      companies, company, routeInput, lastSearched, searched,
+      companies, company, routeInput, lastSearched, searched, searchFocused,
+      searchRowRef, onSearchRowFocus, onSearchRowBlur, onSearchRowPointerLeave,
       allRoutes, matchedRoutes, routeKey, stops, selectedStop, etas,
       dataAge, countdown, refreshing, clockText,
       loadingStops, error, stopListRef, mapExpanded, mapRowText,
@@ -1660,8 +2876,13 @@ createApp({
       onCompanyChange, onSearch, onCompanyPick, closeCompanyPicker,
       selectDirection, onStopClick, onStopMapClick,
       expandMap, collapseMap, zoomIn, zoomOut, clearDirection,
+      goToLanding,
       toggleFavourite, removeFavourite, onFavClick,
       manualRefresh, formatMinutes, formatDistance,
+      gpsLoading, gpsResults, gpsError, gpsOpen, gpsPopupOpen, gpsCoords, gpsRouteRows,
+      gpsPopupStyle, nearbySearch, gpsPickRoute, closeGps, clearGps, gpsReopen,
+      placeLoading, placeResults, placeQuery, placeOpen, placeRouteRows, placeGroups,
+      placeSearch, placePickRoute, closePlace, clearPlace,
     };
   },
 }).mount("#app");
