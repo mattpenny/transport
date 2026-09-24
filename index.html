@@ -134,6 +134,14 @@
     display: flex; align-items: center; gap: 6px;
   }
   .fav-section .title .star { color: #f9a825; font-size: calc(14px * var(--font-scale)); }
+  .fav-section .title .font-size-controls { margin-left: auto; }
+  /* +/- buttons moved out of the dark header into the light sidebar: keep the
+     same size/shape as the header (consistency) but flip to a dark colourway so
+     they stay visible on the white background. */
+  .fav-section .title .font-btn {
+    color: #333; border: 1px solid #ccd; background: rgba(0,0,0,0.05);
+  }
+  .fav-section .title .font-btn:active { transform: scale(0.95); }
   .fav-slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
   .fav-slot {
     position: relative; padding: 5px 4px;
@@ -966,10 +974,6 @@
       </h1>
     </div>
     <div class="header-meta">
-      <div class="font-size-controls">
-        <button class="font-btn" @click="decreaseFontSize" title="縮小字型">−</button>
-        <button class="font-btn" @click="increaseFontSize" title="放大字型">+</button>
-      </div>
       <span class="header-clock">{{ clockText }}</span>
       <p>資料來源：資料一線通 · 地圖：地政總署 CSDI</p>
     </div>
@@ -979,7 +983,12 @@
     <aside class="panel sidebar">
 
       <div class="fav-section">
-        <div class="title"><span class="star">⭐</span>我的最愛</div>
+        <div class="title"><span class="star">⭐</span>我的最愛
+          <div class="font-size-controls">
+            <button class="font-btn" @click="decreaseFontSize" title="縮小字型">−</button>
+            <button class="font-btn" @click="increaseFontSize" title="放大字型">+</button>
+          </div>
+        </div>
         <div class="fav-slots" :class="{ collapsed: !favExpanded }">
           <div v-for="(fav, i) in favourites" :key="i"
                class="fav-slot"

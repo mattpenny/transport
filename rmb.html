@@ -79,7 +79,7 @@
     box-shadow: 0 0 0 2px rgba(255,255,255,0.28), 0 1px 4px rgba(0,0,0,0.3);
     overflow: hidden;
   }
-  .header-logo { width: 26px; height: 26px; object-fit: contain; display: block; }
+  .header-logo { width: 24px; height: 24px; object-fit: contain; display: block; }
   .header-meta { display: flex; align-items: center; gap: 12px; flex-shrink: 0; min-width: 0; }
   .header-clock {
     font-size: calc(14px * var(--font-scale)); font-weight: 600; letter-spacing: 0.4px;
@@ -100,6 +100,9 @@
     display: flex; align-items: center; justify-content: center;
   }
   .font-btn:active { transform: scale(0.95); }
+  @media (max-width: 600px) {
+    .header-logo { width: 21px; height: 21px; }
+  }
 
   /* === LAYOUT (matches gmb.html / index.html) === */
   .layout {
@@ -152,6 +155,15 @@
     font-size: calc(13px * var(--font-scale)); font-weight: 700; color: var(--rmb-red);
     display: flex; align-items: center; gap: 6px; margin-bottom: 8px;
   }
+  .fav-section .title .star { color: #f9a825; font-size: calc(14px * var(--font-scale)); }
+  .fav-section .title .font-size-controls { margin-left: auto; }
+  /* +/- buttons moved out of the dark header into the light sidebar: keep the
+     same size/shape as the header (consistency) but flip to a dark colourway so
+     they stay visible on the white background. */
+  .fav-section .title .font-btn {
+    color: #333; border: 1px solid #ccd; background: rgba(0,0,0,0.05);
+  }
+  .fav-section .title .font-btn:active { transform: scale(0.95); }
   .fav-slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
   .fav-slot {
     position: relative; border: 1px dashed #cfd7e6; border-radius: 9px;
@@ -269,6 +281,19 @@
     background: #f0f0f0; color: #333; font-size: 16px; cursor: pointer; flex-shrink: 0;
   }
   .detail-sheet-close:active { transform: scale(0.95); }
+  .detail-sheet-head .head-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .detail-sheet-head .head-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .detail-font-controls {
+    display: flex; align-items: center; gap: 4px; flex-shrink: 0;
+  }
+  .detail-font-btn {
+    width: 30px; height: 30px; border-radius: 6px;
+    border: none; background: #f0f0f0; color: #333;
+    font-size: 16px; font-weight: 700; line-height: 1; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .detail-font-btn:hover { background: #e4e4e4; }
+  .detail-font-btn:active { transform: scale(0.95); }
 
   @media (max-width: 900px) {
     .detail-stack { display: none; }
@@ -369,6 +394,10 @@
     width: 46px; height: 30px; flex-shrink: 0;
     object-fit: contain; display: block;
   }
+  /* bus.png carries more internal padding than gmb.png/rmb.png, so it reads
+     smaller at the same box. Nudge the bus mode icon a touch bigger to match
+     the perceived size of the other two mode icons. */
+  .mode-link .mode-icon-img.bus-mode { width: 52px; height: 34px; }
   .mode-link .mode-text { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
   .mode-link .mode-title { font-size: calc(15px * var(--font-scale)); font-weight: 700; color: var(--rmb-red); }
   .mode-link .mode-desc { font-size: calc(11px * var(--font-scale)); color: #888; }
@@ -543,10 +572,6 @@
       Ansum 紅巴
     </h1>
     <div class="header-meta">
-      <div class="font-size-controls">
-        <button class="font-btn" @click="decreaseFontSize" title="縮小字型">−</button>
-        <button class="font-btn" @click="increaseFontSize" title="放大字型">+</button>
-      </div>
       <span class="header-clock">{{ clockText }}</span>
     </div>
   </header>
@@ -554,7 +579,12 @@
   <div class="layout">
     <aside class="panel sidebar">
       <div class="fav-section">
-        <div class="title"><span>⭐</span>我的最愛</div>
+        <div class="title"><span class="star">⭐</span>我的最愛
+          <div class="font-size-controls">
+            <button class="font-btn" @click="decreaseFontSize" title="縮小字型">−</button>
+            <button class="font-btn" @click="increaseFontSize" title="放大字型">+</button>
+          </div>
+        </div>
         <div class="fav-slots">
           <div v-for="(fav, i) in favourites" :key="i"
                class="fav-slot" :class="fav ? 'filled' : 'empty'"
@@ -602,7 +632,7 @@
       <div v-if="isLanding" class="other-modes">
         <div class="mode-section-title">可選擇其他交通工具</div>
         <a href="index.html" class="mode-link">
-          <img class="mode-icon-img" src="bus.png" alt="巴士" />
+          <img class="mode-icon-img bus-mode" src="bus.png" alt="巴士" />
           <span class="mode-text">
             <span class="mode-title">巴士路線</span>
             <span class="mode-desc">九巴 / 城巴 / 嶼巴</span>
@@ -628,8 +658,16 @@
       <div class="detail-stack" v-if="current" :class="{ open: detailOpen }">
         <div class="detail-sheet">
           <div class="detail-sheet-head">
-            <span class="detail-sheet-title">{{ current.name }} — 路線詳細資料</span>
-            <button class="detail-sheet-close" @click="closeDetail()">✕</button>
+            <div class="head-left">
+              <span class="detail-sheet-title">{{ current.name }} — 路線詳細資料</span>
+            </div>
+            <div class="head-right">
+              <div class="detail-font-controls">
+                <button class="detail-font-btn" @click="decreaseFontSize" title="縮小字型">−</button>
+                <button class="detail-font-btn" @click="increaseFontSize" title="放大字型">+</button>
+              </div>
+              <button class="detail-sheet-close" @click="closeDetail()">✕</button>
+            </div>
           </div>
           <div class="detail-sheet-body">
 

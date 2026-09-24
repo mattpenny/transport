@@ -86,7 +86,7 @@
     box-shadow: 0 0 0 2px rgba(255,255,255,0.28), 0 1px 4px rgba(0,0,0,0.3);
     overflow: hidden;
   }
-  .header-logo { width: 26px; height: 26px; object-fit: contain; display: block; }
+  .header-logo { width: 24px; height: 24px; object-fit: contain; display: block; }
   header.app-header p { margin: 0; font-size: calc(11px * var(--font-scale)); opacity: 0.75; flex-shrink: 0; }
   .header-meta { display: flex; align-items: center; gap: 12px; flex-shrink: 0; min-width: 0; }
   .header-clock {
@@ -118,7 +118,7 @@
     header.app-header { padding: 8px 12px; padding-top: max(8px, env(safe-area-inset-top), var(--status-inset)); }
     header.app-header h1 { font-size: calc(15px * var(--font-scale)); }
     .header-logo-badge { width: 30px; height: 30px; font-size: 18px; }
-    .header-logo { width: 23px; height: 23px; }
+    .header-logo { width: 21px; height: 21px; }
     header.app-header p { display: none; }
     .header-clock { font-size: calc(13px * var(--font-scale)); }
     .font-btn { width: 26px; height: 26px; font-size: 14px; }
@@ -151,6 +151,14 @@
     display: flex; align-items: center; gap: 6px;
   }
   .fav-section .title .star { color: #f9a825; font-size: calc(14px * var(--font-scale)); }
+  .fav-section .title .font-size-controls { margin-left: auto; }
+  /* +/- buttons moved out of the dark header into the light sidebar: keep the
+     same size/shape as the header (consistency) but flip to a dark colourway so
+     they stay visible on the white background. */
+  .fav-section .title .font-btn {
+    color: #333; border: 1px solid #ccd; background: rgba(0,0,0,0.05);
+  }
+  .fav-section .title .font-btn:active { transform: scale(0.95); }
   .fav-slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
   .fav-slot {
     position: relative; padding: 5px 4px;
@@ -317,6 +325,10 @@
     width: 46px; height: 30px; flex-shrink: 0;
     object-fit: contain; display: block;
   }
+  /* bus.png carries more internal padding than gmb.png/rmb.png, so it reads
+     smaller at the same box. Nudge the bus mode icon a touch bigger to match
+     the perceived size of the other two mode icons. */
+  .mode-link .mode-icon-img.bus-mode { width: 52px; height: 34px; }
   .mode-link .mode-text { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
   .mode-link .mode-title { font-size: calc(15px * var(--font-scale)); font-weight: 700; color: #0d5e3a; }
   .mode-link .mode-desc { font-size: calc(11px * var(--font-scale)); color: #888; }
@@ -761,7 +773,20 @@
      border-bottom: 1px solid #eef0f4;
      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
    }
-   .detail-modal-title { font-size: calc(15px * var(--font-scale)); font-weight: 700; color: #222; }
+   .detail-modal-head .head-left { display: flex; align-items: center; gap: 10px; }
+  .detail-modal-head .head-right { display: flex; align-items: center; gap: 8px; }
+  .detail-font-controls {
+    display: flex; align-items: center; gap: 4px; flex-shrink: 0;
+  }
+  .detail-font-btn {
+    width: 30px; height: 30px; border-radius: 6px;
+    border: none; background: #f0f0f0; color: #333;
+    font-size: 16px; font-weight: 700; line-height: 1; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .detail-font-btn:hover { background: #e4e4e4; }
+  .detail-font-btn:active { transform: scale(0.95); }
+  .detail-modal-title { font-size: calc(15px * var(--font-scale)); font-weight: 700; color: #222; }
    .detail-modal-close {
      width: 30px; height: 30px; border-radius: 6px; border: none;
      background: #f0f0f0; color: #333; font-size: 16px; cursor: pointer;
@@ -846,10 +871,6 @@
       Ansum 小巴
     </h1>
     <div class="header-meta">
-      <div class="font-size-controls">
-        <button class="font-btn" @click="decreaseFontSize" title="縮小字型">−</button>
-        <button class="font-btn" @click="increaseFontSize" title="放大字型">+</button>
-      </div>
       <span class="header-clock">{{ clockText }}</span>
     </div>
   </header>
@@ -858,7 +879,12 @@
     <aside class="panel sidebar">
 
       <div class="fav-section">
-        <div class="title"><span class="star">⭐</span>我的最愛</div>
+        <div class="title"><span class="star">⭐</span>我的最愛
+          <div class="font-size-controls">
+            <button class="font-btn" @click="decreaseFontSize" title="縮小字型">−</button>
+            <button class="font-btn" @click="increaseFontSize" title="放大字型">+</button>
+          </div>
+        </div>
         <div class="fav-slots" :class="{ collapsed: !favExpanded }">
           <div v-for="(fav, i) in favourites" :key="i"
                class="fav-slot"
@@ -959,7 +985,7 @@
       <div v-if="!isMobile || isLanding" class="other-modes">
         <div class="mode-section-title">可選擇其他交通工具</div>
         <a href="index.html" class="mode-link">
-          <img class="mode-icon-img" src="bus.png" alt="巴士" />
+          <img class="mode-icon-img bus-mode" src="bus.png" alt="巴士" />
           <span class="mode-text">
             <span class="mode-title">巴士路線</span>
             <span class="mode-desc">九巴 / 城巴 / 嶼巴</span>
@@ -1070,10 +1096,18 @@
    <!-- 由搜尋列的「詳請」按鈕開啟 -->
    <div class="detail-modal" v-if="detailOpen && currentDetail && detailBounds.length" @click.self="closeDetail()">
      <div class="detail-modal-box">
-     <div class="detail-modal-head">
-       <span class="detail-modal-title">路線詳細資料</span>
-       <button class="detail-modal-close" @click="closeDetail()">✕</button>
-     </div>
+    <div class="detail-modal-head">
+      <div class="head-left">
+        <span class="detail-modal-title">路線詳細資料</span>
+      </div>
+      <div class="head-right">
+        <div class="detail-font-controls">
+          <button class="detail-font-btn" @click="decreaseFontSize" title="縮小字型">−</button>
+          <button class="detail-font-btn" @click="increaseFontSize" title="放大字型">+</button>
+        </div>
+        <button class="detail-modal-close" @click="closeDetail()">✕</button>
+      </div>
+    </div>
      <div class="detail-modal-body">
        <div class="detail-variant-picker" v-if="detailVariant && detailVariant.label">
          <div class="detail-variant-label">服務時段／走線</div>
