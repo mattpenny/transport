@@ -23,7 +23,13 @@
 <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
 <style>
-  :root { --font-scale: 1; }
+  :root {
+    --font-scale: 1; --modal-font-scale: 1;
+    /* APK 全螢幕時由 Java 注入（見 android/）：狀態列與導航列高度，
+       瀏覽器則維持 0px，改由 env(safe-area-inset-*) 負責。 */
+    --status-inset: 0px;
+    --nav-inset: 0px;
+  }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
   html, body {
     margin: 0; padding: 0; height: 100%; overflow: hidden;
@@ -51,7 +57,7 @@
     flex-shrink: 0; display: flex; align-items: center;
     justify-content: space-between; gap: 12px;
     min-width: 0; min-height: 0;
-    padding-top: max(10px, env(safe-area-inset-top));
+    padding-top: max(10px, env(safe-area-inset-top), var(--status-inset));
   }
   header.app-header h1 {
     margin: 0; font-size: calc(17px * var(--font-scale)); white-space: nowrap;
@@ -91,7 +97,7 @@
   .font-btn:active { transform: scale(0.95); }
 
   @media (max-width: 600px) {
-    header.app-header { padding: 8px 12px; padding-top: max(8px, env(safe-area-inset-top)); }
+    header.app-header { padding: 8px 12px; padding-top: max(8px, env(safe-area-inset-top), var(--status-inset)); }
     header.app-header h1 { font-size: calc(15px * var(--font-scale)); }
     .header-logo-badge { width: 30px; height: 30px; }
     .header-logo { width: 21px; height: 21px; }
@@ -195,16 +201,13 @@
       padding: 8px 10px; flex-shrink: 0;
       font-size: calc(12.5px * var(--font-scale));
     }
-    .row .gps-btn {
-      width: 34px; height: 34px; padding: 0; flex-shrink: 0;
-      display: inline-flex; align-items: center; justify-content: center;
-    }
-    .row .gps-btn .gps-btn-text { display: none; }
-    .row .gps-btn .gps-btn-icon { display: block; }
     .row.focused label { font-size: calc(15px * var(--font-scale)); min-width: 0; }
     .row.focused input[type="text"] { padding: 12px 10px; }
     .row.focused .search-btn { padding: 12px 12px; font-size: calc(13.5px * var(--font-scale)); }
-    .row.focused .gps-btn { width: 42px; height: auto; padding: 12px 0; }
+    /* 「詳請」與「查詢」同一行、同一尺寸感。側欄只有 340px，
+       兩個按鈕都必須緊湊，否則輸入框會被壓到只剩一百多 px。 */
+    .row .detail-btn { padding: 8px 10px; font-size: calc(12.5px * var(--font-scale)); }
+    .row.focused .detail-btn { padding: 12px 12px; font-size: calc(13.5px * var(--font-scale)); }
   }
   input[type="text"]:focus { outline: 2px solid #1a3d7c; border-color: #1a3d7c; }
 
@@ -225,8 +228,7 @@
     box-shadow: 0 0 0 4px rgba(26,61,124,0.10);
     font-weight: 600;
   }
-  .row.focused .search-btn,
-  .row.focused .gps-btn { padding: 13px 18px; font-size: calc(15px * var(--font-scale)); border-radius: 10px; }
+  .row.focused .search-btn { padding: 13px 18px; font-size: calc(15px * var(--font-scale)); border-radius: 10px; }
 
   /* 收合必須延遲到「指標真的離開整個搜尋列」之後。
      否則：使用者焦點在輸入框時按下「查詢」→ input blur → .focused 移除 →
@@ -289,21 +291,6 @@
       font-size: calc(12.5px * var(--font-scale));
     }
 
-    /* 附近路線在桌機縮成純圖示方塊，把寬度讓給輸入框 */
-    .row .gps-btn,
-    .row.landing .gps-btn,
-    .row.focused .gps-btn {
-      flex-shrink: 0; margin-left: 0;
-      width: 36px; height: 36px; padding: 0; border-radius: 8px;
-      display: inline-flex; align-items: center; justify-content: center;
-    }
-    .row .gps-btn .gps-btn-text,
-    .row.landing .gps-btn .gps-btn-text,
-    .row.focused .gps-btn .gps-btn-text { display: none; }
-    .row .gps-btn .gps-btn-icon,
-    .row.landing .gps-btn .gps-btn-icon,
-    .row.focused .gps-btn .gps-btn-icon { display: block; }
-
     /* 點進輸入框要「即時放大」（使用者原始需求），桌機也要保留。
        放在這個區塊的最後，才會蓋掉上面為.landing 所做的壓縮。
        高度/字級放大但寬度仍靠 flex:1 1 auto 自動撐滿，所以不會再塌掉。 */
@@ -322,7 +309,6 @@
       padding: 13px 10px; border-radius: 10px;
       font-size: calc(13px * var(--font-scale));
     }
-    .row.focused .gps-btn { width: 46px; height: 46px; border-radius: 10px; }
   }
 
   /* === COMPANY BUTTONS === */
@@ -555,8 +541,7 @@
     .row.focused { flex-wrap: wrap; }
     .row.focused label { font-size: calc(19px * var(--font-scale)); min-width: 88px; }
     .row.focused input[type="text"] { font-size: max(16px, calc(18px * var(--font-scale))); padding: 12px 12px; }
-    .row.focused .search-btn,
-    .row.focused .gps-btn { padding: 12px 14px; font-size: calc(14px * var(--font-scale)); }
+    .row.focused .search-btn { padding: 12px 14px; font-size: calc(14px * var(--font-scale)); }
 
     .row.landing label { font-size: calc(19px * var(--font-scale)); min-width: 88px; }
     .mode-section-title { font-size: calc(19px * var(--font-scale)); }
@@ -566,13 +551,10 @@
     .other-modes { margin: 12px 0 10px; }
   }
 
-  /* === 平板 / 窄視窗（601–900px）：四個元素仍然同一行 ===
+  /* === 平板 / 窄視窗（601–900px）：標籤 + 輸入框 + 查詢 同一行 ===
      這個區間版面已切成單欄，側欄寬度 = 視窗寬 - 24px（最多 ~876px），
-     空間其實非常充裕。但 .row 沿用基礎規則的 flex-wrap: wrap，
-     而「附近路線」帶著文字標籤（~86px），在 600~900px 就會被推到第二行
-     —— 使用者回報的截圖（視窗 ~610px）就是這個情況。
-     這裡把 wrap 關掉、保留文字標籤，全部擠在同一行；輸入框吃掉剩餘寬度。
-     手機（≤600px）才讓它換行，見下方區塊。 */
+     空間非常充裕，所以關掉 wrap，讓輸入框吃掉剩餘寬度。
+     手機（≤600px）才讓標籤換行，見下方區塊。 */
   @media (min-width: 601px) and (max-width: 900px) {
     .row,
     .row.landing,
@@ -590,101 +572,38 @@
     .row .search-btn,
     .row.landing .search-btn,
     .row.focused .search-btn { flex-shrink: 0; }
-    /* 附近路線保留文字標籤（此區間寬度足夠），不要只留圖示 */
-    .row .gps-btn,
-    .row.landing .gps-btn,
-    .row.focused .gps-btn {
-      flex-shrink: 0; margin-left: 0; width: auto; height: auto;
-    }
-    .row .gps-btn .gps-btn-text,
-    .row.landing .gps-btn .gps-btn-text,
-    .row.focused .gps-btn .gps-btn-text { display: inline; }
-    .row .gps-btn .gps-btn-icon,
-    .row.landing .gps-btn .gps-btn-icon,
-    .row.focused .gps-btn .gps-btn-icon { display: none; }
   }
 
-  /* === GPS NEARBY SEARCH === */
-  .gps-btn {
-    margin-left: 8px; flex-shrink: 0;
-    padding: 9px 14px; border-radius: 8px;
-    border: 1px solid #1a3d7c; background: #fff; color: #1a3d7c;
-    font-size: calc(14px * var(--font-scale)); font-weight: 600;
-    cursor: pointer; white-space: nowrap;
-  }
-  .gps-btn:hover:not(:disabled) { background: #eef3fb; }
-  .gps-btn:disabled { opacity: 0.6; cursor: default; }
-  /* 桌機版把「附近路線」縮成圖示（見上方 media query），手機版維持文字 */
-  .gps-btn .gps-btn-icon { display: none; }
-  .gps-btn .gps-btn-icon svg { width: 18px; height: 18px; display: block; }
-  .gps-btn .gps-btn-text { display: inline; }
+  /* === 手機（≤600px）：標籤獨佔一行，輸入框與「查詢」同一行 ===
+     「附近路線」按鈕移除後只剩三個元素，其實 320px 也擠得下，但讓標籤獨佔
+     一行可把寬度全部留給輸入框（320px 時輸入框仍有 ~126px），
+     而且遇到使用者把字級調大（--font-scale 最大 1.6）時不會被迫換行。 */
+  @media (max-width: 600px) {
+    .row,
+    .row.landing,
+    .row.focused { flex-wrap: wrap; gap: 8px; }
 
-  /* 桌機：側欄只留一個可點的提示列，真正的清單在右側主面板彈出 */
-  .gps-chip {
-    display: flex; align-items: center; gap: 8px;
-    margin: 10px 0 12px; padding: 10px 12px;
-    border: 1px solid #1a3d7c; border-radius: 10px;
-    background: #eef3fb; cursor: pointer;
-    flex-shrink: 0;                 /* 側欄是 column flex，不加會被壓扁 */
-    transition: background 0.15s;
-  }
-  .gps-chip:hover { background: #e2ebf9; }
-  .gps-chip .gps-chip-title {
-    font-weight: 700; color: #1a3d7c;
-    font-size: calc(13.5px * var(--font-scale)); flex-shrink: 0;
-  }
-  .gps-chip .gps-chip-sub {
-    flex: 1 1 auto; min-width: 0; color: #5a6a85;
-    font-size: calc(12px * var(--font-scale));
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  .gps-chip .gps-chip-open {
-    flex-shrink: 0; color: #1a3d7c; font-weight: 700;
-    font-size: calc(12.5px * var(--font-scale));
-  }
-  .gps-chip .gps-clear {
-    flex-shrink: 0; width: 24px; height: 24px; border-radius: 6px;
-    border: none; background: rgba(26,61,124,0.12); color: #1a3d7c;
-    font-size: 13px; cursor: pointer; line-height: 1;
-  }
-  .gps-chip .gps-clear:hover { background: rgba(26,61,124,0.22); }
+    /* 標籤獨佔一行 → 輸入框與「查詢」自動換到第二行 */
+    .row label,
+    .row.landing label,
+    .row.focused label {
+      flex: 0 0 100%; width: 100%; min-width: 0;
+    }
 
-  /* 桌機版彈窗：覆蓋在右側地圖面板上（手機版用 .gps-overlay，兩者互斥）。
-     用 Teleport 掛到 body，位置由 JS 量測右側面板的矩形後以 inline style 指定
-     （gpsPopupStyle）。這樣做是因為若留在 .map-wrap 內部，會受到祖先
-     overflow:hidden / 圓角裁切，而且主面板是 flex item，彈窗無法真正覆蓋整個右側區域。 */
-  .gps-modal { display: none; }
-  @media (min-width: 901px) {
-    .gps-modal {
-      display: flex; position: fixed;
-      z-index: 1200;
-      background: rgba(23,32,48,0.42);
-      align-items: center; justify-content: center;
-      padding: 20px;
-      border-radius: 12px;
+    .row input[type="text"],
+    .row.landing input[type="text"],
+    .row.focused input[type="text"] {
+      /* flex-basis 必須是 0（不是 auto）。原因：flex 的換行判斷發生在「收縮」之前，
+         若 basis 是 auto，輸入框的內在寬度（size 預設 20 字元）會先獨佔第二行，
+         判定後面的按鈕放不下 → 被擠到下一行。
+         basis 0 令假想主尺寸只剩 min-width，兩者才判定得進同一行，
+         再由 flex-grow 把剩餘寬度補回輸入框。
+         注意不可寫成 `width: 0`（那才是先前把輸入框壓成 32px 的元凶）。 */
+      flex: 1 1 0px; width: auto; min-width: 90px;
     }
-    .gps-modal-sheet {
-      width: 100%; max-width: 520px;
-      max-height: 100%;
-      background: #fff; border-radius: 14px;
-      overflow: hidden; display: flex; flex-direction: column;
-      box-shadow: 0 12px 40px rgba(0,0,0,0.3);
-    }
-    .gps-modal-head {
-      display: flex; align-items: center; gap: 10px;
-      padding: 12px 16px; background: #1a3d7c; color: #fff; flex-shrink: 0;
-    }
-    .gps-modal-titles { flex: 1 1 auto; min-width: 0; }
-    .gps-modal-title { font-size: calc(15px * var(--font-scale)); font-weight: 700; }
-    .gps-modal-sub { font-size: calc(12px * var(--font-scale)); opacity: 0.85; margin-top: 2px; }
-    .gps-modal-close {
-      flex-shrink: 0; width: 32px; height: 32px; border-radius: 8px;
-      border: none; background: rgba(255,255,255,0.18); color: #fff;
-      font-size: 16px; cursor: pointer; line-height: 1;
-    }
-    .gps-modal-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
-    .gps-modal-body .gps-list { max-height: none; }
   }
+
+  /* === 目的地搜尋結果 === */
   .gps-error {
     margin: 8px 0; padding: 9px 12px; border-radius: 8px;
     background: #fdecea; color: #b3261e;
@@ -696,8 +615,8 @@
     /* 側欄是 column flex 容器（.panel 的 display:flex; flex-direction:column），
        所以每一個直接子元素都是 flex item 且預設 flex-shrink:1。
        沒有這一行的話，面板會在側欄變矮時被壓成 2~3px，
-       但它的內容（.gps-list 219px）仍然照原尺寸排版並溢出，
-       被 .panel 的 overflow:hidden 切掉 —— 結果就是「看得到標題、看不到任何路線」。
+       但它的內容仍然照原尺寸排版並溢出，被 .panel 的 overflow:hidden 切掉
+       —— 結果就是「看得到標題、看不到任何車站」。
        專案裡同類的坑在別處也用 flex-shrink: 0 解決過。 */
     flex-shrink: 0;
   }
@@ -712,41 +631,110 @@
     border: none; background: rgba(255,255,255,0.18); color: #fff;
     font-size: 14px; cursor: pointer; line-height: 1;
   }
-  .gps-list { list-style: none; margin: 0; padding: 0; max-height: 340px; overflow-y: auto; }
-  .gps-list li {
-    display: flex; align-items: center; gap: 10px;
-    padding: 10px 12px; cursor: pointer;
-    border-bottom: 1px solid #e6ebf3; flex-shrink: 0;
+
+  /* === 目的地結果：車站 + 路線籤 ===
+     每列是一個車站（名稱＋距離），下面列出「能到該目的地」的路線。
+     小巴（GMB）在本頁沒有路線清單可開，所以做成不可點、且外觀明顯不同，
+     否則使用者會以為點下去就能看到小巴班次。 */
+  .dest-list { max-height: 340px; overflow-y: auto; }
+  .dest-stop {
+    padding: 9px 12px; border-bottom: 1px solid #e6ebf3; flex-shrink: 0;
   }
-  .gps-list li:last-child { border-bottom: none; }
-  .gps-list li:hover { background: #eef3fb; }
-  .gps-list .gps-route {
-    flex-shrink: 0; min-width: 52px; text-align: center;
-    padding: 4px 8px; border-radius: 6px;
-    background: #1a3d7c; color: #fff;
-    font-size: calc(14px * var(--font-scale)); font-weight: 700;
-  }
-  .gps-list .gps-info { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-  .gps-list .gps-dir {
-    font-size: calc(13px * var(--font-scale)); color: #16233a;
+  .dest-stop:last-child { border-bottom: none; }
+  .dest-stop-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+  .dest-stop-name {
+    flex: 1 1 auto; min-width: 0; font-weight: 700; color: #16233a;
+    font-size: calc(13.5px * var(--font-scale));
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .gps-list .gps-stop {
-    font-size: calc(11.5px * var(--font-scale)); color: #5a6a85;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  .dest-stop-dist {
+    flex-shrink: 0; color: #1a3d7c; font-weight: 700;
+    font-size: calc(12px * var(--font-scale));
   }
-  .gps-list .gps-dist { flex-shrink: 0; font-size: calc(12px * var(--font-scale)); color: #1a3d7c; font-weight: 600; }
-  .place-group + .place-group { border-top: 1px solid #d5dbe6; }
-  .place-group-title {
-    padding: 6px 12px; background: #e8eef8; color: #1a3d7c;
-    font-size: calc(12.5px * var(--font-scale)); font-weight: 700;
-    position: sticky; top: 0; z-index: 1;
+  .dest-stop-routes { display: flex; flex-wrap: wrap; gap: 6px; }
+  .dest-route-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 8px; border-radius: 6px; cursor: pointer;
+    border: 1px solid #1a3d7c; background: #1a3d7c; color: #fff;
+    font-size: calc(12px * var(--font-scale)); font-weight: 700; line-height: 1.25;
   }
+  .dest-route-chip:hover:not(:disabled) { background: #142f61; border-color: #142f61; }
+  .dest-route-chip .chip-co {
+    font-weight: 500; opacity: 0.85;
+    font-size: calc(10.5px * var(--font-scale));
+  }
+  /* 小巴：虛線外框 + 淺底，一眼看出與巴士線不同 */
+  .dest-route-chip.is-gmb {
+    background: #fff; color: #1a3d7c;
+    border: 1px dashed #1a3d7c; cursor: default;
+  }
+  .dest-route-chip.is-gmb:disabled { opacity: 1; }
+  .dest-route-chip.is-gmb .chip-co { color: #5a6a85; opacity: 1; }
+  .dest-gmb-note {
+    padding: 7px 12px; background: #e8eef8; color: #5a6a85;
+    font-size: calc(11.5px * var(--font-scale));
+    border-top: 1px solid #d5dbe6;
+  }
+  /* 路線籤上的票價：用細分隔線與路線號分開，免得被讀成路線號的一部分 */
+  .dest-route-chip .chip-fare {
+    padding-left: 6px; margin-left: 1px;
+    border-left: 1px solid rgba(255, 255, 255, 0.4);
+    font-weight: 600; font-size: calc(11px * var(--font-scale));
+  }
+  /* 小巴籤是白底，分隔線要改成深色才看得見 */
+  .dest-route-chip.is-gmb .chip-fare { border-left-color: rgba(26, 61, 124, 0.28); }
+
+  /* === 桌機：目的地結果改放右欄 ===
+     以前結果擠在 340px 側欄裡，車站名稍長就被 ellipsis 切掉。
+     現在與「路線詳細資料」同一區塊：佔滿原本地圖那一列，標題固定、清單自己捲。
+     手機版維持全螢幕 .gps-overlay（下方 .gps-panel{display:none} 會一併隱藏這裡）。 */
+  .place-panel { padding: 0; margin: 0; }
+  .place-panel .dest-list { flex: 1 1 auto; min-height: 0; max-height: none; overflow-y: auto; }
+  /* 只改桌機：手機的 .main-area 是 display:contents，若在此隱藏 .eta-box
+     會連手機的候車時間面板一起消失。 */
+  @media (min-width: 901px) {
+    .main-area.showing-place { grid-template-rows: minmax(0, 1fr); }
+    .main-area.showing-place > .map-wrap-desktop,
+    .main-area.showing-place > .eta-box { display: none; }
+
+    /* 右欄有 700px 以上可用，卡片不必再遷就 340px 側欄的尺寸，
+       所以桌機的字級與內距大約是原本的兩倍（手機彈出層維持原尺寸）。 */
+    /* 標題與副標題在 24px/16px 下會擠成兩行折行，所以在桌機把副標題
+       換到第二行（order + flex-basis:100%），關閉鈕留在第一行右側。 */
+    .place-panel .gps-head { padding: 16px 22px; gap: 6px 14px; flex-wrap: wrap; }
+    .place-panel .gps-head .gps-title {
+      order: 1; flex: 1 1 auto; min-width: 0;
+      font-size: calc(24px * var(--font-scale));
+    }
+    .place-panel .gps-head .gps-clear {
+      order: 2; width: 42px; height: 42px; font-size: 21px; border-radius: 10px;
+    }
+    .place-panel .gps-head .gps-sub {
+      order: 3; flex: 1 1 100%;
+      font-size: calc(16px * var(--font-scale));
+    }
+
+    .place-panel .dest-stop { padding: 18px 24px; }
+    .place-panel .dest-stop-head { gap: 14px; margin-bottom: 13px; }
+    .place-panel .dest-stop-name { font-size: calc(28px * var(--font-scale)); }
+    .place-panel .dest-stop-dist { font-size: calc(20px * var(--font-scale)); }
+
+    .place-panel .dest-stop-routes { gap: 11px; }
+    .place-panel .dest-route-chip {
+      padding: 10px 18px; border-radius: 10px; gap: 11px;
+      font-size: calc(22px * var(--font-scale));
+    }
+    .place-panel .dest-route-chip .chip-co { font-size: calc(18px * var(--font-scale)); }
+    .place-panel .dest-route-chip .chip-fare {
+      font-size: calc(19px * var(--font-scale)); padding-left: 12px;
+    }
+
+    .place-panel .dest-gmb-note { padding: 13px 24px; font-size: calc(17px * var(--font-scale)); }
+  }
+
   @media (max-width: 900px) {
     .row.landing { flex-wrap: wrap; }
-    .gps-btn { margin-left: 0; }
-    .gps-panel { display: none; }
-    .gps-chip { display: none; }   /* 手機版改用全螢幕 .gps-overlay */
+    .gps-panel { display: none; }   /* 手機版改用全螢幕 .gps-overlay */
   }
   .gps-overlay { display: none; }
   @media (max-width: 900px) {
@@ -757,7 +745,7 @@
       background: rgba(0,0,0,0.55);
       align-items: center; justify-content: center;
       padding: 20px;
-      padding-bottom: max(20px, env(safe-area-inset-bottom));
+      padding-bottom: max(20px, env(safe-area-inset-bottom), var(--nav-inset));
     }
     .gps-sheet {
       width: 100%; max-width: 480px;
@@ -777,7 +765,8 @@
       font-size: 18px; cursor: pointer;
     }
     .gps-sheet-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
-    .gps-sheet-body .gps-list { max-height: none; }
+    /* 彈出層內不限高，交給 .gps-sheet-body 捲動 */
+    .gps-sheet-body .dest-list { max-height: none; }
   }
 
   /* === MAP OVERLAY === */
@@ -790,7 +779,7 @@
       flex-direction: column;
       padding: 10px;
       padding-top: max(10px, env(safe-area-inset-top));
-      padding-bottom: max(10px, env(safe-area-inset-bottom));
+      padding-bottom: max(10px, env(safe-area-inset-bottom), var(--nav-inset));
     }
     .map-overlay-inner { flex: 1 1 auto; min-height: 0; background: white; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; }
     .map-overlay-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: #1a3d7c; color: white; flex-shrink: 0; gap: 10px; }
@@ -811,7 +800,7 @@
       background: rgba(0,0,0,0.55);
       align-items: center; justify-content: center;
       padding: 20px;
-      padding-bottom: max(20px, env(safe-area-inset-bottom));
+      padding-bottom: max(20px, env(safe-area-inset-bottom), var(--nav-inset));
     }
     .company-sheet { width: 100%; max-width: 380px; background: white; border-radius: 16px; overflow: hidden; }
     .company-sheet-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; background: #1a3d7c; color: white; }
@@ -827,6 +816,138 @@
 
   .searching-hint { color: #1a3d7c; font-size: calc(12px * var(--font-scale)); padding: 4px 0; display: flex; align-items: center; gap: 6px; }
   .searching-hint::before { content: ""; width: 10px; height: 10px; border: 2px solid #1a3d7c; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; }
+
+  /* === ROUTE DETAIL MODAL ===
+     與 gmb.html 的「詳請」彈窗是同一套樣式與同一個尺寸
+     （.detail-modal-box 最大 720px 寬、高度用 --modal-max-h），
+     唯一的差別是強調色跟隨本頁的藍色 #1a3d7c（GMB 頁是綠色 #0d5e3a）。
+     內容來源：routeFareList.min.json（收費、站序）＋ bus-detail.json（班次）。 */
+  .detail-btn {
+    padding: 8px 14px; border-radius: 6px;
+    background: #fff; color: #1a3d7c;
+    border: 1.5px solid #1a3d7c;
+    font-size: calc(13px * var(--font-scale)); font-weight: 700;
+    cursor: pointer; flex-shrink: 0; white-space: nowrap;
+  }
+  .detail-btn:hover { background: #eaf1ff; }
+  .detail-btn:active { transform: scale(0.97); }
+
+  .detail-modal {
+    position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+    z-index: 4000; display: flex; align-items: flex-start; justify-content: center;
+    background: rgba(0,0,0,0.5); padding: 20px;
+    padding-top: max(20px, env(safe-area-inset-top));
+    padding-bottom: max(20px, env(safe-area-inset-bottom), var(--nav-inset));
+    overflow-y: auto;
+  }
+  .detail-modal-box {
+    display: flex; flex-direction: column;
+    width: 100%; max-width: 720px;
+    /* dvh accounts for mobile browser chrome; fallback via JS-set --modal-max-h */
+    height: var(--modal-max-h, calc(100dvh - 40px));
+    max-height: 100dvh; margin: 0 auto;
+    border-radius: 12px; overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.28);
+    background: white;
+  }
+  .detail-modal-head {
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%; flex-shrink: 0; padding: 12px 16px;
+    background: white; border-radius: 12px 12px 0 0;
+    border-bottom: 1px solid #eef0f4;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .detail-modal-head .head-left { display: flex; align-items: center; gap: 10px; }
+  .detail-modal-head .head-right { display: flex; align-items: center; gap: 8px; }
+  .detail-font-controls {
+    display: flex; align-items: center; gap: 4px; flex-shrink: 0;
+  }
+  /* 尺寸與配色刻意跟 .detail-modal-close 完全一致（30×30、#f0f0f0、16px），
+     三個控制鈕排成一列才像同一組。全域有 * { box-sizing: border-box }，
+     所以這裡不用管 border 會不會把外框撐大。 */
+  .detail-font-btn {
+    width: 30px; height: 30px; border-radius: 6px;
+    border: none; background: #f0f0f0; color: #333;
+    font-size: 16px; font-weight: 700; line-height: 1; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .detail-font-btn:hover { background: #e4e4e4; }
+  .detail-font-btn:active { transform: scale(0.95); }
+  .detail-modal-title { font-size: calc(17px * var(--modal-font-scale)); font-weight: 700; color: #222; }
+  .detail-modal-close {
+    width: 30px; height: 30px; border-radius: 6px; border: none;
+    background: #f0f0f0; color: #333; font-size: 16px; cursor: pointer;
+  }
+  .detail-modal-body {
+    background: white; border-radius: 0 0 12px 12px;
+    flex: 1 1 auto; min-height: 0;
+    overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 16px;
+  }
+  .detail-variant-picker, .detail-direction-picker { margin-bottom: 12px; }
+  .detail-variant-label, .detail-direction-label {
+    font-size: calc(13px * var(--modal-font-scale)); color: #888; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;
+  }
+  .chip-row { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    padding: 5px 10px; border-radius: 8px;
+    border: 1px solid #dde; background: white; color: #333;
+    font-size: calc(14px * var(--modal-font-scale)); cursor: pointer;
+  }
+  .chip.active { background: #1a3d7c; color: white; border-color: #1a3d7c; }
+  .detail-card {
+    border: 1px solid #eef; border-radius: 10px; padding: 10px 12px;
+    margin: 12px 0; background: #fafbff; overflow: hidden;
+  }
+  .detail-card h3.card-title {
+    font-size: calc(16px * var(--modal-font-scale)); color: #222; margin: 0 0 4px 0;
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  }
+  .detail-card h3.card-title small { color: #666; font-weight: 500; font-size: calc(13px * var(--modal-font-scale)); }
+  /* Fare rows styled to match the sidebar's .fare-line */
+  .fare-table { display: flex; flex-direction: column; }
+  .fare-row {
+    display: flex; align-items: baseline; gap: 8px;
+    padding: 6px 0 8px;
+    border-bottom: 1px solid #f0f0f0;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+    font-size: calc(22px * var(--modal-font-scale));
+    line-height: 1.2;
+  }
+  .fare-row:last-child { border-bottom: none; margin-bottom: 0; }
+  .fare-row .fare-label { font-size: inherit; color: #888; font-weight: 700; }
+  .fare-row .fare-value { font-size: inherit; font-weight: 800; color: #e67e22; font-variant-numeric: tabular-nums; }
+  .hint-line { color: #999; font-size: calc(14px * var(--modal-font-scale)); font-style: italic; padding: 2px 0; }
+  .detail-card .fare-note { font-size: inherit; color: #888; font-weight: 600; margin-top: 8px; white-space: pre-line; line-height: 1.5; }
+  .flag-row { display: inline-flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+  .flag { font-size: calc(12px * var(--modal-font-scale)); padding: 2px 6px; border-radius: 6px; background: #eef; color: #333; border: 1px solid #dde; }
+  .detail-card table { width: 100%; border-collapse: collapse; font-size: calc(15px * var(--modal-font-scale)); }
+  .detail-card td { padding: 4px 0; vertical-align: top; }
+  .tt-row { display: flex; gap: 8px; border-bottom: 1px dashed #eee; }
+  .tt-row:last-child { border-bottom: none; }
+  .tt-day { color: #555; font-weight: 500; width: 120px; flex: 0 0 120px; }
+  .tt-time { color: #1a3d7c; font-weight: 700; }
+  .tt-headway { color: #888; margin-left: auto; font-size: calc(13px * var(--modal-font-scale)); }
+  /* 沿途車站：站序 + 站名。與 .tt-row 同一種排版，只是第一欄窄很多。 */
+  .st-row { display: flex; gap: 8px; border-bottom: 1px dashed #eee; }
+  .st-row:last-child { border-bottom: none; }
+  .st-idx { color: #999; flex: 0 0 34px; width: 34px; font-variant-numeric: tabular-nums; }
+  .st-name { color: #333; font-weight: 500; line-height: 1.5; word-break: break-word; }
+  /* 營辦商／資料來源：外觀與 .tt-row 相同，但用獨立類名。
+     兩者共用 .tt-row 的話，選取器（含測試）分不出「班次列」與「營辦商列」。 */
+  .op-row { display: flex; gap: 8px; border-bottom: 1px dashed #eee; }
+  .op-row:last-child { border-bottom: none; }
+  .op-label { color: #555; font-weight: 500; width: 120px; flex: 0 0 120px; }
+  .op-value { color: #1a3d7c; font-weight: 700; word-break: break-word; }
+  .detail-card .notice { padding: 8px 10px; border: 1px solid #eee; background: #fafafa; border-radius: 6px; }
+  .notice { color: #777; font-size: calc(13px * var(--modal-font-scale)); margin: 8px 0; line-height: 1.4; }
+  .tt-time, .tt-headway { white-space: normal; word-break: break-word; }
+
+  @media (max-width: 600px) {
+    .detail-modal { padding: 8px; padding-top: max(8px, env(safe-area-inset-top)); }
+    .detail-modal-box { max-width: 100%; height: var(--modal-max-h, calc(100dvh - 16px)); border-radius: 12px; }
+  }
 </style>
 </head>
 <body>
@@ -901,67 +1022,28 @@
            @mouseleave="onSearchRowPointerLeave">
         <label>巴士路線</label>
         <input type="text" v-model.trim="routeInput"
-               placeholder="巴士號碼或地點（如 旺角）"
+               placeholder="巴士號碼或目的地（如 旺角）"
                @focus="onSearchRowFocus"
                @blur="onSearchRowBlur"
                @keyup.enter="onSearch" />
         <button class="search-btn" @click="onSearch" :disabled="mobileSearching">
           {{ mobileSearching ? '搜尋中' : '查詢' }}
         </button>
-        <button class="gps-btn" @click="nearbySearch" :disabled="gpsLoading"
-                :title="'根據目前位置搜尋附近巴士路線'">
-          <span class="gps-btn-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                 stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z" />
-              <circle cx="12" cy="10" r="2.6" />
-            </svg>
-          </span>
-          <span class="gps-btn-text">{{ gpsLoading ? '定位中' : '附近路線' }}</span>
+        <!-- 選好方向後才出現，與 gmb.html 的「詳請」同一個位置與行為 -->
+        <button class="detail-btn" v-if="routeKey"
+                @click="openDetail()" title="查看路線詳細資料">
+          詳請
         </button>
       </div>
 
       <div v-if="mobileSearching" class="searching-hint">正在搜尋路線…</div>
-      <div v-if="placeLoading" class="searching-hint">正在搜尋地點…</div>
+      <div v-if="placeLoading" class="searching-hint">正在定位並搜尋車站…</div>
 
-      <div v-if="gpsError" class="gps-error">{{ gpsError }}</div>
-
-      <div v-if="placeResults && placeRouteRows.length" class="gps-panel">
-        <div class="gps-head">
-          <span class="gps-title">「{{ placeQuery }}」附近路線</span>
-          <span class="gps-sub">{{ placeResults.matchedStops }} 個車站 · {{ placeRouteRows.length }} 條</span>
-          <button class="gps-clear" @click="clearPlace" title="清除地點搜尋結果">✕</button>
-        </div>
-        <div v-for="g in placeGroups" :key="'pg-' + g.id" class="place-group">
-          <div class="place-group-title">{{ g.label }}</div>
-          <ul class="gps-list">
-            <li v-for="item in g.rows" :key="'p-' + g.id + item.routeId + item.bound"
-                @click="placePickRoute(item)">
-              <span class="gps-route">{{ item.route }}</span>
-              <span class="gps-info">
-                <span class="gps-dir">{{ item.directionLabel }}</span>
-                <span class="gps-stop">{{ item.stopName }}</span>
-              </span>
-              <span class="gps-dist">{{ item.stopCount }} 站</span>
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      <!-- 桌機：附近路線結果改在右側主面板彈出，側欄只留一個提示列 -->
-      <div v-if="gpsResults && gpsRouteRows.length" class="gps-chip" @click="gpsReopen">
-        <span class="gps-chip-title">附近路線</span>
-        <span class="gps-chip-sub">
-          {{ gpsResults.coarse ? '最近的車站' : '半徑 ' + formatDistance(gpsResults.radius) + ' 內' }}
-          · {{ gpsRouteRows.length }} 條
-        </span>
-        <span class="gps-chip-open">查看</span>
-        <button class="gps-clear" @click.stop="clearGps" title="清除附近路線結果">✕</button>
-      </div>
+      <div v-if="placeError" class="gps-error">{{ placeError }}</div>
 
       <div v-if="!searched" class="other-modes">
   <div class="mode-section-title">可選擇其他交通工具</div>
-  <a href="gmb.html" class="mode-link" @click="clearGps">
+  <a href="gmb.html" class="mode-link" @click="clearPlace">
     <img class="mode-icon-img" src="gmb.png" alt="專線小巴" />
     <span class="mode-text">
       <span class="mode-title">專線小巴</span>
@@ -969,7 +1051,7 @@
     </span>
     <span class="mode-arrow">→</span>
   </a>
-  <a href="rmb.html" class="mode-link" @click="clearGps">
+  <a href="rmb.html" class="mode-link" @click="clearPlace">
     <img class="mode-icon-img" src="rmb.png" alt="紅色小巴" />
     <span class="mode-text">
       <span class="mode-title">紅色小巴</span>
@@ -1016,6 +1098,7 @@
           <li v-for="s in stops" :key="s.id"
               :data-stop-id="s.id"
               :class="{ active: selectedStop && selectedStop.id === s.id }"
+              :title="s.nameFull || s.name"
               @click="onStopClick(s)">
             <span class="stop-name">{{ s.name }}</span>
             <button class="stop-map-btn" @click.stop="onStopMapClick(s)">
@@ -1032,7 +1115,40 @@
       <p v-if="error" class="error">{{ error }}</p>
     </aside>
 
-    <main class="main-area">
+    <main class="main-area" :class="{ 'showing-place': placeResults && placeStops.length }">
+      <!-- 目的地結果（桌機）：佔用右欄，和「路線詳細資料」同一位置。
+           手機版由 .gps-panel{display:none} 隱藏，改用全螢幕 .gps-overlay。 -->
+      <div v-if="placeResults && placeStops.length" class="panel gps-panel place-panel">
+        <div class="gps-head">
+          <span class="gps-title">往「{{ placeQuery }}」的最近車站</span>
+          <span class="gps-sub">{{ destSubtitle }}</span>
+          <button class="gps-clear" @click="clearPlace" title="清除搜尋結果">✕</button>
+        </div>
+        <div class="dest-list">
+          <div v-for="s in placeStops" :key="'dsp-' + s.id" class="dest-stop">
+            <div class="dest-stop-head">
+              <span class="dest-stop-name" :title="s.nameFull || s.name">{{ s.name }}</span>
+              <span class="dest-stop-dist">{{ s.distText }}</span>
+            </div>
+            <div class="dest-stop-routes">
+              <button v-for="r in s.routes" :key="'dsp-' + s.id + r.key"
+                      class="dest-route-chip"
+                      :class="{ 'is-gmb': r.isGmb }"
+                      :disabled="r.isGmb"
+                      :title="(r.isGmb ? '專線小巴路線，請到「專線小巴」頁查看' : '開啟 ' + r.route) + (r.fareText ? '（' + r.fareText + '）' : '')"
+                      @click="placePickRoute(r)">
+                <span class="chip-route">{{ r.route }}</span>
+                <span class="chip-co">{{ r.companyLabel }}</span>
+                <span v-if="r.fareText" class="chip-fare">{{ r.fareText }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div v-if="placeHasGmb" class="dest-gmb-note">
+          標示「專線小巴」的路線請到「專線小巴」頁查看
+        </div>
+      </div>
+
       <div class="panel map-wrap map-wrap-desktop">
         <div id="map-desktop"></div>
         <div class="map-zoom-controls">
@@ -1143,99 +1259,159 @@
   </Teleport>
 
   <Teleport to="body">
-    <div v-if="placeOpen && placeRouteRows.length" class="gps-overlay" @click.self="closePlace">
+    <div v-if="placeOpen && placeStops.length" class="gps-overlay" @click.self="closePlace">
       <div class="gps-sheet">
         <div class="gps-sheet-header">
           <div>
-            <div class="title">「{{ placeQuery }}」附近路線</div>
-            <div class="sub">{{ placeResults.matchedStops }} 個車站 · {{ placeRouteRows.length }} 條</div>
+            <div class="title">往「{{ placeQuery }}」的最近車站</div>
+            <div class="sub">{{ destSubtitle }}</div>
           </div>
           <button class="close-btn" @click="closePlace">✕</button>
         </div>
         <div class="gps-sheet-body">
-          <div v-for="g in placeGroups" :key="'pmg-' + g.id" class="place-group">
-            <div class="place-group-title">{{ g.label }}</div>
-            <ul class="gps-list">
-              <li v-for="item in g.rows" :key="'pm-' + g.id + item.routeId + item.bound"
-                  @click="placePickRoute(item)">
-                <span class="gps-route">{{ item.route }}</span>
-                <span class="gps-info">
-                  <span class="gps-dir">{{ item.directionLabel }}</span>
-                  <span class="gps-stop">{{ item.stopName }}</span>
-                </span>
-                <span class="gps-dist">{{ item.stopCount }} 站</span>
-              </li>
-            </ul>
+          <div class="dest-list">
+            <div v-for="s in placeStops" :key="'dsm-' + s.id" class="dest-stop">
+              <div class="dest-stop-head">
+                <span class="dest-stop-name" :title="s.nameFull || s.name">{{ s.name }}</span>
+                <span class="dest-stop-dist">{{ s.distText }}</span>
+              </div>
+              <div class="dest-stop-routes">
+                <button v-for="r in s.routes" :key="'dsm-' + s.id + r.key"
+                        class="dest-route-chip"
+                        :class="{ 'is-gmb': r.isGmb }"
+                        :disabled="r.isGmb"
+                        :title="(r.isGmb ? '專線小巴路線，請到「專線小巴」頁查看' : '開啟 ' + r.route) + (r.fareText ? '（' + r.fareText + '）' : '')"
+                        @click="placePickRoute(r)">
+                  <span class="chip-route">{{ r.route }}</span>
+                  <span class="chip-co">{{ r.companyLabel }}</span>
+                  <span v-if="r.fareText" class="chip-fare">{{ r.fareText }}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div v-if="placeHasGmb" class="dest-gmb-note">
+            標示「專線小巴」的路線請到「專線小巴」頁查看
           </div>
         </div>
       </div>
     </div>
   </Teleport>
 
-  <Teleport to="body">
-    <div v-if="gpsResults && gpsRouteRows.length && gpsPopupOpen"
-         class="gps-modal" :style="gpsPopupStyle" @click.self="gpsPopupOpen = false">
-      <div class="gps-modal-sheet">
-        <div class="gps-modal-head">
-          <div class="gps-modal-titles">
-            <div class="gps-modal-title">附近路線</div>
-            <div class="gps-modal-sub">
-              {{ gpsResults.coarse ? '最近的車站' : '半徑 ' + formatDistance(gpsResults.radius) + ' 內' }}
-              · {{ gpsRouteRows.length }} 條
-            </div>
-          </div>
-          <button class="gps-modal-close" @click="gpsPopupOpen = false" aria-label="關閉">✕</button>
+  <!-- ===== 路線詳細資料彈窗 =====
+       與 gmb.html 的「詳請」同一套樣式與同一個尺寸（720px 寬、--modal-max-h 高）。
+       由搜尋列的「詳請」按鈕開啟。 -->
+  <div class="detail-modal" v-if="detailOpen && detailRoute" @click.self="closeDetail()">
+    <div class="detail-modal-box">
+      <div class="detail-modal-head">
+        <div class="head-left">
+          <span class="detail-modal-title">路線詳細資料</span>
         </div>
-        <div class="gps-modal-body">
-          <ul class="gps-list">
-            <li v-for="item in gpsRouteRows" :key="'dm-' + item.routeId + item.company"
-                @click="gpsPickRoute(item)">
-              <span class="gps-route">{{ item.route }}</span>
-              <span class="gps-info">
-                <span class="gps-dir">{{ item.directionLabel }}</span>
-                <span class="gps-stop">{{ item.companyLabel }} · {{ item.stopName }}</span>
-              </span>
-              <span class="gps-dist">{{ item.distText }}</span>
-            </li>
-          </ul>
+        <div class="head-right">
+          <div class="detail-font-controls">
+            <button class="detail-font-btn" @click="decreaseDetailFontSize" title="縮小字型">−</button>
+            <button class="detail-font-btn" @click="increaseDetailFontSize" title="放大字型">+</button>
+          </div>
+          <button class="detail-modal-close" @click="closeDetail()">✕</button>
         </div>
       </div>
-    </div>
-  </Teleport>
+      <div class="detail-modal-body">
 
-  <Teleport to="body">
-    <div v-if="gpsOpen && gpsRouteRows.length" class="gps-overlay" @click.self="closeGps">
-      <div class="gps-sheet">
-        <div class="gps-sheet-header">
-          <div>
-            <div class="title">附近路線</div>
-            <div class="sub">
-              {{ gpsResults.coarse ? '最近的車站' : '半徑 ' + formatDistance(gpsResults.radius) + ' 內' }}
-              · {{ gpsRouteRows.length }} 條
+        <!-- 服務日（對應 GMB 的「服務時段／走線」chips） -->
+        <div class="detail-variant-picker" v-if="detailDayKeys.length > 1">
+          <div class="detail-variant-label">服務日</div>
+          <div class="chip-row">
+            <button v-for="(d, i) in detailDayKeys" :key="d.key"
+                    class="chip" :class="{ active: detailDayKey === d.key }"
+                    @click="detailDayIndex = i">
+              {{ d.label }}
+            </button>
+          </div>
+        </div>
+
+        <!-- 行車方向（對應 GMB 的「行車方向」chips） -->
+        <div class="detail-direction-picker" v-if="matchedRoutes.length > 1">
+          <div class="detail-direction-label">行車方向</div>
+          <div class="chip-row">
+            <button v-for="r in matchedRoutes" :key="r.key"
+                    class="chip" :class="{ active: routeKey === r.key }"
+                    @click="pickDetailDirection(r)">
+              {{ r.orig_tc }} → {{ r.dest_tc }}
+            </button>
+          </div>
+        </div>
+
+        <div class="detail-card card-fare">
+          <h3 class="card-title">
+            💰 收費表
+            <small>{{ detailCompanyName }} · {{ detailDirectionLabel }}</small>
+          </h3>
+          <div class="fare-table" v-if="detailFareRows.length">
+            <div v-for="(f, i) in detailFareRows" :key="'f' + i" class="fare-row">
+              <span class="fare-label">{{ f.label }}</span>
+              <span class="fare-value">{{ formatDetailFare(f.amount) }}</span>
             </div>
           </div>
-          <button class="close-btn" @click="closeGps">✕</button>
+          <div class="hint-line" v-else>此路線暫無收費資料</div>
+          <div class="fare-note" v-if="detailFareNote">{{ detailFareNote }}</div>
+          <div class="flag-row" v-if="detailHasHolidayFare">
+            <span class="flag">{{ detailFareSet && detailFareSet.holiday ? '今日為公眾假期，顯示假日收費' : '此路線設有假日收費' }}</span>
+          </div>
         </div>
-        <div class="gps-sheet-body">
-          <ul class="gps-list">
-            <li v-for="item in gpsRouteRows" :key="'m-' + item.routeId + item.company"
-                @click="gpsPickRoute(item)">
-              <span class="gps-route">{{ item.route }}</span>
-              <span class="gps-info">
-                <span class="gps-dir">{{ item.directionLabel }}</span>
-                <span class="gps-stop">{{ item.companyLabel }} · {{ item.stopName }}</span>
-              </span>
-              <span class="gps-dist">{{ item.distText }}</span>
-            </li>
-          </ul>
+
+        <div class="detail-card card-timetable">
+          <h3 class="card-title">
+            🕒 服務時間及班距
+            <small v-if="detailDayKeys.length === 1">{{ detailDayKeys[0].label }}</small>
+          </h3>
+          <table v-if="detailTimetable.length">
+            <tbody>
+              <tr v-for="(t, i) in detailTimetable" :key="'t' + i" class="tt-row">
+                <td class="tt-time">{{ t.time }}</td>
+                <td class="tt-headway" v-if="t.headway">{{ t.headway }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="hint-line" v-else>{{ detailTimetableHint }}</div>
         </div>
+
+        <div class="detail-card card-stops" v-if="detailStops.length">
+          <h3 class="card-title">
+            🗺️ 沿途車站
+            <small>共 {{ detailStops.length }} 站，依行車次序</small>
+          </h3>
+          <table>
+            <tbody>
+              <tr v-for="s in detailStops" :key="'s' + s.idx" class="st-row">
+                <td class="st-idx">{{ s.idx + 1 }}</td>
+                <td class="st-name">{{ s.name }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="detail-card card-operator" v-if="detailOperator.length">
+          <h3 class="card-title">ℹ️ 營辦商／資料來源</h3>
+          <table>
+            <tbody>
+              <tr v-for="(o, i) in detailOperator" :key="'o' + i" class="op-row">
+                <td class="op-label">{{ o.label }}</td>
+                <td class="op-value">{{ o.value }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="notice">
+            收費及班次資料來自運輸署開放數據（DATA.GOV.HK「公共交通工具的路線及收費」，每兩週更新）。
+            資料來源：運輸署，香港特別行政區政府。實際收費及班次以營辦商公布為準。
+          </div>
+        </div>
+
       </div>
     </div>
-  </Teleport>
+  </div>
 </div>
 
 <script>
-const { createApp, ref, computed, onMounted, onUnmounted, nextTick } = Vue;
+const { createApp, ref, computed, watch, onMounted, onUnmounted, nextTick } = Vue;
 
 /* ==================== 本機檔案開啟防護 ====================
    以 file:// 直接開啟時，瀏覽器基於安全理由會封鎖對本機
@@ -1354,7 +1530,7 @@ async function fetchKmbStop(stopId) {
   const j = await getJSON(`${KMB_BASE}/stop/${stopId}`);
   const s = j.data, lat = Number(s.lat), lng = Number(s.long);
   if (!isFinite(lat) || !isFinite(lng)) return null;
-  return { id: s.stop, name: s.name_tc, lat, lng };
+  return { id: s.stop, name: cleanStopName(s.name_tc), nameFull: s.name_tc, lat, lng };
 }
 async function fetchKmbEta(stopId, route, serviceType = "1") {
   const j = await getJSON(`${KMB_BASE}/eta/${stopId}/${route}/${serviceType}`);
@@ -1384,7 +1560,7 @@ async function fetchCitybusStop(stopId) {
   const j = await getJSON(`${CTB_BASE}/stop/${stopId}`);
   const s = j.data, lat = Number(s.lat), lng = Number(s.long);
   if (!isFinite(lat) || !isFinite(lng)) return null;
-  return { id: s.stop, name: s.name_tc, lat, lng };
+  return { id: s.stop, name: cleanStopName(s.name_tc), nameFull: s.name_tc, lat, lng };
 }
 async function fetchCitybusEta(stopId, route) {
   const j = await getJSON(`${CTB_BASE}/eta/CTB/${stopId}/${route}`);
@@ -1412,7 +1588,8 @@ async function fetchNlbRoutes() {
 async function fetchNlbRouteStops(routeId) {
   const j = await getJSON(`${NLB_BASE}/stop.php?action=list&routeId=${encodeURIComponent(routeId)}`);
   return (j.stops || []).map((s, i) => ({
-    seq: i + 1, id: String(s.stopId), name: s.stopName_c,
+    seq: i + 1, id: String(s.stopId),
+    name: cleanStopName(s.stopName_c), nameFull: s.stopName_c,
     lat: Number(s.latitude), lng: Number(s.longitude),
   }));
 }
@@ -1455,6 +1632,33 @@ function loadFareCache() {
 function saveFareCache(data) {
   try { localStorage.setItem(FARE_CACHE_KEY, JSON.stringify({ version: FARE_CACHE_VERSION, timestamp: Date.now(), data })); } catch (e) {}
 }
+/* 票價檔的 bound（行車方向）是「逐公司」的：同一筆可以是 { kmb: "O", ctb: "I" }。
+   索引只存一個字串，因為 localStorage 配額已經見底（見 lookupFareKey 的註解）。
+   各公司一致時就存那個值（絕大多數，2,275 + 1,298 筆）；只有 98 筆真的不一致，
+   那時才存 "kmb:O|ctb:I"。這樣一個字串就夠用，又幾乎不佔空間。 */
+function packBound(bound) {
+  if (!bound || typeof bound !== "object") return "";
+  const keys = Object.keys(bound).filter(k => bound[k] != null && String(bound[k]) !== "");
+  if (!keys.length) return "";
+  const first = String(bound[keys[0]]);
+  if (keys.every(k => String(bound[k]) === first)) return first;
+  return keys.map(k => k + ":" + bound[k]).join("|");
+}
+
+/* 把 packBound 的結果還原成「這間公司的方向」。
+   回空字串＝這筆沒有該公司的方向資料（呼叫方要當成「不知道」而不是「不匹配」）。 */
+function entryBoundFor(entry, co) {
+  const b = String((entry && entry.bound) || "");
+  if (!b) return "";
+  if (b.indexOf(":") < 0) return b.toUpperCase();
+  const want = String(co || "").toLowerCase();
+  for (const part of b.split("|")) {
+    const i = part.indexOf(":");
+    if (i > 0 && part.slice(0, i).toLowerCase() === want) return part.slice(i + 1).toUpperCase();
+  }
+  return "";
+}
+
 function buildFareIndex(raw) {
   const index = {};
   const src = raw && raw.routeList ? raw.routeList : raw;
@@ -1473,7 +1677,7 @@ function buildFareIndex(raw) {
         if (Array.isArray(a)) stopsMap[k] = a.map(s => String(s));
       }
     }
-    index[id] = { route: String(e.route || ""), serviceType: String(e.serviceType || "1"), companyList: coList, bound: (e.bound && (e.bound.kmb || e.bound.ctb || e.bound.nlb || e.bound.gmb)) || "", fares, faresHoliday: faresH, stopsMap };
+    index[id] = { route: String(e.route || ""), serviceType: String(e.serviceType || "1"), companyList: coList, bound: packBound(e.bound), fares, faresHoliday: faresH, stopsMap };
   }
   return index;
 }
@@ -1546,11 +1750,33 @@ async function fetchFareDb() {
  * 由於 routeList[].stops 用的是「公司車站編號」，必須反轉 stopMap 才能對得上，
  * 故建立 companyId + 公司車站編號 → internalId 的反向索引。
  */
-const GEO_STOP_CACHE_KEY = "hk-bus-geo-stops-v2";
-let geoIndex = null;               // { stops: [{id,name,lat,lng,byCompany}], rev: {company:{companyId:internalId}}, routeStopIdx }
+/* v3：車站名稱改為已清理（去掉結尾站號）並多帶 nameFull，
+   舊快取的站名會連站號一起顯示，所以要換鍵。 */
+const GEO_STOP_CACHE_KEY = "hk-bus-geo-stops-v3";
+/* v2 格式已不適用，留著只會白佔配額（本索引約 7 MB，已接近 localStorage 上限）。 */
+try { localStorage.removeItem("hk-bus-geo-stops-v2"); } catch (e) {}
+let geoIndex = null;               // { stops: [{id,name,nameFull,lat,lng,byCompany}], rev: {company:{companyId:internalId}}, routeStopIdx }
 let geoIndexLoading = null;
 const GEO_RADII = [400, 800, 1500]; // 由近至遠自動放寬的半徑（米）
 const GEO_MAX_RESULTS = 12;
+
+/* ========== 車站名稱清理 ==========
+ * 票價檔的站名後面常掛著一組站號，例如「廣華醫院 (YT322)」
+ * 「油麻地眾坊街 (YT545)」。UI 只需要站名，所以顯示前把**結尾**的
+ * 「(1–3 個英文字母 + 1–4 位數字)」拿掉。
+ *
+ * 一定要限定結尾：全港 15,267 個站之中，5,805 個帶站號，
+ * 另有 445 個的括號是名稱的一部分（「中環 (港澳碼頭)」「鰂魚涌 (海澤街)」），
+ * 用寬鬆的規則會把它們切壞。
+ *
+ * 完整站名保留在 nameFull，供 title 提示與日後除錯用。
+ */
+const STOP_CODE_RE = /\s*[（(]\s*[A-Za-z]{1,3}\d{1,4}\s*[)）]\s*$/;
+function cleanStopName(name) {
+  const s = String(name == null ? "" : name);
+  const cleaned = s.replace(STOP_CODE_RE, "").trim();
+  return cleaned || s.trim();
+}
 
 /* 反向索引：公司車站編號 → internalId，附帶該站的座標與名稱 */
 function buildGeoIndex(fareIndex, stopList, stopMap) {
@@ -1572,7 +1798,14 @@ function buildGeoIndex(fareIndex, stopList, stopMap) {
     const lat = parseFloat(s.location.lat), lng = parseFloat(s.location.lng);
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
     const name = s.name || {};
-    stops.push({ id: internalId, name: name.zh || name.en || "", en: name.en || "", lat, lng, byCompany: stopMap[internalId] || [] });
+    const full = name.zh || name.en || "";
+    stops.push({
+      id: internalId,
+      name: cleanStopName(full),      /* 顯示／比對用：已去掉結尾站號 */
+      en: cleanStopName(name.en || ""),
+      nameFull: full,                 /* 原始站名，供 title 提示 */
+      lat, lng, byCompany: stopMap[internalId] || [],
+    });
   }
   /* 路線索引：internalId → [{ route, bound, serviceType, company }]。
      注意 routeList 的 key 是自家格式（如 "1+1+CHUK YUEN ESTATE+STAR FERRY"），
@@ -1592,7 +1825,11 @@ function buildGeoIndex(fareIndex, stopList, stopMap) {
           (routeStopIdx[internalId] || (routeStopIdx[internalId] = [])).push({
             routeId,
             route: e.route,
-            bound: e.bound || "",
+            /* e.bound 是 packBound 的結果（可能長成 "kmb:O|ctb:I"）。
+               這裡已經知道是哪間公司，所以要還原成該公司的方向，
+               否則下游用 route+bound+serviceType 組出來的鍵會對不上
+               matchedRoutes 的 route+direction+serviceType。 */
+            bound: entryBoundFor(e, co) || e.bound || "",
             serviceType: e.serviceType || "1",
             company: co,
           });
@@ -1673,7 +1910,11 @@ function findStopsByName(geo, q) {
   return out;
 }
 
-/* 以地名搜尋可乘搭的路線：路線按「服務幾個相符車站」排序 */
+/* 以地名搜尋可乘搭的路線：路線按「服務幾個相符車站」排序
+ *
+ * ⚠️ 目前沒有呼叫點：目的地搜尋已改用 findStopsToDestination（改為回答
+ *    「我附近哪 5 個車站有車去該目的地」）。本專案沒有版控，刪掉無法還原，
+ *    故保留；確定不需要時可整段移除。 */
 function findRoutesByPlaceName(geo, q, opts = {}) {
   const out = { routes: [], stops: [], center: null, matchedStops: 0 };
   const hits = findStopsByName(geo, q);
@@ -1719,7 +1960,11 @@ function findRoutesByPlaceName(geo, q, opts = {}) {
   return out;
 }
 
-/* 以座標為中心，由內至外放寬半徑，回傳可乘搭的路線（附最近車站與距離） */
+/* 以座標為中心，由內至外放寬半徑，回傳可乘搭的路線（附最近車站與距離）
+ *
+ * ⚠️ 目前沒有呼叫點：舊的「附近路線」按鈕已移除，該流程由
+ *    findStopsToDestination 取代（多了「要能到達指定目的地」的條件）。
+ *    本專案沒有版控，刪掉無法還原，故保留。 */
 function findNearbyRoutes(geo, lat, lng, opts = {}) {
   const out = { routes: [], stops: [], radius: GEO_RADII[GEO_RADII.length - 1], coarse: false };
   if (!geo || !geo.stops || !geo.stops.length) return out;
@@ -1743,7 +1988,7 @@ function findNearbyRoutes(geo, lat, lng, opts = {}) {
     near = all.slice(0, 5); out.coarse = true;
   }
   out.radius = usedRadius;
-  out.stops = near.map(x => ({ id: x.stop.id, name: x.stop.name, en: x.stop.en, lat: x.stop.lat, lng: x.stop.lng, dist: x.dist }));
+  out.stops = near.map(x => ({ id: x.stop.id, name: x.stop.name, en: x.stop.en, nameFull: x.stop.nameFull, lat: x.stop.lat, lng: x.stop.lng, dist: x.dist }));
 
   /* 車站 → 路線（只取 800 米內，避免「最近站」很遠時把全港路線都拉進來） */
   const byRoute = new Map();
@@ -1771,6 +2016,140 @@ function findNearbyRoutes(geo, lat, lng, opts = {}) {
   return out;
 }
 
+/* ===== 目的地搜尋：往某個地點的最近車站 =====
+ * 使用者輸入目的地（例如「旺角」）時，要回答的是「我附近哪 5 個車站有車去旺角」，
+ * 而不是「旺角本身有甚麼路線」——後者已由 findRoutesByPlaceName 負責。
+ *
+ * 三個關鍵點：
+ *   1. 目的地車站用名稱比對（沿用 findStopsByName）。
+ *   2. 候選車站必須在「同一條路線、同一方向」上位於目的地之前。
+ *      fareIndex[routeId].stopsMap[公司] 是有序陣列，用索引先後判斷方向；
+ *      少了這一步就會推薦反方向的班次（「近」不等於「方向對」）。
+ *   3. 半徑由近至遠放寬；完全找不到才退回「最近的合格車站」並標記 coarse。
+ *
+ * lat/lng 不合法（未取得定位）時，改用目的地車站的座標中位數當中心，
+ * 並設 noGps 讓 UI 誠實標示，避免整個功能在拒絕定位權限後完全不能用。
+ */
+const DEST_MAX_STOPS = 5;
+const DEST_RADII = GEO_RADII;
+
+function findStopsToDestination(geo, fareIndex, lat, lng, q, opts = {}) {
+  const out = { stops: [], matchedStops: 0, radius: 0, coarse: false, noGps: false, center: null };
+  if (!geo || !geo.stops || !geo.stops.length) return out;
+  const maxStops = opts.maxStops || DEST_MAX_STOPS;
+  const hits = findStopsByName(geo, q);
+  if (!hits.length) return out;
+  out.matchedStops = hits.length;
+
+  /* 目的地車站的座標中位數：沒有定位時的參考中心 */
+  const lats = hits.map(h => h.stop.lat).sort((a, b) => a - b);
+  const lngs = hits.map(h => h.stop.lng).sort((a, b) => a - b);
+  const mid = arr => arr.length % 2
+    ? arr[(arr.length - 1) / 2]
+    : (arr[arr.length / 2 - 1] + arr[arr.length / 2]) / 2;
+  out.center = { lat: mid(lats), lng: mid(lngs) };
+
+  let oLat = lat, oLng = lng;
+  if (!Number.isFinite(oLat) || !Number.isFinite(oLng)) {
+    oLat = out.center.lat; oLng = out.center.lng; out.noGps = true;
+  }
+
+  const destIds = new Set(hits.map(h => h.stop.id));
+
+  /* 1. 目的地所有路線（key = 路線＋方向＋服務類型） */
+  const routeKeys = new Map();
+  for (const h of hits) {
+    for (const r of (geo.routeStopIdx[h.stop.id] || [])) {
+      const k = r.route + "+" + r.bound + "+" + r.serviceType;
+      if (!routeKeys.has(k)) {
+        routeKeys.set(k, {
+          route: r.route, bound: r.bound, serviceType: r.serviceType,
+          company: r.company, routeId: r.routeId, earliest: Infinity,
+        });
+      }
+    }
+  }
+
+  /* 2. 每條路線的站序表，以及「最早出現的目的地站」位置 */
+  const orderByKey = new Map();
+  for (const [k, cur] of routeKeys) {
+    const co = String(cur.company || "").toLowerCase();
+    const entry = fareIndex && fareIndex[cur.routeId];
+    const ids = entry && entry.stopsMap && entry.stopsMap[co];
+    const order = new Map();
+    if (Array.isArray(ids) && ids.length) {
+      const revCo = (geo.rev && geo.rev[co]) || {};
+      for (let i = 0; i < ids.length; i++) {
+        const iid = revCo[String(ids[i])];
+        if (iid && !order.has(iid)) order.set(iid, i);   /* 環狀線取首次出現的站序 */
+      }
+    }
+    orderByKey.set(k, order);
+    let earliest = Infinity;
+    for (const iid of destIds) {
+      const v = order.get(iid);
+      if (v !== undefined && v < earliest) earliest = v;
+    }
+    cur.earliest = earliest;
+  }
+
+  /* 3. 以起點為中心掃描車站；limit 為 null 表示不限半徑 */
+  const collect = (limit) => {
+    const found = [];
+    for (const s of geo.stops) {
+      const d = haversineMeters(oLat, oLng, s.lat, s.lng);
+      if (limit !== null && d > limit) continue;
+      const routes = [];
+      const seen = new Set();
+      for (const rs of (geo.routeStopIdx[s.id] || [])) {
+        const k = rs.route + "+" + rs.bound + "+" + rs.serviceType;
+        const cur = routeKeys.get(k);
+        if (!cur || !(cur.earliest < Infinity)) continue;
+        const idx = orderByKey.get(k).get(s.id);
+        if (idx === undefined) continue;
+        /* 有定位時要求「本站早於目的地站」，否則就是反方向；
+           沒定位時只要求同一條路線，因為中心點就是目的地本身。 */
+        if (!out.noGps && idx >= cur.earliest) continue;
+        /* 同一條路線號在同一站可能有多個 bound／serviceType（去回程、特別班次），
+           它們都通過了上面的方向檢查，但對使用者來說都是「同一條線」，
+           重複列出只會變成三張一樣的籤，所以按路線號＋公司去重。 */
+        const dedupe = rs.route + "|" + String(cur.company).toLowerCase();
+        if (seen.has(dedupe)) continue;
+        seen.add(dedupe);
+        routes.push({
+          route: cur.route, bound: cur.bound, serviceType: cur.serviceType,
+          company: cur.company, routeId: cur.routeId,
+        });
+      }
+      if (routes.length) found.push({ stop: s, dist: d, routes });
+    }
+    return found;
+  };
+
+  const radii = opts.radii || DEST_RADII;
+  let candidates = [];
+  let usedRadius = radii[radii.length - 1];
+  if (!out.noGps) {
+    for (const r of radii) {
+      usedRadius = r;
+      candidates = collect(r);
+      if (candidates.length) break;
+    }
+  }
+  if (!candidates.length) {          /* 郊野地區或無定位：不限半徑取最近的合格車站 */
+    candidates = collect(null);
+    out.coarse = true;
+  }
+  out.radius = usedRadius;
+
+  candidates.sort((a, b) => a.dist - b.dist);
+  out.stops = candidates.slice(0, maxStops).map(c => ({
+    id: c.stop.id, name: c.stop.name, en: c.stop.en, nameFull: c.stop.nameFull,
+    lat: c.stop.lat, lng: c.stop.lng, dist: c.dist, routes: c.routes,
+  }));
+  return out;
+}
+
 
 function isTodayHoliday() {
   if (holidaysList && Array.isArray(holidaysList) && holidaysList.length) {
@@ -1782,18 +2161,34 @@ function isTodayHoliday() {
   }
   return new Date().getDay() === 0;
 }
-function lookupFareEntry(routeNum, companyId, serviceType) {
+/* direction＝行車方向（"O"／"I"，即 matchedRoutes[].direction）。
+   為什麼要傳：同一條線的兩個方向在票價檔是兩筆，逐站票價不同
+   （1 號線往尖沙咀第 17 站起 $5.8，回程第 9 站起 $6.3）。
+   只按 route+serviceType+公司查會永遠命中第一筆，即「回程也顯示去程票價」。
+   實測 2,118 個 route+serviceType 組合裡有 1,022 個有兩個方向 —— 也就是近半路線
+   在不傳方向時會拿到錯的那一份。不傳（或傳了但篩不到）就維持舊行為。 */
+function lookupFareEntry(routeNum, companyId, serviceType, direction) {
   if (!fareDb) return null;
   const num = String(routeNum || "").toUpperCase();
   const co = String(companyId || "").toLowerCase();
   const st = String(serviceType || "1");
-  const candidates = [];
+  const dir = String(direction || "").toUpperCase();
+  let candidates = [];
   for (const k of Object.keys(fareDb)) {
     const e = fareDb[k];
     if (!e) continue;
     if (String(e.route).toUpperCase() !== num) continue;
     if (String(e.serviceType) !== st) continue;
     candidates.push(e);
+  }
+  if (dir) {
+    /* "OI"／"IO" 是環線（兩個方向共用一份票價），兩個方向都要收；
+       沒有該公司方向資料的（回空字串）不能因此被排除，否則會由有資料變成沒資料。 */
+    const byDir = candidates.filter(c => {
+      const b = entryBoundFor(c, co);
+      return b === "" || b === dir || b === "OI" || b === "IO";
+    });
+    if (byDir.length) candidates = byDir;
   }
   if (!candidates.length) return null;
   const exact = candidates.find(c => c.companyList.includes(co));
@@ -1822,6 +2217,103 @@ function computeBoardingFare(entry, companyId, stop) {
   if (idx < 0 || idx >= fares.length) return { boarding: full, full, isSectional: false };
   const boarding = fares[idx];
   return { boarding, full, isSectional: Math.abs(boarding - full) > 0.05 };
+}
+
+/* 票價索引的鍵（＝ routeList 的 key，如 "1+1+CHUK YUEN ESTATE+STAR FERRY"）。
+   索引項目本身沒有存鍵：存了要多佔約 130 KB 的 localStorage，而實測配額只剩
+   約 100 KB，塞進去會令整個票價快取寫不進去。所以用物件身分反查 ——
+   只在按「詳請」時呼叫一次，掃 3,463 個鍵可以接受。 */
+function lookupFareKey(routeNum, companyId, serviceType, direction) {
+  const e = lookupFareEntry(routeNum, companyId, serviceType, direction);
+  if (!e || !fareDb) return "";
+  for (const k of Object.keys(fareDb)) if (fareDb[k] === e) return k;
+  return "";
+}
+
+/* ========== 路線詳細資料（巴士的「詳請」彈窗） ==========
+ * 收費／站序取自票價索引（已在記憶體），班次取自 bus-detail.json。
+ *
+ * 為什麼班次不一起放進票價快取？實測 localStorage 只剩約 100 KB 可用，
+ * 而巴士班次資料約 0.66 MB —— 併進去會令整個票價快取寫入失敗，反而讓每次
+ * 載入都要重抓 8 MB 的 routeFareList.min.json。所以拆成獨立小檔，
+ * 而且只在使用者第一次按「詳請」時才抓（本頁其他功能完全不需要它）。
+ * 與 gmb.html 的 gmbDetailDb 一樣，只在記憶體快取，不寫 localStorage。
+ */
+const BUS_DETAIL_URL = "bus-detail.json";
+let busDetailDb = null;          /* { days, freq } */
+let busDetailLoading = null;
+
+async function fetchBusDetailDb() {
+  if (busDetailDb) return busDetailDb;
+  if (busDetailLoading) return busDetailLoading;
+  busDetailLoading = (async () => {
+    try {
+      /* no-cache（向伺服器確認、可回 304）而不是 no-store：
+         檔案約 660 KB、兩週才更新一次，讓瀏覽器快取省下大部分流量。 */
+      const res = await fetch(BUS_DETAIL_URL, { cache: "no-cache" });
+      if (!res.ok) return null;
+      const doc = await res.json();
+      if (!doc || !doc.freq || !Object.keys(doc.freq).length) return null;
+      busDetailDb = doc;
+      return busDetailDb;
+    } catch (e) {
+      return null;
+    }
+  })();
+  try { return await busDetailLoading; } finally { busDetailLoading = null; }
+}
+
+/* 公司車站編號 → 站名。geoIndex 有 rev（公司＋公司車站編號 → internalId）
+   與 stops（internalId → 名稱），合起來就能還原票價檔裡那一串車站編號。 */
+let stopById = null, stopByIdFor = null;
+function stopNameForCompanyId(co, companyStopId) {
+  if (!geoIndex) return "";
+  if (stopByIdFor !== geoIndex) {
+    stopById = new Map();
+    for (const s of geoIndex.stops) stopById.set(s.id, s);
+    stopByIdFor = geoIndex;
+  }
+  const rev = geoIndex.rev[String(co || "").toLowerCase()];
+  const internalId = rev && rev[String(companyStopId)];
+  if (!internalId) return "";
+  const s = stopById.get(internalId);
+  return s ? s.name : "";
+}
+
+/* "0535" → "05:35"；不是 4 位數字就原樣回傳，不要造出 "0:5:35" 這種東西。 */
+function formatHHMM(v) {
+  const s = String(v == null ? "" : v).trim();
+  if (!/^\d{3,4}$/.test(s)) return s;
+  const t = s.padStart(4, "0");
+  return t.slice(0, 2) + ":" + t.slice(2);
+}
+
+/* 班距（秒）→「每 15 分鐘」。0／缺值回空字串，讓 UI 不顯示那一格。 */
+function formatHeadway(sec) {
+  const n = Number(sec);
+  if (!Number.isFinite(n) || n <= 0) return "";
+  const m = Math.round(n / 60);
+  if (m < 1) return "每 " + n + " 秒";
+  if (m >= 60) {
+    const h = Math.floor(m / 60), r = m % 60;
+    return r ? "每 " + h + " 小時 " + r + " 分" : "每 " + h + " 小時";
+  }
+  return "每 " + m + " 分鐘";
+}
+
+/* 目的地路線籤上要顯示的票價文字。
+   routeId 本身就是票價索引的 key，所以直接查表，不必再掃全部路線。
+   查不到就回空字串，讓 UI 不顯示那一格 —— 票價檔還沒載入或該線不在檔內時，
+   顯示 "$NaN"／"$0.0" 比不顯示更糟。 */
+function chipFareText(routeId) {
+  const entry = (routeId != null && fareDb) ? fareDb[routeId] : null;
+  if (!entry) return "";
+  const fares = (isTodayHoliday() && entry.faresHoliday && entry.faresHoliday.length)
+    ? entry.faresHoliday
+    : entry.fares;
+  if (!fares || !fares.length) return "";
+  const v = fares[0];
+  return Number.isFinite(v) ? "$" + v.toFixed(1) : "";
 }
 
 /* ========== 儲存層 ========== */
@@ -1866,6 +2358,22 @@ function parseFavArray(raw) {
     return r;
   } catch (e) { return null; }
 }
+/* 彈窗專用字型大小（與全頁 --font-scale 獨立，不影響側欄／地圖）。
+   鍵與全頁分開，所以兩邊可以各自調整。 */
+const DETAIL_FONT_SCALE_KEY = "hk-bus-detail-font-scale";
+const DETAIL_FONT_MIN = 0.8;
+const DETAIL_FONT_MAX = 1.6;
+function loadDetailFontScale() {
+  const tp = (raw) => { const v = parseFloat(raw); return (isFinite(v) && v >= DETAIL_FONT_MIN && v <= DETAIL_FONT_MAX) ? v : null; };
+  try { const v = tp(localStorage.getItem(DETAIL_FONT_SCALE_KEY)); if (v !== null) return v; } catch (e) {}
+  try { const v = tp(readCookie(DETAIL_FONT_SCALE_KEY)); if (v !== null) return v; } catch (e) {}
+  return 1;
+}
+function saveDetailFontScale(s) {
+  try { localStorage.setItem(DETAIL_FONT_SCALE_KEY, String(s)); } catch (e) {}
+  writeCookie(DETAIL_FONT_SCALE_KEY, String(s), FAV_COOKIE_DAYS);
+}
+
 function loadFavourites() {
   let ls = null;
   try { ls = parseFavArray(localStorage.getItem(FAV_STORAGE_KEY)); } catch (e) {}
@@ -1906,6 +2414,19 @@ createApp({
     };
     const increaseFontSize = () => updateFontScale(fontScale.value + 0.1);
     const decreaseFontSize = () => updateFontScale(fontScale.value - 0.1);
+
+    /* 詳請彈窗專用的字型大小：與全頁 --font-scale 分開，
+       所以放大彈窗內容不必連側欄、路線清單、地圖一起放大。
+       寫在 <html> 上（只有彈窗樣式讀它），初始值不套用也沒關係。 */
+    const detailFontScale = ref(loadDetailFontScale());
+    const applyDetailFontScale = (s) => document.documentElement.style.setProperty('--modal-font-scale', String(s));
+    const updateDetailFontScale = (s) => {
+      const c = Math.min(Math.max(s, DETAIL_FONT_MIN), DETAIL_FONT_MAX);
+      detailFontScale.value = c; applyDetailFontScale(c); saveDetailFontScale(c);
+    };
+    const increaseDetailFontSize = () => updateDetailFontScale(detailFontScale.value + 0.1);
+    const decreaseDetailFontSize = () => updateDetailFontScale(detailFontScale.value - 0.1);
+    applyDetailFontScale(detailFontScale.value);
 
     const companies = [
       { id: "KMB", name: "九巴", logo: "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60"><rect width="100" height="60" fill="#fff"/><text x="50" y="42" font-family="Arial Black,sans-serif" font-size="34" font-weight="900" fill="#e30613" text-anchor="middle">KMB</text></svg>`) },
@@ -1969,30 +2490,13 @@ createApp({
     const favExpanded = ref(true);
     const favourites = ref(loadFavourites());
     const currentFareEntry = ref(null);
-    /* GPS 附近路線搜尋 */
-    const gpsLoading = ref(false);
-    const gpsResults = ref(null);      // null = 未搜尋；{ routes, stops, radius, coarse, coords }
-    const gpsError = ref("");
-    const gpsOpen = ref(false);        // 手機版彈出層（全螢幕）
-    const gpsPopupOpen = ref(false);   // 桌機版彈窗（覆蓋右側地圖面板）
-    const gpsCoords = ref(null);       // { lat, lng, accuracy }
-    /* 桌機版彈窗要「蓋在右側地圖面板上」。
-       彈窗用 Teleport 掛到 body，因此不能靠 CSS 定位到面板，
-       必須量測面板矩形後以 inline style 指定（見 gpsPopupStyle）。 */
-    const mapPanelRect = ref(null);     // { x, y, w, h }
-    const gpsPopupStyle = computed(() => {
-      const r = mapPanelRect.value;
-      if (!r) return {};
-      return {
-        top: r.y + "px", left: r.x + "px",
-        width: r.w + "px", height: r.h + "px",
-      };
-    });
-    /* 地名搜尋（在輸入框打「旺角」之類） */
+    /* 目的地搜尋（在輸入框打「旺角」之類）＋ GPS 定位。
+       結果由 findStopsToDestination 產生：使用者附近 5 個「有車去該目的地」的車站。 */
     const placeLoading = ref(false);
-    const placeResults = ref(null);    // { routes, stops, center, matchedStops }
+    const placeResults = ref(null);    // findStopsToDestination 的輸出
     const placeQuery = ref("");
     const placeOpen = ref(false);
+    const placeError = ref("");
 
     const isLanding = computed(() => !searched.value && !routeInput.value.trim() && !stops.value.length);
     const isHoliday = computed(() => isTodayHoliday());
@@ -2039,6 +2543,7 @@ createApp({
       dataAge.value = null; countdown.value = null;
       currentFareEntry.value = null; allRoutes.value = [];
       searched.value = false; mapExpanded.value = false; pickingDirection.value = false;
+      detailOpen.value = false;
       try {
         const list = await loadRouteListFor(company.value);
         if (token !== loadToken) return;
@@ -2078,7 +2583,7 @@ createApp({
       const q = (routeInput.value || "").trim();
       if (!q) return;
       collapseFavourites();
-      clearGps(); clearPlace();
+      clearPlace();
       /* 看起來不像路線號碼 → 當作地名搜尋（例如「旺角」「銅鑼灣」） */
       if (!looksLikeRouteNumber(q)) { await placeSearch(q); return; }
       if (!isMobile.value) { searchRoute(q); return; }
@@ -2123,7 +2628,7 @@ createApp({
     }
     function closeCompanyPicker() { showCompanyPicker.value = false; pickerCompanyIds.value = []; }
 
-    /* ===== GPS 附近路線搜尋 ===== */
+    /* ===== 定位 ===== */
     function getPosition() {
       return new Promise((resolve, reject) => {
         if (!navigator.geolocation) { reject(new Error("此瀏覽器不支援定位")); return; }
@@ -2140,231 +2645,155 @@ createApp({
       });
     }
 
-    async function nearbySearch() {
-      collapseFavourites();
-      gpsLoading.value = true; gpsError.value = ""; gpsResults.value = null;
-      try {
-        const dbPromise = fetchFareDb();
-        const coords = await getPosition();
-        gpsCoords.value = coords;
-        await dbPromise;
-        if (!geoIndex) geoIndex = loadGeoStopCache();
-        if (!geoIndex) throw new Error("車站資料尚未載入，請稍後再試");
-        const res = findNearbyRoutes(geoIndex, coords.lat, coords.lng);
-        if (!res.routes.length) throw new Error("附近 1.5 公里內找不到巴士路線");
-        gpsResults.value = { ...res, coords };
-        /* 手機：全螢幕彈出層；桌機：在右側主面板彈窗 */
-        if (isMobile.value) gpsOpen.value = true;
-        else { measureMapPanel(); gpsPopupOpen.value = true; }
-      } catch (e) {
-        gpsError.value = e.message || "定位失敗";
-      } finally {
-        gpsLoading.value = false;
-      }
-    }
-
-    /* 點選 GPS 結果 → 切到該公司並直接開啟該路線（沿用原有方向選擇流程） */
-    async function gpsPickRoute(item) {
-      if (!item) return;
-      const co = String(item.company || "").toUpperCase();
-      const target = co === "LWB" ? "KMB" : co;
-      gpsOpen.value = false;
-      gpsPopupOpen.value = false;
-      try {
-        if (company.value !== target) { company.value = target; await loadRoutes(); }
-        routeInput.value = item.route;
-        await searchRoute(item.route, item.directionKey || null);
-      } catch (e) { error.value = "無法開啟路線：" + e.message; }
-    }
-
-    function closeGps() { gpsOpen.value = false; gpsPopupOpen.value = false; }
-
-    /* 量測右側地圖面板的矩形，讓桌機版彈窗精準覆蓋它。
-       面板在手機版是 display:none，量到 0 就直接不設矩形（此時也不會開彈窗）。 */
-    function measureMapPanel() {
-      const el = document.querySelector(".map-wrap-desktop");
-      if (!el) { mapPanelRect.value = null; return; }
-      const r = el.getBoundingClientRect();
-      if (r.width < 1 || r.height < 1) { mapPanelRect.value = null; return; }
-      mapPanelRect.value = { x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height) };
-    }
-    function gpsReopen() {
-      if (isMobile.value) return;
-      measureMapPanel();
-      gpsPopupOpen.value = true;
-    }
-    function clearGps() {
-      gpsOpen.value = false; gpsPopupOpen.value = false;
-      gpsResults.value = null; gpsCoords.value = null; gpsError.value = "";
-    }
-    /* 視窗尺寸改變時重新量測，避免彈窗與地圖面板錯位 */
-    function onWinResize() { if (gpsPopupOpen.value) measureMapPanel(); }
-
-    /* Esc 關閉桌機版附近路線彈窗（與其他彈窗行為一致） */
+    /* Esc 關閉目的地結果彈出層（與其他彈窗行為一致） */
     function onDocKeydown(e) {
       if (e.key !== "Escape") return;
-      if (gpsPopupOpen.value) { gpsPopupOpen.value = false; e.preventDefault(); return; }
-      if (gpsOpen.value) { gpsOpen.value = false; e.preventDefault(); }
+      if (detailOpen.value) { closeDetail(); e.preventDefault(); return; }
+      if (placeOpen.value) { placeOpen.value = false; e.preventDefault(); }
     }
 
-    /* 將 GPS 結果的 routeId 轉成可顯示的路線資料（含方向標籤）
-     * geo 索引輸出 route + bound + serviceType，與 allRoutes 建 key 的方式一致；
-     * 同一條路線可能在兩個方向都有站，所以兩者都要能對上。 */
-    const gpsRouteRows = computed(() => {
-      const res = gpsResults.value;
-      if (!res || !res.routes) return [];
-      if (!allRoutes.value.length) return [];
-      const byKey = new Map();
-      for (const r of allRoutes.value) {
-        const key = r.isNlb
-          ? "NLB+" + r.routeId
-          : r.route + "+" + r.direction + "+" + (r.serviceType || "1");
-        if (!byKey.has(key)) byKey.set(key, r);
+    /* 公司代號 → 顯示名稱。GMB 不在 companies 陣列內（本頁只載入巴士路線清單，
+       小巴的站／線資料來自票價檔），所以要獨立補上，否則小巴標籤會空白。
+       目的地結果必須清楚標示 GMB，否則使用者會以為那是可以在此頁開啟的巴士線。 */
+    const COMPANY_LABELS = {
+      kmb: "九巴", lwb: "龍運", ctb: "城巴", nlb: "新大嶼山巴士", gmb: "專線小巴",
+    };
+    function companyLabelFor(co) {
+      const key = String(co || "").toLowerCase();
+      return COMPANY_LABELS[key] || String(co || "").toUpperCase();
+    }
+
+    /* 路線號自然排序：13D < 16 < 16P < 24 < A20 < N293。
+       直接字串排序會把 "16P" 排在 "16" 之前，並把 A／E／N 開頭的線全擠到最前。 */
+    function compareRouteNo(a, b) {
+      const pa = /^([A-Za-z]*)(\d+)([A-Za-z]*)$/.exec(String(a));
+      const pb = /^([A-Za-z]*)(\d+)([A-Za-z]*)$/.exec(String(b));
+      if (pa && pb) {
+        if (pa[1] !== pb[1]) return pa[1] < pb[1] ? -1 : 1;
+        if (Number(pa[2]) !== Number(pb[2])) return Number(pa[2]) - Number(pb[2]);
+        if (pa[3] !== pb[3]) return pa[3] < pb[3] ? -1 : 1;
+        return 0;
       }
-      const rows = [];
-      for (const item of res.routes) {
-        const co = String(item.company || "").toUpperCase();
-        /* 只看目前公司（LWB 併入 KMB），換公司時 allRoutes 會重新載入 */
-        const target = co === "LWB" ? "KMB" : co;
-        if (target && target !== company.value) continue;
-        const key = (co === "nlb" || target === "NLB")
-          ? "NLB+" + item.routeId
-          : item.route + "+" + item.bound + "+" + item.serviceType;
-        const r = byKey.get(key);
-        if (!r) continue;
-        rows.push({
-          ...item,
-          route: r.route,
-          companyLabel: (companies.find(c => c.id === target) || {}).name || target,
-          directionLabel: `${r.orig_tc} → ${r.dest_tc}`,
-          directionKey: key,
-          distText: formatDistance(item.dist),
-        });
-      }
-      return rows;
+      const sa = String(a), sb = String(b);
+      return sa < sb ? -1 : (sa > sb ? 1 : 0);
+    }
+
+    /* 目的地結果 → 可顯示的列。每列是一個車站，下面掛著能到該目的地的路線。 */
+    const placeStops = computed(() => {
+      const res = placeResults.value;
+      if (!res || !res.stops) return [];
+      return res.stops.map(s => ({
+        ...s,
+        distText: Number.isFinite(s.dist) ? formatDistance(s.dist) : "",
+        routes: (s.routes || []).map(r => {
+          const key = r.route + "+" + r.bound + "+" + (r.serviceType || "1");
+          return {
+            ...r,
+            key: key + "+" + r.company,
+            directionKey: key,
+            companyLabel: companyLabelFor(r.company),
+            isGmb: String(r.company || "").toLowerCase() === "gmb",
+            fareText: chipFareText(r.routeId),
+          };
+        }).sort((a, b) => compareRouteNo(a.route, b.route)),
+      }));
     });
 
-    /* ===== 地名搜尋 =====
-     * 在輸入框打「旺角」這類地名時，列出服務該地點的路線。
-     * 地名結果橫跨多間公司，所以這裡不只看目前選取的公司，而是把所有公司的
-     * 路線清單都載入後一起 join（GPS 附近搜尋則維持只顯示目前公司）。 */
-    const placeLists = ref({});        // { KMB: [...], CTB: [...], NLB: [...] }
-    const placeListsLoading = ref(false);
-
-    async function loadAllRouteLists() {
-      if (placeListsLoading.value) return placeLists.value;
-      placeListsLoading.value = true;
-      try {
-        const [kmb, ctb, nlb] = await Promise.all([
-          loadRouteListFor("KMB").catch(() => []),
-          loadRouteListFor("CTB").catch(() => []),
-          loadRouteListFor("NLB").catch(() => []),
-        ]);
-        placeLists.value = { KMB: kmb || [], CTB: ctb || [], NLB: nlb || [] };
-      } finally {
-        placeListsLoading.value = false;
+    /* 不重複的路線數（同一條線可以在多個候選車站出現，只算一次） */
+    const placeRouteCount = computed(() => {
+      const seen = new Set();
+      for (const s of placeStops.value) {
+        for (const r of s.routes) seen.add(r.route + "+" + r.company);
       }
-      return placeLists.value;
-    }
+      return seen.size;
+    });
 
+    /* 有 GMB 結果時要提示使用者：小巴路線在本頁開不了 */
+    const placeHasGmb = computed(() =>
+      placeStops.value.some(s => s.routes.some(r => r.isGmb)));
+
+    /* 副標題必須誠實反映資料來源：
+       noGps = 拿不到定位，距離是「以目的地為中心」算的，不是「你附近」。
+       coarse = 半徑內找不到合格車站，退回不限半徑的最近車站。 */
+    const destSubtitle = computed(() => {
+      const res = placeResults.value;
+      if (!res) return "";
+      const parts = [];
+      if (res.noGps) parts.push("未取得位置 · 以目的地為中心");
+      else if (res.coarse) parts.push("最近的車站");
+      else parts.push("半徑 " + formatDistance(res.radius) + " 內");
+      parts.push(placeStops.value.length + " 個車站 · " + placeRouteCount.value + " 條路線");
+      return parts.join(" · ");
+    });
+
+    /* 桌機的結果面板是把 .map-wrap-desktop 用 display:none 蓋掉的，
+       Leaflet 的容器會縮成 0×0；收起來的時候一定要重新量一次尺寸，
+       否則地圖會留下一片空白，直到使用者手動縮放視窗才恢復。 */
+    watch(
+      () => !!(placeResults.value && placeStops.value.length),
+      (showing) => {
+        if (showing || isMobile.value) return;
+        nextTick(() => { if (mapDesktop) try { mapDesktop.invalidateSize(); } catch (e) {} });
+      }
+    );
+
+    /* ===== 目的地搜尋 =====
+     * 在輸入框打「旺角」這類目的地時，回答的是「我附近哪 5 個車站有車去旺角」，
+     * 而不是「旺角本身有甚麼路線」。
+     * 需要定位：以使用者位置為中心由內至外放寬半徑，只保留「同一路線、同一方向
+     * 上排在目的地之前」的車站，所以結果一定是往目的地去的方向。
+     * 定位被拒絕時 findStopsToDestination 會退回以目的地中心掃描並設 noGps，
+     * UI 會如實標示，不會假裝那是「你附近」。
+     * 小巴（GMB）的站與線都在票價檔內，因此會一併出現；但本頁載入不到小巴路線
+     * 清單，無法開啟小巴路線，所以 UI 必須把 GMB 標示清楚且不可點擊。 */
     async function placeSearch(q) {
       const query = String(q || "").trim();
       if (!query) return;
-      placeLoading.value = true; placeResults.value = null; placeQuery.value = query;
+      placeLoading.value = true;
+      placeResults.value = null;
+      placeQuery.value = query;
+      placeError.value = "";
       try {
         const dbPromise = fetchFareDb();
+        let coords = null;
+        let gpsErr = "";
+        try {
+          coords = await getPosition();
+        } catch (e) {
+          /* 定位失敗不中斷搜尋：改用目的地中心，並由 noGps 在副標題如實標示。
+             這裡先不顯示紅字錯誤 —— 有結果時副標題已經說明；
+             真的連車站都找不到才把定位錯誤報出來（那通常就是原因）。 */
+          gpsErr = e.message || "無法取得目前位置";
+        }
         await dbPromise;
         if (!geoIndex) geoIndex = loadGeoStopCache();
         if (!geoIndex && geoNeedsFetch) { geoNeedsFetch = false; geoIndex = await loadGeoFromFile(); }
         if (!geoIndex) throw new Error("車站資料尚未載入，請稍後再試");
-        await loadAllRouteLists();
-        const res = findRoutesByPlaceName(geoIndex, query);
-        if (!res.routes.length) {
-          error.value = `找不到地點「${query}」的巴士路線`;
-          placeResults.value = null;
+        const res = findStopsToDestination(
+          geoIndex, fareDb, coords ? coords.lat : null, coords ? coords.lng : null, query);
+        if (!res.stops.length) {
+          placeError.value = gpsErr || `找不到「${query}」附近的車站，請試試其他寫法`;
           return;
         }
-        error.value = "";
         placeResults.value = res;
         if (isMobile.value) placeOpen.value = true;
       } catch (e) {
-        error.value = "地點搜尋失敗：" + (e.message || "未知錯誤");
+        placeError.value = "目的地搜尋失敗：" + (e.message || "未知錯誤");
       } finally {
         placeLoading.value = false;
       }
     }
 
-    /* 把地名結果對上各公司的路線資料，換成可顯示的列。
-     * bound 可能是複合值（例如 "IO"），故比對時允許雙向包含。 */
-    function placeRowsFor(companyId) {
-      const res = placeResults.value;
-      if (!res || !res.routes) return [];
-      const list = (placeLists.value || {})[companyId];
-      if (!list || !list.length) return [];
-      const byKey = new Map();
-      for (const r of list) {
-        const key = r.isNlb
-          ? "NLB+" + r.routeId
-          : r.route + "+" + r.direction + "+" + (r.serviceType || "1");
-        if (!byKey.has(key)) byKey.set(key, r);
-      }
-      const rows = [];
-      for (const item of res.routes) {
-        const co = String(item.company || "").toUpperCase();
-        const target = co === "LWB" ? "KMB" : co;
-        if (target !== companyId) continue;
-        if (target === "GMB") continue;            // 小巴請到小巴頁（本頁無資料）
-        const key = target === "NLB"
-          ? "NLB+" + item.routeId
-          : item.route + "+" + item.bound + "+" + item.serviceType;
-        let r = byKey.get(key);
-        if (!r) {
-          /* 複合方向（如 "IO"）或服務類型差異：退回只比對路線號碼＋方向 */
-          const cands = list.filter(x =>
-            x.route === item.route &&
-            String(x.direction || "").toUpperCase()
-              .includes(String(item.bound || "").toUpperCase().slice(-1)));
-          r = cands[0];
-        }
-        if (!r) continue;
-        rows.push({
-          ...item,
-          route: r.route,
-          companyLabel: (companies.find(c => c.id === target) || {}).name || target,
-          directionLabel: `${r.orig_tc} → ${r.dest_tc}`,
-          directionKey: r.isNlb
-            ? "NLB+" + r.routeId
-            : r.route + "+" + r.direction + "+" + (r.serviceType || "1"),
-          company: target,
-          stopText: `${item.stopCount} 個${placeQuery.value}車站`,
-        });
-      }
-      return rows;
-    }
-
-    /* 地名結果依公司分組，讓使用者一眼看出哪間公司有車到該地點 */
-    const placeGroups = computed(() => {
-      if (!placeResults.value) return [];
-      const out = [];
-      for (const id of ["KMB", "CTB", "NLB"]) {
-        const rows = placeRowsFor(id);
-        if (rows.length) {
-          out.push({
-            id,
-            label: (companies.find(c => c.id === id) || {}).name || id,
-            rows,
-          });
-        }
-      }
-      return out;
-    });
-
-    const placeRouteRows = computed(() => placeGroups.value.flatMap(g => g.rows));
-
+    /* 點選目的地結果的路線 → 切到該公司並開啟該路線。
+       company 由 geo 索引而來是小寫代號；小巴在本頁沒有路線清單可開，
+       所以直接略過（UI 已把 GMB 標成不可點）。 */
     async function placePickRoute(item) {
-      if (!item) return;
-      const target = item.company || "KMB";
-      placeOpen.value = false;
+      if (!item || item.isGmb) return;
+      const co = String(item.company || "").toLowerCase();
+      const target = co === "lwb" ? "KMB" : co.toUpperCase();
+      if (["KMB", "CTB", "NLB"].indexOf(target) < 0) return;
+      /* 結果面板（桌機在右欄）要收起來，否則會一直蓋著剛打開的路線地圖。 */
+      placeOpen.value = false; placeResults.value = null;
       try {
         if (company.value !== target) { company.value = target; await loadRoutes(); }
         routeInput.value = item.route;
@@ -2373,13 +2802,16 @@ createApp({
     }
 
     function closePlace() { placeOpen.value = false; }
-    function clearPlace() { placeOpen.value = false; placeResults.value = null; placeQuery.value = ""; }
+    function clearPlace() {
+      placeOpen.value = false; placeResults.value = null; placeQuery.value = ""; placeError.value = "";
+    }
 
     function clearDirection() {
       routeKey.value = ""; selectedDirectionLabel.value = "";
       pickingDirection.value = true;
       stops.value = []; selectedStop.value = null; etas.value = [];
       dataAge.value = null; countdown.value = null; currentFareEntry.value = null;
+      detailOpen.value = false;   /* 詳請彈窗跟著方向一起收掉 */
     }
 
     /* 返回主頁：清空搜尋狀態，回到初始 landing 畫面 */
@@ -2394,9 +2826,9 @@ createApp({
       currentFareEntry.value = null;
       loadingStops.value = false; refreshing.value = false;
       mapExpanded.value = false;
+      detailOpen.value = false;
       error.value = "";
-      gpsOpen.value = false; gpsPopupOpen.value = false; gpsError.value = "";
-      placeOpen.value = false; placeResults.value = null; placeQuery.value = "";
+      placeOpen.value = false; placeResults.value = null; placeQuery.value = ""; placeError.value = "";
       /* 清空地圖圖層（matchedRoutes 為 computed，重置 searched 後即自動清空） */
       clearMapLayers();
       window.scrollTo(0, 0);
@@ -2408,7 +2840,8 @@ createApp({
       if (!r) return;
       const db = await fetchFareDb();
       if (!db) return;
-      const e = lookupFareEntry(r.route, company.value, r.serviceType || "1");
+      /* 一定要帶 r.direction：不帶的話回程會拿到去程那份逐站票價。 */
+      const e = lookupFareEntry(r.route, company.value, r.serviceType || "1", r.direction);
       if (e) currentFareEntry.value = e;
     }
 
@@ -2508,6 +2941,207 @@ createApp({
     const mapRowText = computed(() => selectedStop.value ? selectedStop.value.name : "路線地圖");
 
     function findCurrentRoute() { return matchedRoutes.value.find(r => r.key === routeKey.value) || null; }
+
+    const detailOpen = ref(false);
+    const detailDayIndex = ref(0);
+    const detailLoading = ref(false);
+    const detailReady = ref(false);      /* 已嘗試載入班次檔（成功或失敗都算） */
+    const detailFailed = ref(false);     /* 班次檔抓不到 */
+
+    /* ==================== 路線詳細資料（「詳請」彈窗） ====================
+       結構刻意與 gmb.html 的詳請彈窗一一對應：
+         服務日 chips（對應 GMB 的「服務時段／走線」）
+         行車方向 chips（對應 GMB 的「行車方向」）
+         💰 收費表 / 🕒 服務時間及班距 / 🗺️ 沿途車站 / ℹ️ 營辦商／資料來源
+       收費與站序來自票價索引（已在記憶體），班次來自 bus-detail.json（按需要才抓）。 */
+    /* 目前選取方向所屬的公司代號（小寫）。九巴路線可能由龍運營運，
+       票價檔在 stopsMap 用 "lwb"，所以要跟 loadFare/computeBoardingFare 同一套規則。 */
+    const detailRoute = computed(() => (routeKey.value ? findCurrentRoute() : null));
+    const detailCompanyKey = computed(() => {
+      const r = detailRoute.value;
+      return (r && r.isLwb && company.value === "KMB") ? "lwb" : String(company.value).toLowerCase();
+    });
+    const detailCompanyName = computed(() => companyLabelFor(detailCompanyKey.value));
+    const detailDirectionLabel = computed(() => selectedDirectionLabel.value || "");
+
+    /* 票價索引的鍵 —— 只有按「詳請」時才算，不必每次選方向都掃一遍。
+       必須帶方向，否則換方向時鍵不變 → 班次表與服務日 chips 都不會跟著換。 */
+    const detailFareKey = computed(() => {
+      if (!detailOpen.value) return "";
+      const r = detailRoute.value;
+      if (!r) return "";
+      return lookupFareKey(r.route, company.value, r.serviceType || "1", r.direction);
+    });
+
+    /* 假日票價優先（與側欄 .fare-line 同一個規則），沒有假日價就用平日價。 */
+    const detailFareSet = computed(() => {
+      const e = currentFareEntry.value;
+      if (!e) return null;
+      const holiday = isTodayHoliday() && Array.isArray(e.faresHoliday) && e.faresHoliday.length > 0;
+      const arr = holiday ? e.faresHoliday : e.fares;
+      return (arr && arr.length) ? { arr, holiday } : null;
+    });
+    const detailHasHolidayFare = computed(() => {
+      const e = currentFareEntry.value;
+      return !!(e && Array.isArray(e.faresHoliday) && e.faresHoliday.length > 0);
+    });
+
+    /* 票價檔那一串公司車站編號，以及它屬於哪間公司（可能與 company 不同，見上）。 */
+    const detailStopIds = computed(() => {
+      const e = currentFareEntry.value;
+      if (!e || !e.stopsMap) return { co: "", ids: [] };
+      let co = detailCompanyKey.value;
+      let arr = e.stopsMap[co];
+      if (!arr && co === "kmb" && e.stopsMap["lwb"]) { co = "lwb"; arr = e.stopsMap["lwb"]; }
+      if (!arr) { for (const k of Object.keys(e.stopsMap)) { co = k; arr = e.stopsMap[k]; break; } }
+      return { co, ids: Array.isArray(arr) ? arr : [] };
+    });
+    /* 票價檔的車站編號 → geoIndex 站名。
+       注意 geoIndex.rev 是 last-write-wins：同一個公司站號會對到多筆內部站記錄
+       （1 號線第一站的 kmb 站號在 stopMap 出現 7 次，最後一筆才勝出），所以名稱會
+       挑到其中一個站柱 —— 例：旺角奶路臣街會變成「旺角」、竹園邨總站會變成
+       「竹園邨巴士總站」。因此只把它當後備。 */
+    const detailGeoStopNames = computed(() => {
+      const { co, ids } = detailStopIds.value;
+      return ids.map(id => stopNameForCompanyId(co, id));
+    });
+    /* 顯示用站名：優先用側欄（ETA API）那一份。
+       兩邊都是同一條線、同一個方向、同一次序；站數一樣就代表沒有被
+       stops.value 的「必須有座標」過濾掉任何一站，可以逐位對齊。
+       用 ETA 站名有兩個好處：跟側欄顯示一致，而且票價表的「由 XXX 起」
+       才會跟側欄對得上。站數不同就整份退回 geoIndex，絕不硬湊位次。
+       全部都有名字才採用（every(Boolean)）：只要有一格空白就整份退回，
+       免得畫面上出現「一半 ETA 名、一半站柱名」的混合清單。
+       注意換方向時 selectDirection 會先清空 stops.value，載回來之前
+       這一份會短暫退回 geoIndex 名 —— 屬預期，載完即自動換回。 */
+    const detailStopNames = computed(() => {
+      const ids = detailStopIds.value.ids;
+      if (ids.length && stops.value.length === ids.length) {
+        const names = stops.value.map(s => s.name);
+        if (names.every(Boolean)) return names;
+      }
+      return detailGeoStopNames.value;
+    });
+    /* 沿途車站。geoIndex 也不在（票價快取與 geo 快取都失效）時，
+       名字最後退回公司車站編號，至少不會空白。 */
+    const detailStops = computed(() => {
+      const ids = detailStopIds.value.ids;
+      const names = detailStopNames.value, geo = detailGeoStopNames.value;
+      return ids.map((id, i) => ({ idx: i, id, name: names[i] || geo[i] || String(id) }));
+    });
+
+    /* 收費表：第 0 筆是全程收費，其餘只列「票價與上一站不同」的站
+       （票價檔是逐站票價，同一個價位會連續重複很多筆，全列出來只是噪音）。 */
+    const detailFareRows = computed(() => {
+      const set = detailFareSet.value;
+      if (!set) return [];
+      const arr = set.arr;
+      const names = detailStopNames.value;
+      const rows = [];
+      for (let i = 0; i < arr.length; i++) {
+        const amount = Number(arr[i]);
+        if (!Number.isFinite(amount)) continue;
+        if (i === 0) { rows.push({ label: "全程收費", amount }); continue; }
+        if (Math.abs(amount - Number(arr[i - 1])) < 0.005) continue;
+        rows.push({ label: names[i] ? "由" + names[i] : ("第 " + (i + 1) + " 站起"), amount });
+      }
+      return rows;
+    });
+    const detailFareNote = computed(() => {
+      const rows = detailFareRows.value;
+      if (rows.length <= 1) return "";
+      return "其餘車站按全程收費計算；實際收費以營辦商公布為準。";
+    });
+
+    /* 服務日（bus-detail.json 的 days/freq）。票價檔的服務日模式多達 128 種，
+       這裡只列該路線真的有的那幾種。 */
+    const detailDayKeys = computed(() => {
+      const db = busDetailDb;
+      const key = detailFareKey.value;
+      if (!detailReady.value || !db || !key) return [];
+      const freq = db.freq[key];
+      if (!freq) return [];
+      const days = db.days || {};
+      return Object.keys(freq).map(k => ({ key: k, label: days[k] || ("服務日 " + k) }));
+    });
+    const detailDayKey = computed(() => {
+      const list = detailDayKeys.value;
+      if (!list.length) return "";
+      const i = Math.min(detailDayIndex.value, list.length - 1);
+      return list[i].key;
+    });
+    const detailTimetable = computed(() => {
+      const db = busDetailDb;
+      const key = detailFareKey.value;
+      const day = detailDayKey.value;
+      if (!detailReady.value || !db || !key || !day) return [];
+      const bands = (db.freq[key] || {})[day] || [];
+      return bands.map(b => ({
+        day: "",
+        time: formatHHMM(b[0]) + " – " + formatHHMM(b[1]),
+        headway: formatHeadway(b[2]),
+      }));
+    });
+    const detailTimetableHint = computed(() => {
+      if (detailLoading.value) return "正在載入班次資料…";
+      if (detailFailed.value) return "班次資料暫時載入不到，請稍後再開。";
+      if (!detailFareKey.value) return "此路線不在收費資料檔內，暫無班次資料。";
+      if (!detailDayKeys.value.length) return "此路線暫無班次資料。";
+      return "";
+    });
+    const detailOperator = computed(() => {
+      const r = detailRoute.value;
+      if (!r) return [];
+      const rows = [
+        { label: "營辦商", value: detailCompanyName.value },
+        { label: "路線", value: String(r.route || "") },
+        { label: "起訖點", value: `${r.orig_tc || ""} → ${r.dest_tc || ""}` },
+      ];
+      if (String(r.serviceType || "1") !== "1") {
+        rows.push({ label: "服務類型", value: "特別班次 " + r.serviceType });
+      }
+      const n = detailStops.value.length;
+      if (n) rows.push({ label: "車站數目", value: n + " 站" });
+      return rows;
+    });
+
+    /* 方向 chips 直接沿用側欄那份 matchedRoutes，選了就走原本的 selectDirection，
+       所以彈窗內換方向與在側欄換方向是同一件事，不會有兩套狀態。 */
+    function pickDetailDirection(r) { if (r) selectDirection(r); }
+
+    /* 一律顯示到小數一位（$6.7／$12.0），與側欄 .fare-line 的格式一致。 */
+    function formatDetailFare(amount) {
+      const n = Number(amount);
+      return Number.isFinite(n) ? "$" + n.toFixed(1) : "—";
+    }
+
+    function updateDetailModalMaxHeight() {
+      const vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+      const pad = window.matchMedia("(max-width: 600px)").matches ? 16 : 40;
+      document.documentElement.style.setProperty("--modal-max-h", Math.max(240, vh - pad) + "px");
+    }
+
+    async function openDetail() {
+      if (!routeKey.value) return;
+      updateDetailModalMaxHeight();
+      detailDayIndex.value = 0;
+      detailOpen.value = true;
+      if (detailReady.value || detailLoading.value) return;
+      detailLoading.value = true;
+      try {
+        const db = await fetchBusDetailDb();
+        detailFailed.value = !db;
+      } catch (e) {
+        detailFailed.value = true;
+      } finally {
+        detailLoading.value = false;
+        detailReady.value = true;      /* 失敗也設 true，否則每次開彈窗都會重試 */
+      }
+    }
+    function closeDetail() { detailOpen.value = false; }
+
+    /* 換方向／換服務類型時，服務日清單會變，索引要收回第一項 */
+    watch(detailFareKey, () => { detailDayIndex.value = 0; });
 
     const isCurrentFavourite = computed(() => {
       if (!routeKey.value) return false;
@@ -2806,6 +3440,9 @@ createApp({
       if (mapDesktop) try { mapDesktop.invalidateSize(); } catch (e) {}
       if (mapMobile) try { mapMobile.invalidateSize(); } catch (e) {}
       isMobile.value = window.matchMedia("(max-width: 900px)").matches;
+      /* 詳請彈窗的高度用 --modal-max-h（避開手機網址欄造成的 100vh 偏差），
+         所以視窗一變就要重算，否則轉向後彈窗會超出畫面。 */
+      if (detailOpen.value) updateDetailModalMaxHeight();
       if (!isMobile.value) {
         showCompanyPicker.value = false;
         pickerCompanyIds.value = [];
@@ -2848,7 +3485,6 @@ createApp({
       window.addEventListener("pagehide", saveFavouritesOnExit);
       document.addEventListener("visibilitychange", handleVisibility);
       document.addEventListener("keydown", onDocKeydown);
-      window.addEventListener("resize", onWinResize);
       tickTimer = setInterval(tick, 1000);
     });
     onUnmounted(() => {
@@ -2859,11 +3495,11 @@ createApp({
       window.removeEventListener("pagehide", saveFavouritesOnExit);
       document.removeEventListener("visibilitychange", handleVisibility);
       document.removeEventListener("keydown", onDocKeydown);
-      window.removeEventListener("resize", onWinResize);
     });
 
     return {
       fontScale, increaseFontSize, decreaseFontSize,
+      detailFontScale, increaseDetailFontSize, decreaseDetailFontSize,
       companies, company, routeInput, lastSearched, searched, searchFocused,
       searchRowRef, onSearchRowFocus, onSearchRowBlur, onSearchRowPointerLeave,
       allRoutes, matchedRoutes, routeKey, stops, selectedStop, etas,
@@ -2873,15 +3509,20 @@ createApp({
       showCompanyPicker, mobileSearching, pickerCompanyIds,
       availableCompaniesForPicker, favExpanded, isLanding,
       favourites, isCurrentFavourite, fareDisplay, isHoliday,
+      detailOpen, detailDayIndex, detailLoading, detailReady, detailFailed,
+      detailRoute, detailCompanyName, detailDirectionLabel, detailFareKey,
+      detailFareSet, detailHasHolidayFare, detailFareRows, detailFareNote,
+      detailDayKeys, detailDayKey, detailTimetable, detailTimetableHint,
+      detailStops, detailOperator,
+      openDetail, closeDetail, pickDetailDirection, formatDetailFare,
       onCompanyChange, onSearch, onCompanyPick, closeCompanyPicker,
       selectDirection, onStopClick, onStopMapClick,
       expandMap, collapseMap, zoomIn, zoomOut, clearDirection,
       goToLanding,
       toggleFavourite, removeFavourite, onFavClick,
       manualRefresh, formatMinutes, formatDistance,
-      gpsLoading, gpsResults, gpsError, gpsOpen, gpsPopupOpen, gpsCoords, gpsRouteRows,
-      gpsPopupStyle, nearbySearch, gpsPickRoute, closeGps, clearGps, gpsReopen,
-      placeLoading, placeResults, placeQuery, placeOpen, placeRouteRows, placeGroups,
+      placeLoading, placeResults, placeQuery, placeOpen, placeError,
+      placeStops, placeRouteCount, placeHasGmb, destSubtitle,
       placeSearch, placePickRoute, closePlace, clearPlace,
     };
   },

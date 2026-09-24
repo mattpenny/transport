@@ -38,7 +38,7 @@
 <link rel="apple-touch-icon" href="rmb.png" />
 <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js" crossorigin="anonymous"></script>
 <style>
-  :root { --font-scale: 1; --rmb-red: #c8102e; --rmb-red-dark: #9c0c24; }
+  :root { --font-scale: 1; --status-inset: 0px; --nav-inset: 0px; --rmb-red: #c8102e; --rmb-red-dark: #9c0c24; }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
   html, body {
     margin: 0; padding: 0; height: 100%; overflow: hidden;
@@ -66,7 +66,7 @@
     flex-shrink: 0; display: flex; align-items: center;
     justify-content: space-between; gap: 12px;
     min-width: 0;
-    padding-top: max(10px, env(safe-area-inset-top));
+    padding-top: max(10px, env(safe-area-inset-top), var(--status-inset));
   }
   header.app-header h1 {
     margin: 0; font-size: calc(17px * var(--font-scale)); white-space: nowrap;
@@ -209,7 +209,7 @@
     z-index: 5000; display: flex; align-items: flex-start; justify-content: center;
     background: rgba(0,0,0,0.5); padding: 20px;
     padding-top: max(20px, env(safe-area-inset-top));
-    padding-bottom: max(20px, env(safe-area-inset-bottom));
+    padding-bottom: max(20px, env(safe-area-inset-bottom), var(--nav-inset));
     overflow-y: auto;
   }
   .picker-sheet {
@@ -277,7 +277,7 @@
       z-index: 4000; align-items: flex-start; justify-content: center;
       background: rgba(0,0,0,0.5); padding: 20px;
       padding-top: max(20px, env(safe-area-inset-top));
-      padding-bottom: max(20px, env(safe-area-inset-bottom));
+      padding-bottom: max(20px, env(safe-area-inset-bottom), var(--nav-inset));
       overflow-y: auto;
     }
     .detail-stack.open .detail-sheet {
