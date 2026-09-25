@@ -37,19 +37,12 @@
 <link rel="icon" type="image/png" href="rmb.png" />
 <link rel="apple-touch-icon" href="rmb.png" />
 <style>
-  /* Painted BEFORE the CDN <script> tags block parsing: keeps the viewport the
-     app background colour instead of white while the libraries download. */
+  /* Painted on the very first frame so the viewport is never white while the
+     document loads. The library <script> tags live at the END of <body> on
+     purpose: in <head> they block the parser and leave the screen blank until
+     they finish downloading - that blank gap was the mode-switch flash. */
   html { background: #f5f7fb; }
 </style>
-<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js" crossorigin="anonymous"></script>
-<script>
-/* CDN fallback: unpkg occasionally fails on mobile networks. While the document
-   is still parsing, document.write() synchronously pulls the jsDelivr copy so
-   Vue can never end up undefined (which would strand the boot shell). */
-if (typeof Vue === "undefined") {
-  document.write('<script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js" crossorigin="anonymous"><\/script>');
-}
-</script>
 
 <style>
   /* ==================== ANTI-FLICKER (FOUC) ====================
@@ -82,6 +75,9 @@ if (typeof Vue === "undefined") {
     display: flex; flex-direction: column;
     background: #f5f7fb;
   }
+  /* The shell paints on the first frame (the library scripts are at the end of
+     <body>, so parsing is never blocked). If the app is ready before the first
+     paint, __revealApp() removes the shell first and it is never seen. */
   #boot-screen .boot-content { flex: 1 1 auto; min-height: 0; background: #f5f7fb; }
   #boot-screen .back-btn,
   #boot-screen .header-meta { pointer-events: none; }
@@ -662,24 +658,6 @@ if (typeof Vue === "undefined") {
     if (boot && boot.parentNode) boot.parentNode.removeChild(boot);
   };
 
-  /* If the CDN failed entirely, #app would stay hidden forever - say so. */
-  if (typeof Vue === "undefined") {
-    var bootEl = document.getElementById("boot-screen");
-    if (bootEl) {
-      bootEl.classList.add("boot-fatal");
-      bootEl.innerHTML =
-        '<div class="boot-fatal-box">' +
-          '<h2>\u26a0\ufe0f \u7121\u6cd5\u8f09\u5165\u7a0b\u5f0f\u5eab</h2>' +
-          '<p>\u9801\u9762\u6240\u9700\u7684 Vue / Leaflet \u672a\u80fd\u4e0b\u8f09\u5b8c\u6210\u3002' +
-          '<br>\u8acb\u6aa2\u67e5\u7db2\u7d61\u9023\u7dda\u5f8c\u518d\u8a66\u4e00\u6b21\u3002</p>' +
-          '<button type="button" id="boot-retry">\u91cd\u65b0\u8f09\u5165</button>' +
-        '</div>';
-      var btn = document.getElementById("boot-retry");
-      if (btn) btn.addEventListener("click", function () { location.reload(); });
-    }
-    return;
-  }
-
   /* Watchdog: even if onMounted throws, never strand the user on the shell. */
   setTimeout(window.__revealApp, 8000);
 })();
@@ -1133,6 +1111,34 @@ function saveFontScale(v) {
 }
 </script>
 
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js" crossorigin="anonymous"></script>
+<script>
+/* CDN fallback: unpkg occasionally fails on mobile networks. We are still
+   parsing, so document.write() pulls the jsDelivr copy synchronously. */
+if (typeof Vue === "undefined") {
+  document.write('<script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js" crossorigin="anonymous"><\/script>');
+}
+</script>
+<script>
+/* Only reachable if the CDN is unreachable. #app is still hidden at this point,
+   so say something useful instead of leaving a blank screen. */
+if (typeof Vue === "undefined") {
+  var bootEl = document.getElementById("boot-screen");
+  if (bootEl) {
+    bootEl.classList.add("boot-fatal");
+    bootEl.innerHTML =
+      '<div class="boot-fatal-box">' +
+        '<h2>\u26a0\ufe0f \u7121\u6cd5\u8f09\u5165\u7a0b\u5f0f\u5eab</h2>' +
+        '<p>\u9801\u9762\u6240\u9700\u7684 Vue / Leaflet \u672a\u80fd\u4e0b\u8f09\u5b8c\u6210\u3002' +
+        '<br>\u8acb\u6aa2\u67e5\u7db2\u7d61\u9023\u7dda\u5f8c\u518d\u8a66\u4e00\u6b21\u3002</p>' +
+        '<button type="button" id="boot-retry">\u91cd\u65b0\u8f09\u5165</button>' +
+      '</div>';
+    var btn = document.getElementById("boot-retry");
+    if (btn) btn.addEventListener("click", function () { location.reload(); });
+  }
+}
+</script>
+
 <script>
 const { createApp, ref, computed, onMounted, onUnmounted } = Vue;
 
@@ -1496,15 +1502,20 @@ createApp({
 }).mount("#app");
 
 /* ==================== ATOMIC SINGLE-FRAME REVEAL ====================
-   mount() renders synchronously; onMounted work (Leaflet init, font scale,
-   localStorage reads) lands in the microtasks right after it. A double
-   requestAnimationFrame waits for all of those DOM mutations to be committed,
-   then removes the boot shell and un-hides #app in ONE task - so the browser
-   performs a single paint and never shows a half-built frame. */
+   mount() renders synchronously and Vue flushes onMounted hooks before it
+   returns, so by the time this line runs the app is already complete. Reveal
+   in a MICROTASK - after any nextTick() work queued by onMounted, but still
+   before the browser's first paint. That way the boot shell is removed before
+   it is ever painted, and the user goes straight from the previous screen to
+   the finished app. (Waiting on requestAnimationFrame here would force the
+   shell to paint for a frame or two - which is itself a visible blink.)
+   The rAF below is only a safety net for the rare case where mount() finishes
+   after the parsing task. */
+queueMicrotask(function () {
+  if (typeof window.__revealApp === "function") window.__revealApp();
+});
 requestAnimationFrame(function () {
-  requestAnimationFrame(function () {
-    if (typeof window.__revealApp === "function") window.__revealApp();
-  });
+  if (typeof window.__revealApp === "function") window.__revealApp();
 });
 
 </script>
