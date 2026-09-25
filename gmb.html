@@ -21,9 +21,75 @@
 <link rel="icon" type="image/png" href="gmb.png" />
 <link rel="apple-touch-icon" href="gmb.png" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous" />
+<style>
+  /* Painted BEFORE the CDN <script> tags block parsing: keeps the viewport the
+     app background colour instead of white while the libraries download. */
+  html { background: #f5f7fb; }
+</style>
 <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
+<script>
+/* CDN fallback: unpkg occasionally fails on mobile networks. While the document
+   is still parsing, document.write() synchronously pulls the jsDelivr copy so
+   Vue / L can never end up undefined (which would strand the boot shell). */
+if (typeof Vue === "undefined") {
+  document.write('<script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js" crossorigin="anonymous"><\/script>');
+}
+if (typeof L === "undefined") {
+  document.write('<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"><\/script>');
+}
+</script>
+
 <style>
+  /* ==================== ANTI-FLICKER (FOUC) ====================
+     Vue is loaded from a CDN. Until mount() finishes, the browser is painting
+     the RAW, uncompiled template: every {{ }} mustache and every v-if block
+     (back button, company picker, GPS panel, map overlay, detail modal ...)
+     is visible at once. On a slow mobile link that is the flash of
+     unrendered text / raw template seen when switching transport modes.
+
+     Fix: treat #app as a pre-rendered but HIDDEN view container.
+       v-cloak      - removed automatically by Vue once mounted (belt)
+       data-booting - controlled by the boot script, removed in the same
+                      single frame that the boot shell is removed (braces)
+     ============================================================== */
+  [v-cloak] { display: none !important; }
+  #app[data-booting] { display: none !important; }
+
+  /* Mutually-exclusive view containers: hidden by default, swapped by
+     toggling [hidden] / .is-hidden instead of rewriting shared live DOM. */
+  [hidden] { display: none !important; }
+  .view[hidden], .view.is-hidden { display: none !important; }
+
+  /* ---- boot shell: static, never compiled by Vue, paints on frame 1 ----
+     Reuses the existing .app-header / .header-logo-badge classes so it is
+     pixel-identical to the real header. Switching transport mode then reads
+     as "the header stays, the content swaps" instead of a white flash plus
+     raw template garbage. */
+  #boot-screen {
+    position: fixed; inset: 0; z-index: 99998;
+    display: flex; flex-direction: column;
+    background: #f5f7fb;
+  }
+  #boot-screen .boot-content { flex: 1 1 auto; min-height: 0; background: #f5f7fb; }
+  #boot-screen .back-btn,
+  #boot-screen .header-meta { pointer-events: none; }
+  /* invisible clock placeholder: keeps the shell's h1 at exactly the
+     same x as the real header's, so the title never jumps on reveal. */
+  #boot-screen .boot-clock { visibility: hidden; }
+  #boot-screen.boot-fatal { align-items: center; justify-content: center; padding: 24px; }
+  #boot-screen .boot-fatal-box {
+    max-width: 430px; background: #fff; border-radius: 14px;
+    padding: 24px 26px; text-align: center; line-height: 1.7;
+    box-shadow: 0 4px 24px rgba(20,30,60,.14);
+  }
+  #boot-screen .boot-fatal-box h2 { margin: 0 0 8px; font-size: 18px; color: #b3261e; }
+  #boot-screen .boot-fatal-box p { margin: 0 0 16px; font-size: 14px; color: #555; }
+  #boot-screen .boot-fatal-box button {
+    font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+    padding: 8px 18px; border: none; border-radius: 8px;
+    background: #0d5e3a; color: #fff;
+  }
   :root { --font-scale: 1; --status-inset: 0px; --nav-inset: 0px; }
   * {
     box-sizing: border-box;
@@ -858,10 +924,71 @@
 
 
 </style>
+<noscript><style>#app[data-booting]{display:flex!important}#boot-screen{display:none!important}</style></noscript>
 </head>
 <body>
 
-<div id="app">
+<!-- ===== BOOT SHELL =====
+     Static HTML, never compiled by Vue. #app stays hidden via
+     data-booting while this is on screen, so the uncompiled raw
+     template can never be painted. Built from the real header
+     classes so the header does not jump when the app takes over. -->
+<div id="boot-screen" aria-hidden="true">
+  <header class="app-header">
+    <a class="back-btn">← 返回</a>
+    <h1>
+      <span class="header-logo-badge">
+        <img class="header-logo" src="gmb.png" alt="" />
+      </span>
+      Ansum 小巴
+    </h1>
+    <div class="header-meta"><span class="header-clock boot-clock">00:00:00</span></div>
+  </header>
+  <div class="boot-content"></div>
+</div>
+
+<script>
+/* ==================== BOOT COORDINATION ==================== */
+(function () {
+  var revealed = false;
+
+  /* ATOMIC REVEAL: dropping data-booting and removing the shell happen in the
+     same task, so the browser paints exactly once. There is never a frame
+     where the shell is gone but #app has not been laid out yet. */
+  window.__revealApp = function () {
+    if (revealed) return;
+    revealed = true;
+    var app  = document.getElementById("app");
+    var boot = document.getElementById("boot-screen");
+    if (app) app.removeAttribute("data-booting");
+    if (boot && boot.parentNode) boot.parentNode.removeChild(boot);
+  };
+
+  /* If the CDN failed entirely, #app would stay hidden forever - say so. */
+  if (typeof Vue === "undefined") {
+    var bootEl = document.getElementById("boot-screen");
+    if (bootEl) {
+      bootEl.classList.add("boot-fatal");
+      bootEl.innerHTML =
+        '<div class="boot-fatal-box">' +
+          '<h2>\u26a0\ufe0f \u7121\u6cd5\u8f09\u5165\u7a0b\u5f0f\u5eab</h2>' +
+          '<p>\u9801\u9762\u6240\u9700\u7684 Vue / Leaflet \u672a\u80fd\u4e0b\u8f09\u5b8c\u6210\u3002' +
+          '<br>\u8acb\u6aa2\u67e5\u7db2\u7d61\u9023\u7dda\u5f8c\u518d\u8a66\u4e00\u6b21\u3002</p>' +
+          '<button type="button" id="boot-retry">\u91cd\u65b0\u8f09\u5165</button>' +
+        '</div>';
+      var btn = document.getElementById("boot-retry");
+      if (btn) btn.addEventListener("click", function () { location.reload(); });
+    }
+    return;
+  }
+
+  /* Watchdog: even if onMounted throws, never strand the user on the shell. */
+  setTimeout(window.__revealApp, 8000);
+})();
+</script>
+
+
+<div id="app" v-cloak data-booting>
   <header class="app-header">
     <a href="index.html" class="back-btn">← 返回</a>
     <h1>
@@ -3285,6 +3412,19 @@ createApp({
     };
   },
 }).mount("#app");
+
+/* ==================== ATOMIC SINGLE-FRAME REVEAL ====================
+   mount() renders synchronously; onMounted work (Leaflet init, font scale,
+   localStorage reads) lands in the microtasks right after it. A double
+   requestAnimationFrame waits for all of those DOM mutations to be committed,
+   then removes the boot shell and un-hides #app in ONE task - so the browser
+   performs a single paint and never shows a half-built frame. */
+requestAnimationFrame(function () {
+  requestAnimationFrame(function () {
+    if (typeof window.__revealApp === "function") window.__revealApp();
+  });
+});
+
 </script>
 </body>
 </html>
