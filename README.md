@@ -4,8 +4,8 @@
 
 ## 線上版
 
-- **巴士**：[https://mattpenny.github.io/transport/](https://mattpenny.github.io/transport/)
-- **專線小巴**：[https://mattpenny.github.io/transport/gmb.html](https://mattpenny.github.io/transport/gmb.html)
+- **巴士**：<https://mattpenny.github.io/transport/>
+- **專線小巴**：<https://mattpenny.github.io/transport/gmb.html>
 - **紅色小巴**：`https://mattpenny.github.io/transport/rmb.html`（**目前 404，尚未上傳**）
 
 ---
@@ -14,12 +14,13 @@
 
 **不要用雙擊方式直接開啟 `index.html` / `gmb.html` / `rmb.html`。**
 
-直接用雙擊開啟時，網址是 `file://...`，瀏覽器基於安全理由會**封鎖本機 JSON／CSV 檔案的讀取（CORS）**，
+直接用雙擊開啟時，網址是 `file://...`，瀏覽器基於安全理由會**封鎖本機 JSON／CSV 檔案的讀取（CORS）**，  
 結果就是：頁面只顯示未渲染的 `{{ ... }}` 模板文字，或票價／路線／站點全部空白。
 
 ### 正確做法（Windows 最簡單）
 
 雙擊資料夾內的 **`start-local.bat`**，它會自動：
+
 1. 啟動本機網頁伺服器（優先使用 Python，找不到時自動改用 Node.js）
 2. 開啟瀏覽器到 `http://localhost:8000/index.html`
 
@@ -37,7 +38,7 @@ node tools/serve.js 8000
 
 然後瀏覽器前往 `http://localhost:8000/index.html`。
 
-> 若透過 `file://` 開啟，頁面會自動顯示一個紅色警告框提醒你改用本機伺服器，
+> 若透過 `file://` 開啟，頁面會自動顯示一個紅色警告框提醒你改用本機伺服器，>   
 > 不會再只顯示一堆看不懂的模板文字。
 
 ---
@@ -62,24 +63,24 @@ node tools/serve.js 8000
 
 ## 功能總覽
 
-| 功能 | 巴士 (`index.html`) | 專線小巴 (`gmb.html`) | 紅色小巴 (`rmb.html`) | 渡輪 (`ferry.html`) |
-|---|:---:|:---:|:---:|:---:|
-| 路線搜尋 | ✅ | ✅（自動判定地區；號碼重複才彈窗問） | ✅（按地區＋關鍵字） | 🚧 |
-| 目的地搜尋（附近 5 個可到達的車站） | ✅ 需定位（含小巴，不可點） | ✅ 需定位（只列小巴） | ❌ | 🚧 |
-| 方向選擇 | ✅ | ✅ | ✅（行車方向） | 🚧 |
-| 站點列表 | ✅ | ✅ | ⚠️ 只列行車路線（`via` 文字） | 🚧 |
-| 實時到站 (ETA) | ✅ 最近 3 班 | ✅ 最近 3 班 | ❌ 紅巴無官方 ETA | 🚧 |
-| 全程票價 | ✅ | ✅ | ✅（收費表） | 🚧 |
-| 分段收費 | ✅ | ❌ | ❌ | ❌ |
-| 路線詳細資料（「詳請」彈窗） | ✅ | ✅ | ✅（右欄內嵌） | 🚧 |
-| 地圖顯示 | ✅ | ✅ | ❌ | 🚧 |
-| GPS 自動定位最近站 | ✅（見「目的地搜尋」） | ✅（見「目的地搜尋」） | ❌ | 🚧 |
-| 我的最愛 | ✅ 6 個 | ✅ 6 個 | ✅ 6 個 | 🚧 |
-| 字型大小調整 | ✅ | ✅ | ✅ | 🚧 |
-| API 節流保護 | — | ✅（防 429） | —（純靜態 JSON） | — |
+| 功能                  | 巴士 (`index.html`) |  專線小巴 (`gmb.html`) |  紅色小巴 (`rmb.html`)  | 渡輪 (`ferry.html`) |
+| ------------------- | :---------------: | :----------------: | :-----------------: | :---------------: |
+| 路線搜尋                |         ✅         | ✅（自動判定地區；號碼重複才彈窗問） |      ✅（按地區＋關鍵字）     |         🚧        |
+| 目的地搜尋（附近 5 個可到達的車站） |   ✅ 需定位（含小巴，不可點）  |     ✅ 需定位（只列小巴）    |          ❌          |         🚧        |
+| 方向選擇                |         ✅         |          ✅         |       ✅（行車方向）       |         🚧        |
+| 站點列表                |         ✅         |          ✅         | ⚠️ 只列行車路線（`via` 文字） |         🚧        |
+| 實時到站 (ETA)          |      ✅ 最近 3 班     |      ✅ 最近 3 班      |     ❌ 紅巴無官方 ETA     |         🚧        |
+| 全程票價                |         ✅         |          ✅         |        ✅（收費表）       |         🚧        |
+| 分段收費                |         ✅         |          ❌         |          ❌          |         ❌         |
+| 路線詳細資料（「詳請」彈窗）      |         ✅         |          ✅         |       ✅（右欄內嵌）       |         🚧        |
+| 地圖顯示                |         ✅         |          ✅         |          ❌          |         🚧        |
+| GPS 自動定位最近站         |    ✅（見「目的地搜尋」）    |     ✅（見「目的地搜尋」）    |          ❌          |         🚧        |
+| 我的最愛                |       ✅ 6 個       |        ✅ 6 個       |        ✅ 6 個        |         🚧        |
+| 字型大小調整              |         ✅         |          ✅         |          ✅          |         🚧        |
+| API 節流保護            |         —         |      ✅（防 429）      |     —（純靜態 JSON）     |         —         |
 
-> **紅巴為何沒有 ETA／地圖？** 紅色小巴沒有政府實時到站 API，亦無官方站點座標，
-> 資料來源是 16seats.net 的路線目錄（`rmb-routes.json`），因此頁面改為
+> **紅巴為何沒有 ETA／地圖？** 紅色小巴沒有政府實時到站 API，亦無官方站點座標，>   
+> 資料來源是 16seats.net 的路線目錄（`rmb-routes.json`），因此頁面改為>   
 > 「地區 → 路線 → 詳細資料（收費表、時間表、行車路線）」的純目錄式瀏覽。
 
 ---
@@ -111,23 +112,23 @@ node tools/serve.js 8000
 └── README.md                   ← 本文件
 ```
 
-> **三個交通模式都必須上傳**（`index.html`、`gmb.html`、`rmb.html`）以及對應的
-> `bus.png`、`gmb.png`、`rmb.png`。缺任何一個都會令首頁連結或圖示變成 404 —
+> **三個交通模式都必須上傳**（`index.html`、`gmb.html`、`rmb.html`）以及對應的>   
+> `bus.png`、`gmb.png`、`rmb.png`。缺任何一個都會令首頁連結或圖示變成 404 —>   
 > 目前線上版本正缺少 `rmb.html`、`gmb.png`、`rmb.png`（見「部署狀態提醒」）。
 
 ### 各檔案用途
 
-| 檔案 | 用途 | 更新頻率 |
-|---|---|---|
-| `index.html` | 巴士介面（單一檔案，含 HTML + CSS + JS） | 只在改功能時 |
-| `gmb.html` | 專線小巴介面（單一檔案） | 只在改功能時 |
-| `rmb.html` | 紅色小巴介面（單一檔案） | 只在改功能時 |
-| `bus.png` / `gmb.png` / `rmb.png` | 各模式應用圖示（favicon 與 header logo） | 極少 |
-| `gmb-detail.json` | GMB 收費／站點／營運資料（**運輸署開放數據**） | 每 2 週（官方更新頻率） |
-| `rmb-routes.json` | 紅色小巴路線目錄（16seats.net） | 不定期 |
-| `gmb-stops-coords.csv` | GMB 站點 HK80 座標 | 每 3-6 個月 |
-| `routeFareList.min.json` | 全港巴士與小巴票價 | 每 3-6 個月 |
-| `bus-detail.json` | 巴士班次（服務日／時段／班距），只供「詳請」彈窗使用 | 與 `routeFareList.min.json` 同步重跑 |
+| 檔案                                | 用途                             | 更新頻率                            |
+| --------------------------------- | ------------------------------ | ------------------------------- |
+| `index.html`                      | 巴士介面（單一檔案，含 HTML + CSS + JS）   | 只在改功能時                          |
+| `gmb.html`                        | 專線小巴介面（單一檔案）                   | 只在改功能時                          |
+| `rmb.html`                        | 紅色小巴介面（單一檔案）                   | 只在改功能時                          |
+| `bus.png` / `gmb.png` / `rmb.png` | 各模式應用圖示（favicon 與 header logo） | 極少                              |
+| `gmb-detail.json`                 | GMB 收費／站點／營運資料（**運輸署開放數據**）    | 每 2 週（官方更新頻率）                   |
+| `rmb-routes.json`                 | 紅色小巴路線目錄（16seats.net）          | 不定期                             |
+| `gmb-stops-coords.csv`            | GMB 站點 HK80 座標                 | 每 3-6 個月                        |
+| `routeFareList.min.json`          | 全港巴士與小巴票價                      | 每 3-6 個月                        |
+| `bus-detail.json`                 | 巴士班次（服務日／時段／班距），只供「詳請」彈窗使用     | 與 `routeFareList.min.json` 同步重跑 |
 
 ### 為什麼用單一 HTML 檔案？
 
@@ -187,12 +188,12 @@ done
 
 ### 前端框架
 
-| 項目 | 版本 | 用途 |
-|---|---|---|
-| Vue 3 | 3.x (global build) | 響應式 UI |
-| Leaflet | 1.9.4 | 互動地圖 |
-| 原生 CSS | — | 全部樣式內嵌 |
-| 無建置工具 | — | 直接部署 |
+| 項目      | 版本                 | 用途     |
+| ------- | ------------------ | ------ |
+| Vue 3   | 3.x (global build) | 響應式 UI |
+| Leaflet | 1.9.4              | 互動地圖   |
+| 原生 CSS  | —                  | 全部樣式內嵌 |
+| 無建置工具   | —                  | 直接部署   |
 
 ### 通訊協定
 
@@ -201,26 +202,26 @@ done
 
 ### 儲存機制
 
-| 用途 | 儲存方式 | Key 前綴 |
-|---|---|---|
-| 我的最愛（巴士） | localStorage + cookie | `hk-bus-eta-favourites` |
-| 我的最愛（專線小巴） | localStorage + cookie | `hk-gmb-favourites-v1` |
-| 我的最愛（紅色小巴） | localStorage + cookie | `hk-rmb-favourites-v1` |
-| 字型大小（三者共用） | localStorage + cookie | `hk-bus-font-scale` |
+| 用途              | 儲存方式                  | Key 前綴                     |
+| --------------- | --------------------- | -------------------------- |
+| 我的最愛（巴士）        | localStorage + cookie | `hk-bus-eta-favourites`    |
+| 我的最愛（專線小巴）      | localStorage + cookie | `hk-gmb-favourites-v1`     |
+| 我的最愛（紅色小巴）      | localStorage + cookie | `hk-rmb-favourites-v1`     |
+| 字型大小（三者共用）      | localStorage + cookie | `hk-bus-font-scale`        |
 | 彈窗字型大小（僅巴士詳請彈窗） | localStorage + cookie | `hk-bus-detail-font-scale` |
-| 票價快取（巴士） | localStorage | `hk-bus-fare-data-v4` |
-| 票價快取（小巴） | localStorage | `hk-gmb-fare-data-v3` |
-| GMB 站點座標快取 | localStorage | `hk-gmb-stop-coords-v1` |
+| 票價快取（巴士）        | localStorage          | `hk-bus-fare-data-v4`      |
+| 票價快取（小巴）        | localStorage          | `hk-gmb-fare-data-v3`      |
+| GMB 站點座標快取      | localStorage          | `hk-gmb-stop-coords-v1`    |
 
 ### 快取策略
 
-| 資料 | 快取時間 | 儲存位置 |
-|---|---|---|
-| 路線清單 | 記憶體內（session） | `routeListsCache` |
-| 小巴站點列表 | 記憶體內 | `stopsCache` |
-| 小巴 ETA | 30 秒 | `etaCache` |
-| 票價資料 | 7 天 | localStorage |
-| GMB 站點座標 | 30 天 | localStorage |
+| 資料       | 快取時間          | 儲存位置              |
+| -------- | ------------- | ----------------- |
+| 路線清單     | 記憶體內（session） | `routeListsCache` |
+| 小巴站點列表   | 記憶體內          | `stopsCache`      |
+| 小巴 ETA   | 30 秒          | `etaCache`        |
+| 票價資料     | 7 天           | localStorage      |
+| GMB 站點座標 | 30 天          | localStorage      |
 
 ### API 節流
 
@@ -238,32 +239,32 @@ const GMB_MIN_INTERVAL_MS = 800;  // 兩次請求間最少間隔
 
 ### 實時到站 (ETA)
 
-| 交通 | API 端點 |
-|---|---|
-| 九巴 (KMB) | `https://data.etabus.gov.hk/v1/transport/kmb` |
-| 城巴 (CTB) | `https://rt.data.gov.hk/v2/transport/citybus` |
-| 新大嶼山巴士 (NLB) | `https://rt.data.gov.hk/v2/transport/nlb` |
-| 專線小巴 (GMB) | `https://data.etagmb.gov.hk` |
+| 交通           | API 端點                                        |
+| ------------ | --------------------------------------------- |
+| 九巴 (KMB)     | `https://data.etabus.gov.hk/v1/transport/kmb` |
+| 城巴 (CTB)     | `https://rt.data.gov.hk/v2/transport/citybus` |
+| 新大嶼山巴士 (NLB) | `https://rt.data.gov.hk/v2/transport/nlb`     |
+| 專線小巴 (GMB)   | `https://data.etagmb.gov.hk`                  |
 
 ### 靜態資料
 
-| 資料 | 來源 | 格式 |
-|---|---|---|
+| 資料             | 來源                                                                                              | 格式                   |
+| -------------- | ----------------------------------------------------------------------------------------------- | -------------------- |
 | GMB 收費／站點／營運資料 | [運輸署開放數據](https://data.gov.hk/tc-data/dataset/hk-td-tis_3-routes-and-fares-of-public-transport) | Access MDB → 轉成 JSON |
-| 票價 | [hkbus.app](https://data.hkbus.app/routeFareList.min.json) | JSON |
-| GMB 站點座標 | [data.gov.hk](https://data.gov.hk) | CSV（HK80 座標） |
-| 地圖底圖 | 地政總署 CSDI | PNG 瓦片 |
-| 地圖標籤 | 地政總署 CSDI | PNG 瓦片 |
+| 票價             | [hkbus.app](https://data.hkbus.app/routeFareList.min.json)                                      | JSON                 |
+| GMB 站點座標       | [data.gov.hk](https://data.gov.hk)                                                              | CSV（HK80 座標）         |
+| 地圖底圖           | 地政總署 CSDI                                                                                       | PNG 瓦片               |
+| 地圖標籤           | 地政總署 CSDI                                                                                       | PNG 瓦片               |
 
 ### 更新週期
 
-| 資料 | 原始更新頻率 | 建議手動更新頻率 |
-|---|---|---|
-| ETA | 每分鐘 | — |
-| 票價 | 每日（hkbus.app） | 每 3-6 個月 |
-| GMB 收費／站點（運輸署） | 每兩週 | 每 1-2 個月 |
-| GMB 站點座標 | 每兩週（政府） | 每 6 個月 |
-| 路線清單 | 不定期 | — |
+| 資料             | 原始更新頻率        | 建議手動更新頻率 |
+| -------------- | ------------- | -------- |
+| ETA            | 每分鐘           | —        |
+| 票價             | 每日（hkbus.app） | 每 3-6 個月 |
+| GMB 收費／站點（運輸署） | 每兩週           | 每 1-2 個月 |
+| GMB 站點座標       | 每兩週（政府）       | 每 6 個月   |
+| 路線清單           | 不定期           | —        |
 
 ---
 
@@ -287,47 +288,47 @@ python tools/fetch-td-gmb.py --keep-mdb
 
 ### ⚠️ 重要陷阱：CSV 是「差異檔」，不是資料
 
-data.gov.hk 上該資料集同時提供 CSV 與 MDB。**CSV 只是變更記錄**
-（欄位僅 `ROUTE_ID,CHANGE`，值為 `ADD`/`UPDATE`），**真正的資料在 `.mdb`（Access）檔案內**。
+data.gov.hk 上該資料集同時提供 CSV 與 MDB。**CSV 只是變更記錄**  
+（欄位僅 `ROUTE_ID,CHANGE`，值為 `ADD`/`UPDATE`），**真正的資料在 `.mdb`（Access）檔案內**。  
 網頁上要先在格式篩選器選「MDB」才會看到。
 
-| 檔案 | 內容 |
-|---|---|
-| `ROUTE_GMB.mdb` | 路線號、起訖點（中英）、全程收費、行車時間、地區 |
-| `FARE_GMB.mdb` | 完整分段收費矩陣（`ON_SEQ` 上車、`OFF_SEQ` 下車、`PRICE`） |
-| `RSTOP_GMB.mdb` | 各線站序與站名（中英） |
-| `STOP_GMB.mdb` | 站點座標（HK80 格網） |
-| `COMPANY_CODE.mdb` | 公司代號對照 |
+| 檔案                 | 內容                                         |
+| ------------------ | ------------------------------------------ |
+| `ROUTE_GMB.mdb`    | 路線號、起訖點（中英）、全程收費、行車時間、地區                   |
+| `FARE_GMB.mdb`     | 完整分段收費矩陣（`ON_SEQ` 上車、`OFF_SEQ` 下車、`PRICE`） |
+| `RSTOP_GMB.mdb`    | 各線站序與站名（中英）                                |
+| `STOP_GMB.mdb`     | 站點座標（HK80 格網）                              |
+| `COMPANY_CODE.mdb` | 公司代號對照                                     |
 
 ### 兩個實作要點
 
-1. **金額格式**：`PRICE` / `FULL_FARE` 是 **1/10000 港元**的整數。
+1. **金額格式**：`PRICE` / `FULL_FARE` 是 **1/10000 港元**的整數。     
    `145000` → `$14.50`。
-2. **`ON_SEQ` 是上車站、`OFF_SEQ` 是下車站**（不是反過來）。
+2. **`ON_SEQ` 是上車站、`OFF_SEQ` 是下車站**（不是反過來）。     
    若標籤寫成「由 OFF 往 ON」就會出現「往起點」的錯誤方向。
 
 ### 已知限制
 
-- **班次時間表不在開放數據內**：該資料集沒有頻率／班次表。
-  路線頁連結（`ROUTE.HYPERLINK_C`）會指向運輸署「香港出行易」官方頁，
+- **班次時間表不在開放數據內**：該資料集沒有頻率／班次表。    
+  路線頁連結（`ROUTE.HYPERLINK_C`）會指向運輸署「香港出行易」官方頁，    
   該頁才有時間表。前端在沒有時間表資料時會自動隱藏該卡片。
-- **個別營辦商名稱不在開放數據內**：只有通用的 `GMB`（專線小巴）代號，
+- **個別營辦商名稱不在開放數據內**：只有通用的 `GMB`（專線小巴）代號，    
   沒有逐線營辦商名稱。
 
 ### 授權（可公開發布）
 
-DATA.GOV.HK 使用條款 v1.2 允許**商業及非商業**用途、免費使用，條件是
-註明資料來源並確認政府知識產權。`gmb-detail.json` 內的
+DATA.GOV.HK 使用條款 v1.2 允許**商業及非商業**用途、免費使用，條件是  
+註明資料來源並確認政府知識產權。`gmb-detail.json` 內的  
 `source` / `sourceName` / `copyright` / `licence` 欄位已寫入相關聲明。
 
-> 舊版資料來自 16seats.net，其版權為「僅供個人非商業參考」，不可公開發布。
+> 舊版資料來自 16seats.net，其版權為「僅供個人非商業參考」，不可公開發布。>   
 > 已備份為 `gmb-detail.16seats.backup.json`。
 
 ---
 
 ## 紅色小巴 (`rmb.html`) 頁面架構
 
-紅巴沒有 API，所以這一頁是本專案**唯一純靜態**的模式：只讀一個 `rmb-routes.json`，
+紅巴沒有 API，所以這一頁是本專案**唯一純靜態**的模式：只讀一個 `rmb-routes.json`，  
 不做任何 ETA 請求。整體佈局刻意與 `gmb.html` 對齊，讓三個模式的操作習慣一致。
 
 ### 操作流程
@@ -337,11 +338,11 @@ DATA.GOV.HK 使用條款 v1.2 允許**商業及非商業**用途、免費使用�
 （左欄）   （右欄／手機在同一欄下方）  （桌面內嵌／手機彈出）
 ```
 
-| 步驟 | 桌面（> 900px） | 手機（≤ 900px） |
-|---|---|---|
-| 1. 選地區 | 左欄**內嵌**地區格線（3 欄） | 同樣是內嵌地區格線 |
-| 2. 選路線 | 路線清單出現在**右欄** | 路線清單接在下方同一捲動欄 |
-| 3. 看詳情 | 右欄**內嵌**展開詳細卡片 | **彈出**全螢幕面板（GMB 的「詳請」樣式） |
+| 步驟     | 桌面（> 900px）       | 手機（≤ 900px）              |
+| ------ | ----------------- | ------------------------ |
+| 1. 選地區 | 左欄**內嵌**地區格線（3 欄） | 同樣是內嵌地區格線                |
+| 2. 選路線 | 路線清單出現在**右欄**     | 路線清單接在下方同一捲動欄            |
+| 3. 看詳情 | 右欄**內嵌**展開詳細卡片    | **彈出**全螢幕面板（GMB 的「詳請」樣式） |
 
 ### 關鍵設計：一份 markup，兩種呈現
 
@@ -364,10 +365,10 @@ DATA.GOV.HK 使用條款 v1.2 允許**商業及非商業**用途、免費使用�
 }
 ```
 
-`display: contents` 讓 `.detail-sheet` 這一層在桌面「消失」（子元素直接成為 flex 子項），
+`display: contents` 讓 `.detail-sheet` 這一層在桌面「消失」（子元素直接成為 flex 子項），  
 在手機才變成真正的面板盒。**好處：不必維護兩份幾乎相同的 ~90 行詳細卡片 markup。**
 
-手機彈出面板的高度用 `--modal-max-h`，由 JS 依 `window.visualViewport.height` 計算，
+手機彈出面板的高度用 `--modal-max-h`，由 JS 依 `window.visualViewport.height` 計算，  
 避開 iOS Safari 網址欄造成的 `100vh` 偏差：
 
 ```javascript
@@ -386,6 +387,7 @@ const isMobile = ref(window.matchMedia("(max-width: 900px)").matches);
 if (isMobile.value) { updateModalMaxHeight(); detailOpen.value = true; }
 else                { detailOpen.value = false; }
 ```
+
 
 `matchMedia` 的 `change` 事件會同步 `isMobile`；由窄轉寬時自動 `detailOpen = false`，
 避免「桌面模式仍留著一個已開啟的彈出層」。按 `Esc` 亦可關閉彈出。
@@ -709,6 +711,7 @@ python tools/build-bus-detail.py 來源.json 輸出.json
 │        │ .place-panel  │         └──────────────┘
 └────────┴──────────────┘         ＋全螢幕 .gps-overlay
 ```
+
 
 - markup 只寫一份，靠 `main.main-area` 上的 `.showing-place` 類別切換：
   該類別把 `.map-wrap-desktop` 與 `.eta-box` 設成 `display:none`，
@@ -1064,6 +1067,7 @@ location.reload();
 })();
 ```
 
+
 **檢查 GMB 站點座標是否載入**：
 
 ```javascript
@@ -1240,33 +1244,53 @@ APK 是一個**超薄 WebView 外殼**，本身不含任何網頁程式碼，只
 https://mattpenny.github.io/transport/
 ```
 
-已完成的 APK 位於 **`apk/Ansum-Transport-v1.0.apk`**（2.2 MB，已簽署），
-完整原始碼在 **`android/`**，建置與手勢說明見 **`android/README.md`**。
+已完成的 APK 位於 **`apk/Ansum-Transport-v1.0.apk`**（約 17 KB，已簽署），
+完整原始碼與建置腳本在 **`android/`**：
+`AndroidManifest.xml`、`src/com/ansum/bus/MainActivity.java`、`res/`、`build.bat`、`merge.py`。
 
 ### 關鍵特性：使用者永不需重新安裝
 
-因為 APK 沒有打包任何 HTML／CSS／JS（已驗證：APK 內完全沒有這類檔案），
-所以**更新 App 只需要 `git push`**：
+因為 APK 沒有打包任何 HTML／CSS／JS（APK 內只有 `MainActivity` 與啟動圖示，
+已驗證完全沒有任何網頁檔案），所以**更新 App 只需要 `git push`**：
 
 1. 修改網頁，`git push` 到 GitHub Pages
-2. 使用者重開 App（或三指輕觸重新載入）即取得最新版
+2. 使用者重開 App 即取得最新版
 3. **不需要發布新的 APK**
 
-技術上是用 `WebSettings.LOAD_NO_CACHE`（已在 APK bytecode 中驗證為 `const/4 v3, #int 2`）
-強制每次載入都向伺服器重新驗證。
+技術上是用 `WebSettings.LOAD_NO_CACHE` 配合 `webView.clearCache(true)`，
+強制每次都向伺服器重新載入，絕不透過 APK 內的舊快取。
 
-### 手勢操作
+### 全螢幕（Edge-to-edge）標題列
 
-單指完全不攔截（地圖拖曳、捲動、點按全部照常），只有多指手勢會被攔截：
+App 啟動時把系統狀態列／導覽列設為透明，並讓 WebView 繪製到螢幕最頂端
+（`FLAG_LAYOUT_FULLSCREEN` + `LAYOUT_HIDE_NAVIGATION`）。網頁每次載入完成
+（`onPageFinished`）後，由 Java 把實際的狀態列／導覽列高度以 CSS 變數
+`--status-inset` / `--nav-inset` 注入 `<html>`，因此標題列底色可以一路延伸到
+螢幕頂端，而內文仍自動避開系統 UI（這也是三個網頁 `:root` 裡
+`--status-inset` / `--nav-inset` 的由來）。
 
-| 手勢 | 動作 |
-|---|---|
-| 兩指右滑 | 上一頁 |
-| 兩指左滑 | 下一頁 |
-| 兩指下滑 | 捲到最頂 |
-| 兩指上滑 | 捲到最底 |
-| 三指輕觸 | 重新載入（取得 GitHub Pages 最新版） |
-| 四指輕觸 | 清除快取後重新載入 |
+### 操作方式（v1.0）
+
+- **返回鍵**：在 WebView 歷史中往回；已在第一頁則退出 App
+- **重新整理**：關閉並重開 App 即會重新拉取線上最新版（因 `LOAD_NO_CACHE`）
+- 地圖拖曳、捲動、點按等單指操作完全不攔截，全部交由網頁處理
+
+> ⚠️ 多指手勢（兩指滑動、三指／四指輕觸）**尚未實作**，將於後續版本加入。
+
+### 建置方式（無 Gradle）
+
+需先設定 `ANDROID_HOME`（含 build-tools 34.0.0 與 36.0.0、platforms/android-34），
+並確保 Python 3 在 PATH：
+
+```
+cd android
+build.bat
+```
+
+手動流程：`aapt2` 編譯＋連結資源 → `javac`(`--release 11`)＋`d8` 轉 dex →
+`merge.py` 把 `classes.dex` 併入 APK → `zipalign` → `apksigner` 簽署
+（alias `ansumbus`；keystore 為 git-ignored 的 `android/keystore.jks`，請自行
+妥善保管，**千萬不要推送上 GitHub**，否則他人可用同一把金鑰偽造更新）。
 
 ### ⚠️ 部署狀態提醒（2026-09-24 實測）
 

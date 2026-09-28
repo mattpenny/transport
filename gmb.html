@@ -590,7 +590,15 @@
 
   .hint { color: #999; font-size: calc(13px * var(--font-scale)); padding: 6px 0; word-break: break-word; }
   .error { color: #c0392b; font-size: calc(12px * var(--font-scale)); margin-top: 6px; word-break: break-word; }
-  .loading { color: #0d5e3a; font-size: calc(12px * var(--font-scale)); padding: 4px 0; }
+  /* 「沿線小巴站」載入中：與搜尋提示同一套 spinner.png 脈動小車。 */
+  .loading { color: #0d5e3a; font-size: calc(12px * var(--font-scale)); padding: 4px 0; display: flex; align-items: center; gap: 6px; }
+  .loading::before {
+    content: ""; flex-shrink: 0;
+    width: 1.7em; height: 1.7em;
+    background: url("spinner.png") center / contain no-repeat;
+    animation: spinnerPulse 1s ease-in-out infinite;
+    display: inline-block;
+  }
 
   /* === MAIN AREA === */
   .main-area { display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 12px; min-height: 0; min-width: 0; overflow: hidden; }
@@ -3643,10 +3651,28 @@ createApp({
       else { stopGeoWatch(); saveFavouritesOnExit(); }
     }
 
+    /* The boot shell keeps #app at display:none (data-booting) until the very
+       last microtask, so initMaps() measures #map-desktop while it is still 0x0.
+       Leaflet caches that viewport and loads only a couple of tiles, leaving the
+       desktop map mostly grey until the user resizes the window. Re-measuring
+       after the reveal (and once more shortly after, for late layout) makes the
+       map fill its panel on first paint. invalidateSize() alone is enough — the
+       tile layer refills itself from the corrected size. */
+    function refreshDesktopMapSize() {
+      if (!mapDesktop) return;
+      requestAnimationFrame(() => {
+        try { mapDesktop.invalidateSize(); } catch (e) {}
+      });
+      setTimeout(() => {
+        try { mapDesktop.invalidateSize(); } catch (e) {}
+      }, 300);
+    }
+
     onMounted(async () => {
       applyFontScale(fontScale.value);
       initMaps();
       if (mapDesktop) buildLabelLayer(mapDesktop);
+      refreshDesktopMapSize();
       fetchGmbCoordDb().catch(() => {});
       fetchGmbFareDb().catch(() => {});
       window.addEventListener("resize", handleResize);
