@@ -1784,8 +1784,16 @@ function minutesUntil(iso) {
   if (!d) return null;
   return Math.max(0, Math.round((d.getTime() - Date.now()) / 60000));
 }
-async function getJSON(url) {
-  const res = await fetch(url, { cache: "no-store" });
+/* 靜態資料的版本號。改資料時把這個值 +1（或改成當日日期），
+   瀏覽器就會當作新檔案重抓，不必再清 localStorage。
+   對應 tools/split-fare.py 產生的兩個檔案。 */
+const DATA_VERSION = "2026-09-28";
+
+/* noStore（預設 true）＝繞過 HTTP 快取，給會變動的 ETA API 用；
+   傳 { noStore: false } 則改用瀏覽器快取，給靜態資料檔用
+   （搭配 DATA_VERSION 就能指定失效）。 */
+async function getJSON(url, { noStore = true } = {}) {
+  const res = await fetch(url, { cache: noStore ? "no-store" : "default" });
   if (!res.ok) throw new Error("HTTP " + res.status);
   return res.json();
 }
@@ -1917,8 +1925,12 @@ async function fetchNlbEta(routeId, stopId) {
 const FARE_CACHE_KEY = "hk-bus-fare-data-v5";
 const FARE_CACHE_VERSION = 5;
 const FARE_CACHE_DAYS = 7;
-const FARE_URL_PRIMARY = "routeFareList.min.json";
-const FARE_URL_FALLBACK = "routeFareList.min.json";
+const FARE_URL_PRIMARY = `routeFareList.min.json?v=${DATA_VERSION}`;
+const FARE_URL_FALLBACK = `routeFareList.min.json?v=${DATA_VERSION}`;
+/* 車站座標／對照表已由 tools/split-fare.py 拆成獨立檔案（約 3.3 MB）。
+   只有「目的地搜尋」與「詳請彈窗的站名反查」才需要它，所以按需載入；
+   單純查路線號時只下載上面的票價檔（約 3.6 MB）。 */
+const STOP_INDEX_URL = `stops-index.min.json?v=${DATA_VERSION}`;
 let fareDb = null, fareDbLoading = null;
 let holidaysList = null;
 
@@ -1985,28 +1997,31 @@ function buildFareIndex(raw) {
   return index;
 }
 
-/* 只取車站座標部分（供舊快取或缺 geo 索引時補載） */
-let geoNeedsFetch = true;
-let geoFetchPromise = null;
-async function loadGeoFromFile() {
-  if (geoIndex) return geoIndex;
-  if (geoFetchPromise) return geoFetchPromise;
-  geoFetchPromise = (async () => {
-    for (const url of [FARE_URL_PRIMARY, FARE_URL_FALLBACK]) {
-      try {
-        const res = await fetch(url, { cache: "no-store" });
-        if (!res.ok) continue;
-        const raw = await res.json();
-        const geo = buildGeoIndex(fareDb, raw && raw.stopList, raw && raw.stopMap);
-        if (!geo || !geo.stops.length) continue;
-        geoIndex = geo;
-        saveGeoStopCache(geo);
-        return geoIndex;
-      } catch (e) {}
-    }
-    return null;
+/* 車站索引（stops-index.min.json）按需載入，只在真的要用時抓一次。
+   記住 promise，因為目的地搜尋與詳請彈窗可能同時用到。 */
+let stopIndexDb = null, stopIndexLoading = null;
+async function fetchStopIndex() {
+  if (stopIndexDb) return stopIndexDb;
+  if (stopIndexLoading) return stopIndexLoading;
+  stopIndexLoading = (async () => {
+    const raw = await getJSON(STOP_INDEX_URL, { noStore: false });
+    stopIndexDb = raw || null;
+    return stopIndexDb;
   })();
-  try { return await geoFetchPromise; } finally { geoFetchPromise = null; }
+  try { return await stopIndexLoading; } finally { stopIndexLoading = null; }
+}
+
+/* 確保 geoIndex（車站座標 + 反向索引）已就緒；已就緒就直接回傳，不再下載。
+   routeStopIdx 需要票價索引，所以先確保 fetchFareDb() 跑完。 */
+async function ensureGeoIndex() {
+  if (geoIndex) return geoIndex;
+  if (!fareDb) await fetchFareDb();
+  if (!fareDb) return null;
+  const stops = await fetchStopIndex();
+  if (!stops || !stops.stopList || !stops.stopMap) return null;
+  geoIndex = buildGeoIndex(fareDb, stops.stopList, stops.stopMap);
+  if (geoIndex) saveGeoStopCache(geoIndex);
+  return geoIndex;
 }
 
 async function fetchFareDb() {
@@ -2020,25 +2035,24 @@ async function fetchFareDb() {
         geoIndex = buildGeoIndex(cached.index, cached.stopList || null, cached.stopMap || null);
       }
       else { fareDb = cached; }
-      /* Older cache entries predate the geo work and carry no stopList/stopMap.
-         Re-fetch the full file so nearby-route search still works, but keep
-         serving the (already loaded) fare index meanwhile. */
+      /* 舊快取可能還內嵌 stopList/stopMap（拆分前的寫法），有的話就地建 geo 索引；
+         沒有就等目的地搜尋／詳請彈窗用到時，再按需抓 stops-index.min.json。 */
+      geoIndex = buildGeoIndex(cached.index || fareDb, cached.stopList || null, cached.stopMap || null);
       if (!geoIndex) geoIndex = loadGeoStopCache();
-      if (!geoIndex && geoNeedsFetch) { geoNeedsFetch = false; try { await loadGeoFromFile(); } catch (e) {} }
       return fareDb;
     }
     for (const url of [FARE_URL_PRIMARY, FARE_URL_FALLBACK]) {
       try {
-        const res = await fetch(url, { cache: "no-store" });
+        const res = await fetch(url, { cache: "default" });
         if (!res.ok) continue;
         const raw = await res.json();
         const idx = buildFareIndex(raw);
         if (!Object.keys(idx).length) continue;
         const hols = Array.isArray(raw && raw.holidays) ? raw.holidays : null;
         fareDb = idx; holidaysList = hols;
-        geoIndex = buildGeoIndex(idx, raw && raw.stopList, raw && raw.stopMap);
-        saveFareCache({ index: idx, holidays: hols, stopList: raw && raw.stopList, stopMap: raw && raw.stopMap });
-        geoNeedsFetch = false;
+        /* 車站索引已拆分到 stops-index.min.json，這裡不再有 stopList/stopMap，
+           所以 geoIndex 留給 ensureGeoIndex() 按需建立。 */
+        saveFareCache({ index: idx, holidays: hols });
         return fareDb;
       } catch (e) {}
     }
@@ -2165,8 +2179,12 @@ function saveGeoStopCache(geo) {
   try { localStorage.setItem(GEO_STOP_CACHE_KEY, JSON.stringify(geo)); } catch (e) {}
 }
 
-/* 由 JSON 建構完整的 geo 索引（供 gmb.html 之類的獨立頁面重用） */
-function ensureGeoIndex(raw) {
+/* 由 JSON 建構完整的 geo 索引。
+   ⚠️ 沒有呼叫點：拆分 routeFareList 之後各頁都改用 ensureGeoIndex()（無參數，
+      會自己抓 stops-index.min.json）。保留僅供日後重用，故改名避免與
+      ensureGeoIndex() 撞名 —— 兩個同名 function 宣告會被後者（Hoisting）蓋掉，
+      呼叫端會拿到錯的版本。 */
+function buildGeoIndexFromRaw(raw) {
   const fareIndex = buildFareIndex(raw);
   return buildGeoIndex(fareIndex, raw && raw.stopList, raw && raw.stopMap);
 }
@@ -2550,7 +2568,7 @@ function lookupFareKey(routeNum, companyId, serviceType, direction) {
  * 而且只在使用者第一次按「詳請」時才抓（本頁其他功能完全不需要它）。
  * 與 gmb.html 的 gmbDetailDb 一樣，只在記憶體快取，不寫 localStorage。
  */
-const BUS_DETAIL_URL = "bus-detail.json";
+const BUS_DETAIL_URL = `bus-detail.json?v=${DATA_VERSION}`;
 let busDetailDb = null;          /* { days, freq } */
 let busDetailLoading = null;
 
@@ -2559,9 +2577,9 @@ async function fetchBusDetailDb() {
   if (busDetailLoading) return busDetailLoading;
   busDetailLoading = (async () => {
     try {
-      /* no-cache（向伺服器確認、可回 304）而不是 no-store：
-         檔案約 660 KB、兩週才更新一次，讓瀏覽器快取省下大部分流量。 */
-      const res = await fetch(BUS_DETAIL_URL, { cache: "no-cache" });
+      /* 靜態資料（~660 KB、兩週才更新一次）：交給瀏覽器 HTTP 快取，
+         靠檔名上的 DATA_VERSION 決定何時失效。 */
+      const res = await fetch(BUS_DETAIL_URL, { cache: "default" });
       if (!res.ok) return null;
       const doc = await res.json();
       if (!doc || !doc.freq || !Object.keys(doc.freq).length) return null;
@@ -3094,8 +3112,7 @@ createApp({
           gpsErr = e.message || "無法取得目前位置";
         }
         await dbPromise;
-        if (!geoIndex) geoIndex = loadGeoStopCache();
-        if (!geoIndex && geoNeedsFetch) { geoNeedsFetch = false; geoIndex = await loadGeoFromFile(); }
+        if (!geoIndex) geoIndex = await ensureGeoIndex();
         if (!geoIndex) throw new Error("車站資料尚未載入，請稍後再試");
         const res = findStopsToDestination(
           geoIndex, fareDb, coords ? coords.lat : null, coords ? coords.lng : null, query);
@@ -3469,6 +3486,11 @@ createApp({
     async function openDetail() {
       if (!routeKey.value) return;
       updateDetailModalMaxHeight();
+      /* 沿途車站的站名是由票價檔的公司站號反查 geoIndex 得來。
+         geoIndex 是模組層級的一般變數（非響應式），所以必須在彈窗開啟前
+         先備妥，否則 detailStopNames 會先用「公司車站編號」當站名且不會再重算。
+         載入失敗不擋彈窗 —— 那是 geoIndex 缺席時原有的退路。 */
+      try { await ensureGeoIndex(); } catch (e) {}
       detailDayIndex.value = 0;
       detailOpen.value = true;
       if (detailReady.value || detailLoading.value) return;

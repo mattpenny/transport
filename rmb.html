@@ -917,6 +917,12 @@
 </div>
 
 <script>
+/* 靜態資料的版本號。改資料時把這個值 +1（或改成當日日期），
+   瀏覽器就會當作新檔案重抓，不必再清 localStorage。
+   必須宣告在使用它的 DATA_URL 之前 —— const 沒有提升，
+   在宣告前取值會直接拋 ReferenceError。 */
+const DATA_VERSION = "2026-09-28";
+
 /* ============================================================
    本機檔案開啟防護
    以 file:// 直接開啟時，瀏覽器基於安全理由會封鎖對本機
@@ -964,7 +970,7 @@ showFileProtocolNotice();
    資料層：紅色小巴路線目錄（rmb-routes.json）
    由 tools/fetch-16seats.ps1 從 16seats.net 產生
    ============================================================ */
-const DATA_URL = "rmb-routes.json";
+const DATA_URL = `rmb-routes.json?v=${DATA_VERSION}`;
 const DATA_CACHE_KEY = "hk-rmb-routes-v1";
 const DATA_CACHE_VERSION = 1;
 const DATA_CACHE_DAYS = 30;
@@ -994,7 +1000,7 @@ function saveDataCache(data) {
 async function fetchData() {
   const cached = loadDataCache();
   if (cached) return cached;
-  const res = await fetch(DATA_URL, { cache: "no-store" });
+  const res = await fetch(DATA_URL, { cache: "default" });
   if (!res.ok) throw new Error("HTTP " + res.status);
   const doc = await res.json();
   saveDataCache(doc);

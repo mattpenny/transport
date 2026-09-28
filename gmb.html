@@ -1752,7 +1752,12 @@ function hk80ToWgs84(easting, northing) {
 const GMB_COORD_CACHE_KEY = "hk-gmb-stop-coords-v1";
 const GMB_COORD_VERSION = 1;
 const GMB_COORD_DAYS = 30;
-const GMB_COORD_URL = "gmb-stops-coords.csv";
+/* 靜態資料的版本號。改資料時把這個值 +1（或改成當日日期），
+   瀏覽器就會當作新檔案重抓，不必再清 localStorage。
+   必須宣告在使用它的 GMB_COORD_URL 之前 —— const 沒有提升，
+   在宣告前取值會直接拋 ReferenceError。 */
+const DATA_VERSION = "2026-09-28";
+const GMB_COORD_URL = `gmb-stops-coords.csv?v=${DATA_VERSION}`;
 
 let gmbCoordDb = null;
 let gmbCoordLoading = null;
@@ -1806,7 +1811,7 @@ async function fetchGmbCoordDb() {
     if (cached) { gmbCoordDb = cached; return gmbCoordDb; }
 
     try {
-      const res = await fetch(GMB_COORD_URL, { cache: "no-store" });
+      const res = await fetch(GMB_COORD_URL, { cache: "default" });
       if (!res.ok) throw new Error("HTTP " + res.status);
       const text = await res.text();
       const clean = text.charCodeAt(0) === 0xFEFF ? text.substring(1) : text;
@@ -1862,13 +1867,27 @@ function lookupGmbCoord(stopId) {
 const FARE_CACHE_KEY = "hk-gmb-fare-data-v4";
 const FARE_CACHE_VERSION = 4;
 const FARE_CACHE_DAYS = 7;
-const FARE_URL_PRIMARY = "routeFareList.min.json";
-const FARE_URL_FALLBACK = "routeFareList.min.json";
+const FARE_URL_PRIMARY = `routeFareList.min.json?v=${DATA_VERSION}`;
+const FARE_URL_FALLBACK = `routeFareList.min.json?v=${DATA_VERSION}`;
+/* 車站座標／對照表已由 tools/split-fare.py 拆成獨立檔案（約 3.3 MB），
+   只有目的地搜尋需要，所以按需載入。 */
+const STOP_INDEX_URL = `stops-index.min.json?v=${DATA_VERSION}`;
+/* noStore（預設 true）＝繞過 HTTP 快取，給會變動的 ETA API 用；
+   傳 { noStore: false } 則改用瀏覽器快取，給靜態資料檔用。 */
+async function getJSON(url, { noStore = true } = {}) {
+  const res = await fetch(url, { cache: noStore ? "no-store" : "default" });
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  return res.json();
+}
 /* v3 的快取是「route+serviceType+bound」單層索引，內容與 v4 不相容，清掉。 */
 try { localStorage.removeItem("hk-gmb-fare-data-v3"); } catch (e) {}
 
 let gmbFareDb = null;
 let gmbFareLoading = null;
+/* 原始 routeList（未建索引）。buildGmbGeoIndex() 需要它，而且 localStorage
+   裡的票價快取只存「已建好的索引」，所以必須另外留一份；
+   網路載入票價檔時順手存下來，就不用再抓第二次。 */
+let gmbRawRouteList = null;
 
 function loadFareCache() {
   try {
@@ -1942,12 +1961,13 @@ async function fetchGmbFareDb() {
 
     for (const url of [FARE_URL_PRIMARY, FARE_URL_FALLBACK]) {
       try {
-        const res = await fetch(url, { cache: "no-store" });
+        const res = await fetch(url, { cache: "default" });
         if (!res.ok) continue;
         const raw = await res.json();
         const idx = buildGmbFareIndex(raw);
         if (!Object.keys(idx.byId).length) continue;
         gmbFareDb = idx;
+        gmbRawRouteList = raw && raw.routeList;
         saveFareCache(idx);
         return gmbFareDb;
       } catch (e) {}
@@ -2125,29 +2145,59 @@ function haversineMeters(lat1, lng1, lat2, lng2) {
   return 2 * R * Math.asin(Math.min(1, Math.sqrt(a)));
 }
 
-/* 取得（並快取）小巴專用的車站座標索引 */
+/* 取得小巴專用的車站座標索引。
+   車站資料已由 tools/split-fare.py 拆到 stops-index.min.json（約 3.3 MB），
+   只有「輸入目的地查附近小巴站」才需要，所以按需載入。
+   buildGmbGeoIndex() 同時需要 routeList（在票價檔裡）與 stopList/stopMap
+   （在車站索引裡），所以兩邊都要備妥；routeList 若已經跟著票價檔抓過就直接用。 */
+let gmbStopIndexDb = null, gmbStopIndexLoading = null;
 let gmbGeoFetchPromise = null;
-async function fetchGmbGeoIndex() {
+async function fetchStopIndex() {
+  if (gmbStopIndexDb) return gmbStopIndexDb;
+  if (gmbStopIndexLoading) return gmbStopIndexLoading;
+  gmbStopIndexLoading = (async () => {
+    const raw = await getJSON(STOP_INDEX_URL, { noStore: false });
+    gmbStopIndexDb = raw || null;
+    return gmbStopIndexDb;
+  })();
+  try { return await gmbStopIndexLoading; } finally { gmbStopIndexLoading = null; }
+}
+
+async function ensureGmbGeoIndex() {
   if (gmbGeoIndex) return gmbGeoIndex;
   if (gmbGeoFetchPromise) return gmbGeoFetchPromise;
-  const cached = loadGmbGeoCache();
-  if (cached) { gmbGeoIndex = cached; return gmbGeoIndex; }
   gmbGeoFetchPromise = (async () => {
-    for (const url of [FARE_URL_PRIMARY, FARE_URL_FALLBACK]) {
-      try {
-        const res = await fetch(url, { cache: "no-store" });
-        if (!res.ok) continue;
-        const raw = await res.json();
-        const geo = buildGmbGeoIndex(raw);
-        if (!geo || !geo.stops.length) continue;
-        gmbGeoIndex = geo;
-        saveGmbGeoCache(geo);
-        return gmbGeoIndex;
-      } catch (e) {}
-    }
-    return null;
+    const cached = loadGmbGeoCache();
+    if (cached) { gmbGeoIndex = cached; return gmbGeoIndex; }
+    const [stops, routeList] = await Promise.all([
+      fetchStopIndex(),
+      ensureRawRouteList(),
+    ]);
+    if (!stops || !routeList) return null;
+    const geo = buildGmbGeoIndex({
+      routeList,
+      stopList: stops.stopList,
+      stopMap: stops.stopMap,
+    });
+    if (!geo || !geo.stops.length) return null;
+    gmbGeoIndex = geo;
+    saveGmbGeoCache(geo);
+    return gmbGeoIndex;
   })();
   try { return await gmbGeoFetchPromise; } finally { gmbGeoFetchPromise = null; }
+}
+
+/* buildGmbGeoIndex() 要的原始 routeList。票價檔已經載入時直接拿；
+   否則抓一次票價檔（現在只剩 routeList，很小，且會被 HTTP 快取住）。 */
+async function ensureRawRouteList() {
+  if (gmbRawRouteList) return gmbRawRouteList;
+  await fetchGmbFareDb().catch(() => null);
+  if (gmbRawRouteList) return gmbRawRouteList;
+  try {
+    const raw = await getJSON(FARE_URL_PRIMARY, { noStore: false });
+    gmbRawRouteList = raw && raw.routeList;
+  } catch (e) { gmbRawRouteList = null; }
+  return gmbRawRouteList;
 }
 
 /* 以座標為中心搜尋附近小巴路線；由內至外放寬半徑
@@ -2474,7 +2524,7 @@ async function findRegionsForRoute(code) {
    GMB 詳細資料（分段收費／時間表／營辦商）
    來源：gmb-detail.json（由 tools/fetch-td-gmb.py 從運輸署開放數據產生）
    ============================================================ */
-const DETAIL_URL = "gmb-detail.json";
+const DETAIL_URL = `gmb-detail.json?v=${DATA_VERSION}`;
 
 let gmbDetailDb = null;      /* 記憶體內快取（檔案較大，不寫 localStorage） */
 let gmbDetailLoading = null;
@@ -2485,7 +2535,7 @@ async function fetchGmbDetailDb() {
 
   gmbDetailLoading = (async () => {
     try {
-      const res = await fetch(DETAIL_URL, { cache: "no-store" });
+      const res = await fetch(DETAIL_URL, { cache: "default" });
       if (!res.ok) return null;
       const doc = await res.json();
       const db = (doc && doc.routes) ? doc.routes : null;
@@ -3063,7 +3113,7 @@ createApp({
       placeQuery.value = query;
       placeError.value = "";
       try {
-        const geoPromise = fetchGmbGeoIndex();
+        const geoPromise = ensureGmbGeoIndex();
         /* 票價籤要在 placeStops 算出來之前就備妥 —— placeStops 是 computed，
            但 gmbFareDb 是模組層級的普通變數（非響應式），算完就不會再重算。
            先並行載入、等結果前 await，票價就不會因為「慢一步」而整批消失。 */
