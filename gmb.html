@@ -323,6 +323,44 @@
     color: #0d5e3a;
   }
 
+  /* === 移除最愛確認彈窗 ===
+     取代原生 confirm()：Android WebView 的 confirm 對話框會顯示
+     「https://mattpenny.github.io/...」網址列，與全站外觀也不一致。
+     改成頁內彈窗：取消／✕／點遮罩／Esc＝取消，「移除」才真的刪除。
+     z-index 4500 蓋過 .detail-modal(4000) 與 .region-overlay(3600)。 */
+  .fav-confirm-overlay {
+    position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+    z-index: 4500;
+    background: rgba(0,0,0,0.55);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    padding-bottom: max(20px, env(safe-area-inset-bottom), var(--nav-inset));
+  }
+  .fav-confirm-box {
+    width: 100%; max-width: 340px;
+    background: white; border-radius: 16px; overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+  }
+  .fav-confirm-title {
+    padding: 16px 18px 0;
+    font-size: calc(15px * var(--font-scale)); font-weight: 700; color: #222;
+  }
+  .fav-confirm-msg {
+    padding: 8px 18px 16px;
+    font-size: calc(13px * var(--font-scale)); color: #555; line-height: 1.5;
+    word-break: break-word;
+  }
+  .fav-confirm-actions { display: flex; gap: 10px; padding: 0 18px 16px; }
+  .fav-confirm-btn {
+    flex: 1 1 0; padding: 10px 0; border: none; border-radius: 10px;
+    font-size: calc(14px * var(--font-scale)); font-weight: 700;
+    cursor: pointer; touch-action: manipulation; font-family: inherit;
+  }
+  .fav-confirm-btn.ghost { background: #f0f2f7; color: #333; }
+  .fav-confirm-btn.ghost:active { background: #e2e5ec; }
+  .fav-confirm-btn.danger { background: #e53935; color: white; }
+  .fav-confirm-btn.danger:active { background: #c62828; }
+
   /* === SEARCH ROW === */
   .row {
     display: flex; align-items: center; gap: 6px;
@@ -1430,6 +1468,23 @@
               <span class="region-name">{{ r.name }}</span>
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+  </Teleport>
+
+  <!-- ===== 移除最愛確認彈窗 =====
+       取代原生 confirm()（WebView 會顯示 mattpenny.github.io 網址列）。
+       取消／✕／點遮罩／Esc 都只關閉；按「移除」才真的刪除。 -->
+  <Teleport to="body">
+    <div v-if="favRemoveIdx >= 0 && favRemoveTarget" class="fav-confirm-overlay" @click.self="cancelRemoveFavourite">
+      <div class="fav-confirm-box" role="alertdialog" aria-modal="true"
+           aria-labelledby="fav-confirm-title">
+        <div class="fav-confirm-title" id="fav-confirm-title">移除最愛</div>
+        <div class="fav-confirm-msg">確定移除最愛「{{ favRemoveTarget.route }} {{ favRemoveTarget.dest_tc }}」？</div>
+        <div class="fav-confirm-actions">
+          <button class="fav-confirm-btn ghost" @click="cancelRemoveFavourite">取消</button>
+          <button class="fav-confirm-btn danger" @click="confirmRemoveFavourite">移除</button>
         </div>
       </div>
     </div>
@@ -3052,6 +3107,8 @@ createApp({
        地區選擇彈窗（z-index 3600）→ 沿線小巴站清單 → 目的地結果。 */
     function onDocKeydown(e) {
       if (e.key !== "Escape") return;
+      /* 最上層的先關：移除最愛確認彈窗（z-index 4500）。 */
+      if (favRemoveIdx.value >= 0) { cancelRemoveFavourite(); e.preventDefault(); return; }
       if (showRegionPicker.value) { closeRegionPicker(); e.preventDefault(); return; }
       if (stopsOpen.value) { closeStopsPopup(); e.preventDefault(); return; }
       if (placeOpen.value) { placeOpen.value = false; e.preventDefault(); }
@@ -3127,10 +3184,25 @@ createApp({
       favourites.value = [...favourites.value]; saveFavourites();
     }
 
+    /* ===== 移除最愛 =====
+       不再用原生 confirm()：Android WebView 的 confirm 對話框會顯示
+       「https://mattpenny.github.io/transport/」網址列。改成頁內
+       .fav-confirm-overlay 彈窗——先記住要移除的索引（favRemoveIdx），
+       按「移除」才真正刪除。 */
+    const favRemoveIdx = ref(-1);
+    const favRemoveTarget = computed(() => {
+      const i = favRemoveIdx.value;
+      return i >= 0 ? favourites.value[i] : null;
+    });
     function removeFavourite(index) {
-      const fav = favourites.value[index];
-      if (!fav) return;
-      if (!confirm(`確定移除最愛「${fav.route} ${fav.dest_tc}」？`)) return;
+      if (!favourites.value[index]) return;
+      favRemoveIdx.value = index;
+    }
+    function cancelRemoveFavourite() { favRemoveIdx.value = -1; }
+    function confirmRemoveFavourite() {
+      const index = favRemoveIdx.value;
+      favRemoveIdx.value = -1;
+      if (index < 0 || !favourites.value[index]) return;
       const n = favourites.value.filter((_, i) => i !== index);
       while (n.length < MAX_FAVOURITES) n.push(null);
       favourites.value = n; saveFavourites();
@@ -3604,6 +3676,7 @@ createApp({
       onRegionPick, closeRegionPicker,
       onSearch, selectDirection, clearDirection,
       toggleFavourite, removeFavourite, onFavClick,
+      favRemoveIdx, favRemoveTarget, confirmRemoveFavourite, cancelRemoveFavourite,
       onStopClick, onStopMapClick, expandMap, collapseMap, zoomIn, zoomOut,
       stopsOpen, openStopsPopup, closeStopsPopup, pickStopFromPopup,
       manualRefresh, formatMinutes, formatDistance,
