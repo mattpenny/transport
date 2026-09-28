@@ -887,7 +887,19 @@
   }
 
   .searching-hint { color: #0d5e3a; font-size: calc(12px * var(--font-scale)); padding: 4px 0; display: flex; align-items: center; gap: 6px; }
-  .searching-hint::before { content: ""; width: 10px; height: 10px; border: 2px solid #0d5e3a; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; }
+  /* 載入動畫改用 spinner.png（小車圖）：不旋轉（車轉圈會上下顛倒），
+     改成脈動縮放，模擬「行車中」。尺寸用 em，會跟 --font-scale 一起放大。 */
+  .searching-hint::before {
+    content: ""; flex-shrink: 0;
+    width: 1.7em; height: 1.7em;
+    background: url("spinner.png") center / contain no-repeat;
+    animation: spinnerPulse 1s ease-in-out infinite;
+    display: inline-block;
+  }
+  @keyframes spinnerPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.25); }
+  }
    /* === GMB DETAIL MODAL (source: Transport Department open data) === */
    .detail-modal {
      position: fixed; top: 0; right: 0; bottom: 0; left: 0;
