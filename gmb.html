@@ -505,6 +505,51 @@
   }
   .stop-list .stop-map-btn svg { width: 16px; height: 16px; display: block; }
 
+  /* 「沿線小巴站」標題列：標題 + 一顆「全部」按鈕。
+     側欄清單只有 60vh 高、站名稍長就被 ellipsis 切掉，所以另開一個大彈窗
+     （.stops-modal，與「詳請」同一套 .detail-modal 尺寸）看整份清單。 */
+  .stops-head { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; }
+  .stops-head h3 { margin: 0; flex: 1 1 auto; min-width: 0; }
+  .stops-expand-btn {
+    flex-shrink: 0; padding: 4px 10px; border-radius: 6px;
+    border: 1px solid #0d5e3a; background: #fff; color: #0d5e3a;
+    font-size: calc(12px * var(--font-scale)); font-weight: 700;
+    cursor: pointer; white-space: nowrap;
+  }
+  .stops-expand-btn:hover { background: #e6f5ec; }
+  .stops-expand-btn:active { transform: scale(0.97); }
+
+  /* === 沿線小巴站彈窗（完整清單） ===
+     與「詳請」共用 .detail-modal 系列：同一個 720px 盒、同一個 --modal-max-h、
+     同樣三種關閉方式（✕／點遮罩／Esc），操作習慣一致。
+     站序 + 站名 + 距離；點一列＝選該站並回到原本畫面。
+     本站的彈窗字型沿用全頁 --font-scale（與 .detail-modal 一致）。 */
+  .stops-modal-sub {
+    font-size: calc(13px * var(--font-scale)); color: #666;
+    margin-bottom: 10px; word-break: break-word;
+  }
+  .stops-modal-list { list-style: none; padding: 0; margin: 0; }
+  .stops-modal-list li {
+    display: flex; align-items: center; gap: 10px; min-width: 0;
+    padding: 9px 6px; border-bottom: 1px solid #eef0f4; cursor: pointer;
+    font-size: calc(16px * var(--font-scale));
+  }
+  .stops-modal-list li:last-child { border-bottom: none; }
+  .stops-modal-list li:hover { background: #f2faf5; }
+  .stops-modal-list li.active { background: #cfeedd; color: #0d5e3a; font-weight: 700; }
+  .stops-modal-list li .sm-idx {
+    flex: 0 0 34px; width: 34px; text-align: right; color: #999;
+    font-size: calc(12px * var(--font-scale)); font-variant-numeric: tabular-nums;
+  }
+  .stops-modal-list li.active .sm-idx { color: #0d5e3a; }
+  .stops-modal-list li .stop-name { flex: 1 1 0; min-width: 0; line-height: 1.4; word-break: break-word; }
+  .stops-modal-list li .sm-dist {
+    flex-shrink: 0; white-space: nowrap; border-radius: 10px; padding: 2px 8px;
+    font-size: calc(13px * var(--font-scale)); font-weight: 600;
+    color: #27ae60; background: #e8f8ee;
+  }
+  .stops-modal-list li.active .sm-dist { background: #cfeedd; color: #0d5e3a; }
+
   .hint { color: #999; font-size: calc(13px * var(--font-scale)); padding: 6px 0; word-break: break-word; }
   .error { color: #c0392b; font-size: calc(12px * var(--font-scale)); margin-top: 6px; word-break: break-word; }
   .loading { color: #0d5e3a; font-size: calc(12px * var(--font-scale)); padding: 4px 0; }
@@ -1056,7 +1101,13 @@
         找不到小巴路線「{{ lastSearched }}」
       </div>
 
-      <h3 v-if="stops.length || loadingStops">沿線小巴站</h3>
+      <div class="stops-head" v-if="stops.length || loadingStops">
+        <h3>沿線小巴站</h3>
+        <button class="stops-expand-btn" v-if="stops.length"
+                @click="openStopsPopup()" title="用大彈窗查看全部車站">
+          全部 {{ stops.length }} 站
+        </button>
+      </div>
       <div v-if="loadingStops" class="loading">載入中…</div>
       <div class="stop-list" v-if="stops.length" ref="stopListRef">
         <ul>
@@ -1191,6 +1242,43 @@
         </ul>
       </div>
     </main>
+   </div>
+
+   <!-- ===== 沿線小巴站彈窗（完整清單） =====
+        側欄的 .stop-list 只有 60vh 高、站名會被 ellipsis 切掉；按標題列的
+        「全部」把整份清單放進大彈窗（沿用「詳請」的 .detail-modal 尺寸）。
+        點一列＝選該站並關閉彈窗，回到原本的畫面；
+        ✕／點遮罩／Esc 只關閉彈窗，不會改動目前已選的車站。 -->
+   <div class="detail-modal stops-modal" v-if="stopsOpen" @click.self="closeStopsPopup()">
+     <div class="detail-modal-box">
+       <div class="detail-modal-head">
+         <div class="head-left">
+           <span class="detail-modal-title">沿線小巴站</span>
+         </div>
+         <div class="head-right">
+           <div class="detail-font-controls">
+             <button class="detail-font-btn" @click="decreaseFontSize" title="縮小字型">−</button>
+             <button class="detail-font-btn" @click="increaseFontSize" title="放大字型">+</button>
+           </div>
+           <button class="detail-modal-close" @click="closeStopsPopup()">✕</button>
+         </div>
+       </div>
+       <div class="detail-modal-body">
+         <div class="stops-modal-sub">
+           {{ selectedDirectionLabel }} · 共 {{ stops.length }} 站
+         </div>
+         <ul class="stops-modal-list">
+           <li v-for="(s, i) in stops" :key="'sm-' + s.id"
+               :class="{ active: selectedStop && selectedStop.id === s.id }"
+               :title="s.nameFull || s.name"
+               @click="pickStopFromPopup(s)">
+             <span class="sm-idx">{{ i + 1 }}</span>
+             <span class="stop-name">{{ s.name }}</span>
+             <span v-if="Number.isFinite(s.distance)" class="sm-dist">{{ formatDistance(s.distance) }}</span>
+           </li>
+         </ul>
+       </div>
+     </div>
    </div>
 
    <!-- ===== GMB-detail 彈窗（收費／站點／營運資料，來源：運輸署開放數據） ===== -->
@@ -2053,12 +2141,21 @@ function findNearbyGmbRoutes(geo, lat, lng, maxResults) {
 const DEST_MAX_STOPS = 5;
 const DEST_RADII = GMB_GEO_RADII;
 
+/* 路線號正規化：去掉所有空白＋轉大寫。
+ * 使用者很常把後綴字母分開打（「44 m」）或只打小寫（「44m」），但 GMB API
+ * 的 /route 清單與 /route/{地區}/{號碼} 都只認「44M」。比對與送 API 都用
+ * 這一套寫法，否則「44 m」會靜靜地變成「找不到小巴路線」——看起來就像
+ * 搜尋太嚴格。 */
+function normalizeRouteNo(s) {
+  return String(s == null ? "" : s).replace(/\s+/g, "").toUpperCase();
+}
+
 /* 判斷輸入像不像路線號碼（數字為主，可能帶字母／尾碼），不像就是地名 */
 function looksLikeRouteNumber(q) {
-  const s = String(q || "").trim();
+  const s = normalizeRouteNo(q);
   if (!s) return false;
   /* 純數字、或數字+字母（1 / 1A / 69X / N1），且長度短 */
-  return /^[A-Z]{0,2}\d{1,4}[A-Z]?$/i.test(s.replace(/\s+/g, ""));
+  return /^[A-Z]{0,2}\d{1,4}[A-Z]?$/.test(s);
 }
 
 /* 找出名稱符合 q 的車站；回傳 [{stop, score}]，score 越小越優先 */
@@ -2250,19 +2347,21 @@ const gmbRegionCache = new Map();   /* routeId → 地區（"" 表示查不到�
 async function resolveGmbRegion(routeId, route) {
   const id = String(routeId || "");
   if (!id) return "";
+  /* 路線號可能是「44 m」「44m」；byCode 的鍵與 API 都只認「44M」。 */
+  const code = normalizeRouteNo(route);
   if (gmbRegionCache.has(id)) return gmbRegionCache.get(id);
   const byId = await buildGmbRegionIndex();
   let rg = byId[id] || "";
   let candidates = null;
   if (!rg) {
     const byCode = await fetchGmbRegionsByCode();
-    candidates = byCode[String(route || "")] || null;
+    candidates = byCode[code] || null;
     if (candidates && candidates.length === 1) rg = candidates[0];
   }
   if (!rg) {
     for (const cand of (candidates && candidates.length ? candidates : GMB_REGION_IDS)) {
       try {
-        const j = await gmbFetch(`${GMB_BASE}/route/${cand}/${route}`);
+        const j = await gmbFetch(`${GMB_BASE}/route/${cand}/${code}`);
         if ((j.data || []).some(r => String(r.route_id) === id)) { rg = cand; break; }
       } catch (e) { /* 換下一個地區再試 */ }
     }
@@ -2277,7 +2376,8 @@ async function resolveGmbRegion(routeId, route) {
    87 個屬兩個以上、其中 6 個三區都有。
    清單拿不到（離線／API 掛掉）才逐區探測。 */
 async function findRegionsForRoute(code) {
-  const c = String(code || "").trim().toUpperCase();
+  /* 正規化：使用者可能打成「44 m」「44m」，而 /route 清單的鍵是「44M」。 */
+  const c = normalizeRouteNo(code);
   if (!c) return [];
   const byCode = await fetchGmbRegionsByCode();
   /* 清單有內容就當權威來源：有就有、沒有就沒有，不必再花 3 個請求去猜。 */
@@ -2566,6 +2666,9 @@ createApp({
     const detailOpen = ref(false);
     const detailLoading = ref(false);
 
+    /* 「沿線小巴站」彈窗（完整清單）是否開啟。與「詳請」共用同一套 .detail-modal 尺寸。 */
+    const stopsOpen = ref(false);
+
     const detailVariant = computed(() => {
       const d = currentDetail.value;
       if (!d || !d.variants || !d.variants.length) return null;
@@ -2781,13 +2884,16 @@ createApp({
 
     /* 真正去查一條路線（地區已確定）。與地區選擇無關，方向清單也在這裡開。 */
     async function runRouteSearch(q) {
+      /* 正規化：目的地結果點籤（placePickRoute）與地區彈窗都會呼叫這裡，
+         統一在這處理，送進 API 的號碼一定是「44M」這種寫法。 */
+      const code = normalizeRouteNo(q);
       searching.value = true;
       error.value = "";
       searched.value = true;
-      lastSearched.value = q;
+      lastSearched.value = code;
       resetRouteState();
       try {
-        const routes = await fetchGmbRouteDetails(region.value, q);
+        const routes = await fetchGmbRouteDetails(region.value, code);
         matchedRoutes.value = routes.map(r => ({ ...r, key: `${r.routeId}+${r.routeSeq}` }));
         if (routes.length === 1) {
           await selectDirection(matchedRoutes.value[0]);
@@ -2808,8 +2914,14 @@ createApp({
       clearPlace();
       showRegionPicker.value = false;
       /* 看起來不像路線號碼 → 當作地名搜尋（例如「旺角」「銅鑼灣」）。
-         這條分支不需要地區，geo 索引本身就覆蓋港九新界。 */
+         這條分支不需要地區，geo 索引本身就覆蓋港九新界。
+         地名不改寫（英文地名有空白：Causeway Bay）。 */
       if (!looksLikeRouteNumber(q)) { await placeSearch(q); return; }
+      /* 路線號：先去空白＋轉大寫（「44 m」「44m」→「44M」）。GMB API 的
+         /route 清單與 /route/{地區}/{號碼} 都只認這個寫法，帶空白或小寫
+         會直接查不到，看起來就像「搜尋太嚴格」。輸入框同時改成正規化寫法。 */
+      const code = normalizeRouteNo(q);
+      if (routeInput.value !== code) routeInput.value = code;
       /* 同一個路線號可能三個地區都有（實測 479 個號碼中 87 個），
          API 又必須指定地區才查得到，所以先問清楚它屬於哪幾個地區：
          只有一個就直接查；兩個以上才彈窗讓使用者選；一個都沒有就照查，
@@ -2818,7 +2930,7 @@ createApp({
       error.value = "";
       let ids = null;
       try {
-        ids = await findRegionsForRoute(q);
+        ids = await findRegionsForRoute(code);
       } catch (e) {
         /* 地區清單拿不到（離線／API 掛掉）→ 用目前地區直接查，不擋使用者 */
       }
@@ -2827,7 +2939,7 @@ createApp({
         resetRouteState();
         searched.value = false;
         lastSearched.value = "";
-        pickerQuery.value = q;
+        pickerQuery.value = code;
         pickerRegions.value = GMB_REGIONS.filter(r => ids.indexOf(r.id) >= 0);
         searching.value = false;
         showRegionPicker.value = true;
@@ -2835,7 +2947,7 @@ createApp({
       }
       if (ids && ids.length === 1) region.value = ids[0];
       searching.value = false;
-      await runRouteSearch(q);
+      await runRouteSearch(code);
     }
 
     function clearDirection() {
@@ -2936,11 +3048,12 @@ createApp({
       placeOpen.value = false; placeResults.value = null; placeQuery.value = ""; placeError.value = "";
     }
 
-    /* Esc 關閉彈出層（與其他彈窗行為一致）。
-       地區選擇彈窗在最上層（z-index 3600），優先關它。 */
+    /* Esc 關閉彈出層（與其他彈窗行為一致）。最上層的先關：
+       地區選擇彈窗（z-index 3600）→ 沿線小巴站清單 → 目的地結果。 */
     function onDocKeydown(e) {
       if (e.key !== "Escape") return;
       if (showRegionPicker.value) { closeRegionPicker(); e.preventDefault(); return; }
+      if (stopsOpen.value) { closeStopsPopup(); e.preventDefault(); return; }
       if (placeOpen.value) { placeOpen.value = false; e.preventDefault(); }
     }
 
@@ -3089,16 +3202,73 @@ createApp({
       el.scrollIntoView({ behavior: "smooth", block: "center" });
     }
 
-    async function onStopClick(stop) { await applySelection(stop); }
+    /* 使用者自己點的站：關掉 GPS 自動跟隨，免得走兩步就被改選。 */
+    async function onStopClick(stop) { autoFollowStop = false; await applySelection(stop); }
     async function onStopMapClick(stop) {
+      autoFollowStop = false;
       collapseFavourites();
       await applySelection(stop);
       await nextTick();
       await expandMap();
     }
 
+    /* ===== 沿線小巴站彈窗（完整清單） =====
+       側欄清單只有 60vh 高、站名會被 ellipsis 切掉，所以另開一個大彈窗
+       （.stops-modal，與「詳請」共用同一套 .detail-modal 尺寸）看整份。
+       ✕／點遮罩／Esc 只關彈窗；點某一列才是「選該站並回到原本畫面」。 */
+    function openStopsPopup() { updateModalMaxHeight(); stopsOpen.value = true; }
+    function closeStopsPopup() { stopsOpen.value = false; }
+    async function pickStopFromPopup(stop) {
+      autoFollowStop = false;
+      closeStopsPopup();
+      await applySelection(stop);
+    }
+
     /* GPS */
     let lastUserPos = null;
+    /* 目前選取的車站是不是由 GPS 自動挑的：
+         true  = GPS 更新時跟著移動自動改選最近的一站；
+         false = 使用者自己點的站，不要搶（onStopClick / onStopMapClick /
+                 pickStopFromPopup 都會設 false）。
+       載入新路線時（autoLocateNearestStop）重設回 true。 */
+    let autoFollowStop = true;
+
+    /* ===== 連續定位（watchPosition） =====
+       這才是「人走到車站時畫面會自己更新」的關鍵：舊版只用 getCurrentPosition
+       抓一次，之後一直沿用 lastUserPos，位置就此靜止。watchPosition 會跟著
+       移動持續回報，所以距離標籤、地圖上的藍點與最近一站都會無縫跟上。
+       離開頁面／切到背景時停掉（省電），回到前景再開。 */
+    let geoWatchId = null;
+
+    function startGeoWatch() {
+      if (geoWatchId !== null || !("geolocation" in navigator)) return;
+      try {
+        geoWatchId = navigator.geolocation.watchPosition(
+          (pos) => { onGeoUpdate(Number(pos.coords.latitude), Number(pos.coords.longitude)); },
+          () => { /* 追蹤失敗（未授權／逾時）：沿用單次定位的結果，不再另外報錯 */ },
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        );
+      } catch (e) { geoWatchId = null; }
+    }
+    function stopGeoWatch() {
+      if (geoWatchId === null) return;
+      try { navigator.geolocation.clearWatch(geoWatchId); } catch (e) {}
+      geoWatchId = null;
+    }
+
+    /* 每次位置更新：移動定位點 → 重算所有車站距離 →（必要時）改選最近的一站。
+       距離與藍點每次都更新，所以畫面上的「幾多米」是連續跟著走的；
+       只有「改選車站」要節制 —— 它會捲動清單、移動地圖並重新抓 ETA。 */
+    async function onGeoUpdate(lat, lng) {
+      if (!isValidCoord(lat, lng)) return;
+      showUserMarker(lat, lng);
+      if (!stops.value.length) return;
+      const prevId = selectedStop.value ? selectedStop.value.id : null;
+      const nearest = applyDistancesFor(lat, lng);
+      if (!nearest || !autoFollowStop || nearest.id === prevId) return;
+      await applySelection(nearest);
+    }
+
     function getUserPosition() {
       return new Promise((resolve, reject) => {
         if (!("geolocation" in navigator)) { reject(new Error("此瀏覽器不支援定位")); return; }
@@ -3116,7 +3286,9 @@ createApp({
             else if (err.code === 3) msg = "定位超時";
             reject(new Error(msg));
           },
-          { enableHighAccuracy: true, timeout: 15000, maximumAge: 300000 }
+          /* maximumAge: 0 —— 一定要「現在」的位置。舊版是 300000（5 分鐘），
+             走動時會一直沿用五分鐘前的座標，「最近的車站」自然不會跟著走。 */
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
         );
       });
     }
@@ -3138,9 +3310,11 @@ createApp({
     }
     async function autoLocateNearestStop() {
       if (!stops.value.length) return;
+      autoFollowStop = true;                        /* 新路線：重新交給 GPS 帶路 */
       if (lastUserPos && isValidCoord(lastUserPos.lat, lastUserPos.lng)) {
         applyDistancesFor(lastUserPos.lat, lastUserPos.lng);
       }
+      startGeoWatch();                              /* 之後每一次移動都會自動更新 */
       try {
         const me = await getUserPosition();
         showUserMarker(me.lat, me.lng);
@@ -3157,6 +3331,10 @@ createApp({
 
     let mapDesktop = null, mapMobile = null, activeMap = null;
     let activeMarkers = [], activeLabels = [], activeRouteLine = null, activeUserMarker = null;
+    /* 藍點目前掛在哪一張地圖上（桌機 map-desktop／手機 map-mobile）。
+       切換地圖時要把標記搬過去，否則 watchPosition 的更新會找不到它
+       （把同一個圖層加到第二張地圖會被 Leaflet 覆寫 _map，導致兩邊都消失）。 */
+    let activeUserMarkerMap = null;
 
     function createMapOn(id) {
       const el = document.getElementById(id);
@@ -3280,14 +3458,24 @@ createApp({
       } catch (e) {}
     }
 
+    /* 更新藍點。watchPosition 每隔幾秒就回報一次，所以「已經有標記就只是移動
+       它」，不要每次刪掉重建 —— 重建會閃爍，也會令地圖不停重排。 */
     function showUserMarker(lat, lng) {
       lastUserPos = { lat, lng };
       if (!isMapUsable(activeMap)) return;
       const ll = safeLatLng(lat, lng);
       if (!ll) return;
+      if (activeUserMarker && activeUserMarkerMap === activeMap) {
+        try { activeUserMarker.setLatLng(ll); } catch (e) {}
+        return;
+      }
+      /* 換過地圖（手機展開／收合）→ 先從舊地圖移除，再掛到目前這張 */
+      if (activeUserMarker && activeUserMarkerMap) {
+        try { activeUserMarkerMap.removeLayer(activeUserMarker); } catch (e) {}
+      }
       try {
-        if (activeUserMarker) activeMap.removeLayer(activeUserMarker);
         activeUserMarker = L.marker(ll, { icon: USER_ICON }).addTo(activeMap);
+        activeUserMarkerMap = activeMap;
       } catch (e) {}
     }
 
@@ -3363,9 +3551,12 @@ createApp({
       countdown.value -= 1;
       if (countdown.value <= 0) { countdown.value = AUTO_REFRESH_INTERVAL; refreshEta(); }
     }
+    /* 回到前景才重新開始追蹤位置；背景時 watchPosition 會持續耗電，先關掉。 */
     function handleVisibility() {
-      if (document.visibilityState === "visible" && selectedStop.value) refreshEta();
-      if (document.visibilityState === "hidden") saveFavouritesOnExit();
+      const visible = document.visibilityState === "visible";
+      if (visible && selectedStop.value) refreshEta();
+      if (visible) { if (stops.value.length) startGeoWatch(); }
+      else { stopGeoWatch(); saveFavouritesOnExit(); }
     }
 
     onMounted(async () => {
@@ -3385,6 +3576,7 @@ createApp({
       tickTimer = setInterval(tick, 1000);
     });
     onUnmounted(() => {
+      stopGeoWatch();               /* 連續定位要關掉，否則離開頁面還在耗電 */
       clearInterval(tickTimer);
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("orientationchange", handleResize);
@@ -3413,6 +3605,7 @@ createApp({
       onSearch, selectDirection, clearDirection,
       toggleFavourite, removeFavourite, onFavClick,
       onStopClick, onStopMapClick, expandMap, collapseMap, zoomIn, zoomOut,
+      stopsOpen, openStopsPopup, closeStopsPopup, pickStopFromPopup,
       manualRefresh, formatMinutes, formatDistance,
       placeLoading, placeResults, placeQuery, placeOpen, placeError,
       placeStops, placeRouteCount, destSubtitle,
