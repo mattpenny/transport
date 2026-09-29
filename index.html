@@ -706,14 +706,17 @@
   .tp-journey-list li { display: flex; align-items: center; gap: 6px; padding: 5px 0; border-bottom: 1px dashed #f0f3f8; min-width: 0; }
   .tp-journey-list li:last-child { border-bottom: none; }
   /* 行車時間的起訖點名經常很長（「洪天路南行近洪志路 → 機場經大欖隧道」），
-     單行加 ellipsis 會把目的地名切走，所以改成最多兩行（line-clamp），
-     超出的部分仍然收掉，避免一行長到要橫向捲。 */
+     單行加 ellipsis 會把目的地名切走，所以改成兩行：第一行是
+     [地區][起點] →，第二行是目的地（.tp-journey-dest 另起一行）。
+     仍然用 line-clamp 收在兩行內，避免過長的名稱把卡片撐爆。 */
   .tp-journey-text {
     flex: 1 1 auto; min-width: 0; color: #2b3a55;
     font-size: calc(14.5px * var(--font-scale)); line-height: 1.4;
     display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
     overflow: hidden; overflow-wrap: anywhere;
   }
+  /* 「 → 」之後的文字另起一行，讓目的地名不會跟在箭咀後面被切走。 */
+  .tp-journey-text .tp-journey-dest { display: block; }
   .tp-journey-arrow { color: #aab4c4; }
   /* 地區前綴：只在跟目前選取的地區不同時才顯示（例如新界 tab 下的 SJ = 新界南）。
      同一區每一行都印一次同樣的地區名會像 bug，所以只在有分別時才印。 */
@@ -1774,7 +1777,7 @@
                 <span v-if="j.regionLabel && j.regionLabel !== selectedRegion" class="tp-region-tag">{{ j.regionLabel }}</span>
                 <span :class="{ 'tp-code': !j.fromMapped }">{{ j.fromText }}</span>
                 <span class="tp-journey-arrow"> → </span>
-                <span :class="{ 'tp-code': !j.destMapped }">{{ j.destText }}</span>
+                <span class="tp-journey-dest" :class="{ 'tp-code': !j.destMapped }">{{ j.destText }}</span>
               </span>
               <span class="tp-journey-mins" :class="'tp-colour-' + j.colour">
                 <template v-if="j.minutes !== null">{{ j.minutes }} 分鐘</template>
@@ -1858,7 +1861,7 @@
                   <span v-if="j.regionLabel && j.regionLabel !== selectedRegion" class="tp-region-tag">{{ j.regionLabel }}</span>
                   <span :class="{ 'tp-code': !j.fromMapped }">{{ j.fromText }}</span>
                   <span class="tp-journey-arrow"> → </span>
-                  <span :class="{ 'tp-code': !j.destMapped }">{{ j.destText }}</span>
+                  <span class="tp-journey-dest" :class="{ 'tp-code': !j.destMapped }">{{ j.destText }}</span>
                 </span>
                 <span class="tp-journey-mins" :class="'tp-colour-' + j.colour">
                   <template v-if="j.minutes !== null">{{ j.minutes }} 分鐘</template>
@@ -2560,6 +2563,7 @@ const TD_JTIS_DEST_NAMES = {
   TPR: { short: "沙田經大埔公路", name: "沙田經大埔公路" },
   KTPR: { short: "九龍經大埔公路", name: "九龍經大埔公路" },
   TSCA: { short: "九龍（西）經八號幹線", name: "九龍（西）經八號幹線" },
+  ATSCA: { short: "西九龍政府合署", name: "西九龍政府合署" },
   TWCP: { short: "荃灣（西）經青山公路", name: "荃灣（西）經青山公路" },
   TWTM: { short: "荃灣（西）經屯門路", name: "荃灣（西）經屯門路" },
   CWBR: { short: "九龍經清水灣道", name: "九龍經清水灣道" },
