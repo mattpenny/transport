@@ -846,12 +846,14 @@
       grid-auto-rows: auto;             /* 每格 = 內容高度 */
       align-content: start;
       /* 底部工具列（.mobile-traffic-bar）是 fixed，會蓋住最後一格，
-         所以預留一段底部 padding。 */
-      gap: 8px; padding: 8px 8px 76px;
+         所以預留一段底部 padding。ETA 面板改用 sticky 之後，它自己
+         也要有落腳點，故只在該列存在時（.has-traffic-bar）預留。 */
+      gap: 8px; padding: 8px 8px 8px;
       overflow-y: auto; overflow-x: hidden;   /* .layout 自己捲動 */
       -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
     }
+    .layout.has-traffic-bar { padding-bottom: 76px; }
     .main-area { display: contents; }
     .map-wrap-desktop { display: none !important; }
     .panel { padding: 10px; min-width: 0; max-width: 100%; }
@@ -872,7 +874,16 @@
     .stop-list .stop-map-btn svg { width: 15px; height: 15px; }
 
     /* .layout 已是捲動容器，ETA 面板不再自己捲（否則就是巢狀捲動） */
-    .eta-box { max-height: none; padding: 8px 12px; }
+    .eta-box {
+      max-height: none; padding: 8px 12px;
+      /* 手機版把 ETA 釘在畫面底部：搜尋路線後使用者不用捲到最底
+         才看得到候車時間，往下滑時它一直停在底部工具列之上。
+         .layout 是唯一的捲動容器，所以用 position:sticky 就夠，
+         不需要另開一層捲動。z-index 高於一般卡片、但低於
+         .mobile-traffic-bar(900) 與全螢幕面板。 */
+      position: sticky; bottom: 0; z-index: 800;
+      box-shadow: 0 -3px 12px rgba(16,32,64,0.12);
+    }
     .eta-box .time { font-size: calc(18px * var(--font-scale)); }
     .eta-box .exact-time { font-size: calc(18px * var(--font-scale)); }
     .eta-box .rank { width: 68px; font-size: calc(18px * var(--font-scale)); }
@@ -1413,7 +1424,11 @@
     </div>
   </header>
 
-  <div class="layout">
+  <!-- has-traffic-bar：底部工具列（.mobile-traffic-bar）是 fixed，
+       landing 時要預留底部 padding；搜尋之後該列消失（ETA 面板改成
+       sticky 釘在底部），padding 就要收回來，否則 ETA 會浮在底部
+       工具列的位置之上留一段空白。 -->
+  <div class="layout" :class="{ 'has-traffic-bar': isLanding && isMobile }">
     <aside class="panel sidebar">
 
       <div class="fav-section">
