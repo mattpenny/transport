@@ -614,9 +614,9 @@
   .tp-section:first-child { padding-top: 0; }
   .tp-section:last-child { border-bottom: none; padding-bottom: 0; }
   .tp-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 7px; min-width: 0; }
-  .tp-head h3 { margin: 0; color: #1a3d7c; font-size: calc(14px * var(--font-scale)); min-width: 0; }
-  .tp-updated { color: #98a2b3; font-size: calc(10px * var(--font-scale)); flex-shrink: 0; font-variant-numeric: tabular-nums; }
-  .tp-empty { color: #98a2b3; font-size: calc(12px * var(--font-scale)); padding: 3px 0; }
+  .tp-head h3 { margin: 0; color: #1a3d7c; font-size: calc(17px * var(--font-scale)); min-width: 0; }
+  .tp-updated { color: #7b879b; font-size: calc(12px * var(--font-scale)); flex-shrink: 0; font-variant-numeric: tabular-nums; }
+  .tp-empty { color: #7b879b; font-size: calc(14px * var(--font-scale)); padding: 3px 0; }
 
   /* --- 特別交通消息：橫向滾動 ticker --- */
   .tp-ticker { overflow: hidden; position: relative; min-width: 0; }
@@ -625,8 +625,8 @@
      尾項後面沒有空位就會令接縫少半個間距而跳一下。 */
   .tp-ticker-track { display: inline-flex; align-items: center; white-space: nowrap; animation: tpMarquee linear infinite; will-change: transform; }
   .tp-ticker:hover .tp-ticker-track { animation-play-state: paused; }
-  .tp-ticker-item { color: #33415c; font-size: calc(12px * var(--font-scale)); flex-shrink: 0; margin-right: 30px; }
-  .tp-ticker-item::before { content: "●"; color: #c8102e; margin-right: 7px; font-size: 10px; vertical-align: middle; }
+  .tp-ticker-item { color: #2b3a55; font-size: calc(15px * var(--font-scale)); line-height: 1.5; flex-shrink: 0; margin-right: 34px; }
+  .tp-ticker-item::before { content: "●"; color: #c8102e; margin-right: 8px; font-size: 12px; vertical-align: middle; }
   .tp-ticker-item.tp-status-closed { color: #98a2b3; }
   .tp-ticker-item.tp-status-closed::before { content: "○"; color: #b6bfcc; }
   /* 由右至左；軌道內容重複一次，所以移到 -50% 就剛好無縫接回開頭。 */
@@ -635,9 +635,9 @@
   /* --- 交通快拍 --- */
   .tp-region-tabs { display: flex; gap: 6px; margin-bottom: 8px; min-width: 0; }
   .tp-tab {
-    flex: 1 1 0; min-width: 0; padding: 5px 4px; cursor: pointer;
+    flex: 1 1 0; min-width: 0; padding: 7px 4px; cursor: pointer;
     border: 1px solid #d8e0ec; border-radius: 7px; background: #fff;
-    color: #4a5a75; font-size: calc(12px * var(--font-scale));
+    color: #3c4c68; font-size: calc(14px * var(--font-scale));
     font-family: inherit; transition: background 0.15s, color 0.15s, border-color 0.15s;
   }
   .tp-tab.active { background: #1a3d7c; border-color: #1a3d7c; color: #fff; font-weight: 700; }
@@ -666,47 +666,115 @@
     display: flex; align-items: baseline; gap: 8px; min-width: 0; margin-bottom: 2px;
   }
   .tp-cam-caption .name {
-    color: #1a3d7c; font-weight: 700; font-size: calc(13px * var(--font-scale));
+    color: #1a3d7c; font-weight: 700; font-size: calc(15px * var(--font-scale));
     min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  .tp-cam-caption .dist { color: #98a2b3; font-size: calc(10.5px * var(--font-scale)); flex-shrink: 0; }
-  .tp-cam-hint { color: #98a2b3; font-size: calc(10.5px * var(--font-scale)); margin: 0 0 8px; }
+  .tp-cam-caption .dist { color: #7b879b; font-size: calc(12px * var(--font-scale)); flex-shrink: 0; }
+  .tp-cam-hint { color: #7b879b; font-size: calc(12px * var(--font-scale)); margin: 0 0 8px; line-height: 1.45; }
 
   /* --- 行車時間顯示器 --- */
   .tp-journey-list { list-style: none; padding: 0; margin: 0; }
   .tp-journey-list li { display: flex; align-items: center; gap: 6px; padding: 5px 0; border-bottom: 1px dashed #f0f3f8; min-width: 0; }
   .tp-journey-list li:last-child { border-bottom: none; }
-  .tp-journey-text { flex: 1 1 auto; min-width: 0; color: #33415c; font-size: calc(12px * var(--font-scale)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .tp-journey-arrow { color: #b6bfcc; }
+  .tp-journey-text { flex: 1 1 auto; min-width: 0; color: #2b3a55; font-size: calc(14.5px * var(--font-scale)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tp-journey-arrow { color: #aab4c4; }
   /* 地區前綴：只在跟目前選取的地區不同時才顯示（例如新界 tab 下的 SJ = 新界南）。
      同一區每一行都印一次同樣的地區名會像 bug，所以只在有分別時才印。 */
   .tp-region-tag { color: #5b6b85; font-weight: 600; margin-right: 7px; }
   /* 未收錄在對照表的代碼：用引號標示，提醒那是原始代碼而不是路名。 */
-  .tp-code { color: #98a2b3; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: calc(11px * var(--font-scale)); }
-  .tp-journey-mins { flex-shrink: 0; font-weight: 700; font-size: calc(13px * var(--font-scale)); font-variant-numeric: tabular-nums; }
+  .tp-code { color: #7b879b; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: calc(13px * var(--font-scale)); }
+  .tp-journey-mins { flex-shrink: 0; font-weight: 700; font-size: calc(15px * var(--font-scale)); font-variant-numeric: tabular-nums; }
   .tp-colour-1 { color: #c8102e; }
   .tp-colour-2 { color: #e67e22; }
   .tp-colour-3 { color: #1a8f4a; }
 
-  /* 桌面：面板是 main-area 的第 3 個 grid 子項，而 main-area 是
-     `grid-template-rows: minmax(0,1fr) auto` + `overflow:hidden`——
-     本來只預算兩個子項（地圖 + ETA）。新面板若不限高，會被當成
-     內容高度的列，把地圖那一列（1fr）擠到 0 高，自己亦會被裁掉。
-     所以桌機給它高度上限並自行捲動，地圖才有空間。 */
+  /* 桌面：面板是 main-area 的最後一個 grid 子項，而 main-area 是
+     `grid-template-rows: minmax(0,1fr) auto` + `overflow:hidden`。
+     landing 時地圖與 ETA 都被隱藏，整欄淨得可以給交通面板，所以
+     landing 專用一個較高的上限（.landing-wide）；搜尋之後地圖回來，
+     面板就要讓位，回到 44vh 並自行捲動。 */
   @media (min-width: 901px) {
     .traffic-panel { max-height: 44vh; overflow-y: auto; }
+    .traffic-panel.landing-wide { max-height: 78vh; }
     .traffic-panel .tp-section { max-width: 760px; }
   }
   /* 手機：交通面板本身只是 .layout 這個可捲動欄裡的一格，所以不再限高
-     （限高會在 .layout 內產生第二層捲動，觸控上很難用）。
-     地圖與快照改用 vh 為上限，確保在矮螢幕上仍看得到地圖。 */
+     （限高會在 .layout 內產生第二層捲動，觸控上很難用）。 */
   @media (max-width: 900px) {
     .traffic-panel { padding: 10px 12px; }
-    .tp-cam-map { height: 44vh; max-height: 360px; min-height: 200px; }
-    .tp-snapshot { max-height: 48vh; }
+    .tp-cam-map { height: 40vh; max-height: 340px; min-height: 200px; }
+    .tp-snapshot { max-height: 46vh; }
   }
   @media (prefers-reduced-motion: reduce) {
     .tp-ticker-track { animation: none; }
+  }
+
+  /* ===== landing 時隱藏主地圖 =====
+     用 display:none 而不是 v-if：#map-desktop 是 Leaflet 的容器，
+     v-if 會在搜尋時把它整個抽掉，實例就死了（地圖一片空白 / 報
+     "Map container is already initialized"）。隱藏只改 display，
+     元素仍在 DOM 裡，顯示回來時 invalidateSize() 補回尺寸即可。 */
+  .map-wrap-desktop.hide-while-landing { display: none !important; }
+
+  /* ===== 手機：底部工具列（交通快拍 / 行車時間）=====
+     這兩個區塊在手機版太長，塞在 landing 欄會令側欄與交通面板互相
+     蓋住，所以改由底部兩個按鈕開全螢幕可捲動面板。 */
+  .mobile-traffic-bar { display: none; }
+  .tp-sheet-overlay { display: none; }
+
+  @media (max-width: 900px) {
+    .mobile-traffic-bar {
+      display: flex; gap: 10px;
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 900;
+      padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+      background: rgba(255,255,255,0.97);
+      border-top: 1px solid #dbe3ef;
+      box-shadow: 0 -2px 10px rgba(16,32,64,0.10);
+    }
+    .mt-bar-btn {
+      flex: 1 1 0; min-width: 0; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+      padding: 11px 6px; border-radius: 10px;
+      border: 1px solid #1a3d7c; background: #1a3d7c; color: #fff;
+      font-family: inherit; font-weight: 700;
+      font-size: calc(15px * var(--font-scale)); line-height: 1.2;
+    }
+    .mt-bar-btn .ico { font-size: 17px; line-height: 1; }
+    .mt-bar-btn.ghost { background: #fff; color: #1a3d7c; }
+
+    /* 全螢幕面板：.tp-sheet-body 自己是唯一的捲動容器，
+       裏面不再有任何 max-height/overflow 的面板，否則會變成巢狀捲動，
+       在觸控上幾乎捲不動（這正是原本「捲唔到」的成因）。 */
+    .tp-sheet-overlay {
+      display: flex; align-items: stretch; justify-content: center;
+      position: fixed; inset: 0; z-index: 1500;
+      background: rgba(10,20,38,0.55);
+    }
+    .tp-sheet {
+      width: 100%; max-width: 720px; height: 100%;
+      display: flex; flex-direction: column; min-height: 0;
+      background: #fff; box-shadow: 0 -4px 20px rgba(0,0,0,0.28);
+    }
+    .tp-sheet-head {
+      flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; padding: 12px 12px calc(12px + env(safe-area-inset-top));
+      background: #1a3d7c; color: #fff;
+    }
+    .tp-sheet-title { font-size: calc(17px * var(--font-scale)); font-weight: 800; }
+    .tp-sheet-close {
+      flex-shrink: 0; width: 34px; height: 34px; border-radius: 8px;
+      border: none; background: rgba(255,255,255,0.2); color: #fff;
+      font-size: 16px; line-height: 1; cursor: pointer;
+    }
+    .tp-sheet-body {
+      flex: 1 1 auto; min-height: 0;
+      overflow-y: auto; overflow-x: hidden;
+      -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+      padding: 10px 12px calc(18px + env(safe-area-inset-bottom));
+    }
+    /* 面板內的 .tp-section 不再有外框與分隔線（已經是獨立面板） */
+    .tp-sheet-body .tp-section { border-bottom: none; padding: 0; }
+    .tp-sheet-body .tp-section + .tp-section { margin-top: 12px; }
   }
 
   .stop-name-label {
@@ -739,7 +807,9 @@
       grid-template-rows: none;         /* 取消單一 1fr 列 */
       grid-auto-rows: auto;             /* 每格 = 內容高度 */
       align-content: start;
-      gap: 8px; padding: 8px;
+      /* 底部工具列（.mobile-traffic-bar）是 fixed，會蓋住最後一格，
+         所以預留一段底部 padding。 */
+      gap: 8px; padding: 8px 8px 76px;
       overflow-y: auto; overflow-x: hidden;   /* .layout 自己捲動 */
       -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
@@ -1490,7 +1560,10 @@
         </div>
       </div>
 
-      <div class="panel map-wrap map-wrap-desktop">
+      <!-- 主地圖：landing 時整張藏起來（只在搜尋路線 / 選了站之後才出現）。
+           用 CSS display:none 隱藏而不是 v-if，因為 #map-desktop 是 Leaflet
+           的容器，v-if 會銷毀實例令地圖在搜尋後變成空白。 -->
+      <div class="panel map-wrap map-wrap-desktop" :class="{ 'hide-while-landing': isLanding }">
         <div id="map-desktop"></div>
         <div class="map-zoom-controls">
           <button class="map-zoom-btn" @click.stop="zoomIn">+</button>
@@ -1499,7 +1572,9 @@
 
       </div>
 
-      <div class="panel eta-box">
+      <!-- 候車時間：landing（未輸入任何東西）時不出現；輸入巴士號碼 / 選好方向
+           之後才出現。桌機與手機一致。 -->
+      <div v-if="!isLanding" class="panel eta-box">
         <div class="eta-header">
           <h3>
             最近三班候車時間
@@ -1554,8 +1629,10 @@
         </ul>
       </div>
 
-      <!-- ===== 交通情報面板（只在 landing page 顯示，位置在 ETA 面板下方）===== -->
-      <div v-if="isLanding" class="panel traffic-panel">
+      <!-- ===== 交通情報面板（只在 landing page 顯示）=====
+           手機版只有「特別交通消息」留在這裡；「交通快拍」與「行車時間」
+           太長，會令側欄與面板互相蓋住，改由底部工具列開全螢幕面板。 -->
+      <div v-if="isLanding" class="panel traffic-panel landing-wide">
 
         <!-- 1. 特別交通消息（橫向滾動 ticker） -->
         <div class="tp-section">
@@ -1574,8 +1651,9 @@
           <div v-else class="tp-empty">{{ trafficNewsError || "暫無特別交通消息" }}</div>
         </div>
 
-        <!-- 2. 交通快拍：地區分頁 + 可點擊的攝影機地圖 -->
-        <div class="tp-section">
+        <!-- 2. 交通快拍：地區分頁 + 可點擊的攝影機地圖（只桌機 inline 顯示；
+                手機版在 .tp-sheet 裡以同一個 #map-cameras 容器顯示） -->
+        <div v-if="!isMobile" class="tp-section">
           <div class="tp-head">
             <h3>交通快拍</h3>
             <span v-if="selectedCam" class="tp-updated">{{ snapshotUpdatedText }}</span>
@@ -1612,8 +1690,8 @@
           <div v-else class="tp-empty">{{ trafficCamError || "此地區暫無快拍攝影機" }}</div>
         </div>
 
-        <!-- 3. 行車時間顯示器（只顯示選取地區的隧道／道路） -->
-        <div class="tp-section">
+        <!-- 3. 行車時間顯示器（只顯示選取地區的隧道／道路；手機版在 .tp-sheet 裡） -->
+        <div v-if="!isMobile" class="tp-section">
           <div class="tp-head">
             <h3>行車時間</h3>
             <span class="tp-updated">{{ selectedRegion }}</span>
@@ -1636,8 +1714,93 @@
         </div>
 
       </div>
+
+      <!-- ===== 手機：底部工具列（只在 landing 出現）=====
+           「交通快拍」與「行車時間」兩塊內容很長，放在 landing 欄會令
+           側欄（巴士／GMB／RMB）被推走甚至互相蓋住，所以改成按這兩個
+           按鈕開全螢幕面板；面板自己是唯一的捲動容器。 -->
+      <div v-if="isLanding && isMobile" class="mobile-traffic-bar">
+        <button class="mt-bar-btn" @click="openTrafficSheet('cams')">
+          <span class="ico">📷</span><span>交通快拍</span>
+        </button>
+        <button class="mt-bar-btn ghost" @click="openTrafficSheet('journey')">
+          <span class="ico">⏱</span><span>行車時間</span>
+        </button>
+      </div>
     </main>
   </div>
+
+  <!-- ===== 手機：交通快拍 / 行車時間 全螢幕面板 ===== -->
+  <Teleport to="body">
+    <div v-if="isMobile && trafficSheet" class="tp-sheet-overlay" @click.self="closeTrafficSheet">
+      <div class="tp-sheet" role="dialog" aria-modal="true"
+           :aria-label="trafficSheet === 'cams' ? '交通快拍' : '行車時間'">
+        <div class="tp-sheet-head">
+          <span class="tp-sheet-title">{{ trafficSheet === 'cams' ? '交通快拍' : '行車時間' }}</span>
+          <button class="tp-sheet-close" @click="closeTrafficSheet" aria-label="關閉">✕</button>
+        </div>
+        <div class="tp-sheet-body">
+
+          <!-- 交通快拍 -->
+          <div v-if="trafficSheet === 'cams'" class="tp-section">
+            <div class="tp-region-tabs">
+              <button v-for="r in TD_REGIONS" :key="r.key"
+                      class="tp-tab"
+                      :class="{ active: selectedRegion === r.key }"
+                      @click="selectRegion(r.key)">{{ r.label }}</button>
+            </div>
+            <template v-if="regionCameras.length">
+              <div id="map-cameras" class="tp-cam-map"></div>
+              <div class="tp-cam-caption">
+                <span class="name">{{ selectedCam ? selectedCam.description : "請點地圖上的攝影機" }}</span>
+                <span v-if="selectedCam && selectedCam.district" class="dist">{{ selectedCam.district }}</span>
+              </div>
+              <p class="tp-cam-hint">
+                共 {{ regionCameras.length }} 支快拍，點地圖上的點即可查看即時影像
+                （目前畫面內 {{ camMapVisibleCount }} 支）
+              </p>
+              <div class="tp-snapshot">
+                <img v-if="snapshotUrl && !snapshotFailed"
+                     :src="snapshotUrl"
+                     :alt="selectedCam.description"
+                     @load="snapshotLoaded = true; snapshotFailed = false"
+                     @error="snapshotFailed = true" />
+                <div v-if="snapshotFailed" class="tp-snapshot-msg">暫時未能提供快拍圖片</div>
+                <div v-else-if="!snapshotLoaded" class="tp-snapshot-msg">載入中…</div>
+              </div>
+            </template>
+            <div v-else class="tp-empty">{{ trafficCamError || "此地區暫無快拍攝影機" }}</div>
+          </div>
+
+          <!-- 行車時間 -->
+          <div v-else class="tp-section">
+            <div class="tp-region-tabs">
+              <button v-for="r in TD_REGIONS" :key="r.key"
+                      class="tp-tab"
+                      :class="{ active: selectedRegion === r.key }"
+                      @click="selectRegion(r.key)">{{ r.label }}</button>
+            </div>
+            <ul v-if="regionJourneys.length" class="tp-journey-list">
+              <li v-for="j in regionJourneys" :key="j.key">
+                <span class="tp-journey-text" :title="j.fromTitle + ' → ' + j.destTitle">
+                  <span v-if="j.regionLabel && j.regionLabel !== selectedRegion" class="tp-region-tag">{{ j.regionLabel }}</span>
+                  <span class="tp-code">{{ j.fromText }}</span>
+                  <span class="tp-journey-arrow"> → </span>
+                  <span :class="{ 'tp-code': !j.destMapped }">{{ j.destText }}</span>
+                </span>
+                <span class="tp-journey-mins" :class="'tp-colour-' + j.colour">
+                  <template v-if="j.minutes !== null">{{ j.minutes }} 分鐘</template>
+                  <template v-else>—</template>
+                </span>
+              </li>
+            </ul>
+            <div v-else class="tp-empty">{{ journeyError || "此地區暫無行車時間資料" }}</div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </Teleport>
 
   <Teleport to="body">
     <div v-if="mapExpanded" class="map-overlay" @click.self="collapseMap">
@@ -3254,6 +3417,9 @@ createApp({
     const journeyTimes = ref([]);
     const journeyError = ref("");
     const selectedCamKey = ref("");
+    /* 手機 landing 的底部工具列開啟了哪一個全螢幕面板：null | 'cams' | 'journey'。
+       桌機兩個區塊直接 inline 顯示，這個值永遠是 null。 */
+    const trafficSheet = ref(null);
     const snapshotLoaded = ref(false);
     const snapshotFailed = ref(false);
     const trafficUpdated = ref(null);
@@ -3319,9 +3485,34 @@ createApp({
     /* 面板由 v-if="isLanding" 控制，重新出現時元素是新的，要重新量一次，
        同時把攝影機地圖掛到新的容器上（舊實例必須先銷毀）。 */
     watch(isLanding, (v) => {
-      if (v) nextTick(() => { measureTicker(); mountCameraMap(); });
+      /* 開始搜尋 → 離開 landing：收起手機的全螢幕面板（它屬於首頁），
+         並把主地圖重新量一次（之前用 display:none 藏起來）。 */
+      if (!v) {
+        trafficSheet.value = null;
+        removeCameraMap();
+        nextTick(() => { refreshDesktopMapSize(); drawOnActiveMap(); });
+        return;
+      }
+      nextTick(() => { measureTicker(); mountCameraMap(); });
+    });
+
+    /* 手機全螢幕面板開 / 關：#map-cameras 隨之建立與移除，
+       所以兩邊都要掛載 / 銷毀 Leaflet 實例。 */
+    watch(trafficSheet, (v) => {
+      if (v === "cams") nextTick(() => { mountCameraMap(); renderCameraMarkers(); });
       else removeCameraMap();
     });
+    /* 轉向 / 拉闊窄到桌機時，手機面板要收起（兩個區塊已 inline 顯示）。 */
+    watch(isMobile, (v) => { if (!v) trafficSheet.value = null; });
+
+    function openTrafficSheet(which) {
+      if (!isMobile.value) return;
+      trafficSheet.value = which;
+      snapshotLoaded.value = false;
+      /* 面板打開時順便補一次交通資料（可能已經過 TTL）。 */
+      if (trafficNews.value.length) loadTrafficInfo();
+    }
+    function closeTrafficSheet() { trafficSheet.value = null; }
     /* 攝影機清單載入完成 / 換區 → 重畫地圖上的點。
        地區無攝影機時模板不會輸出 #map-cameras，所以要先確認元素存在。 */
     watch(regionCameras, () => {
@@ -4688,6 +4879,7 @@ createApp({
       regionCameras, regionJourneys, snapshotUrl, snapshotLoaded, snapshotFailed,
       snapshotUpdatedText, tickerLoop, tickerTrack, tickerDuration,
       camMapVisibleCount,
+      trafficSheet, openTrafficSheet, closeTrafficSheet,
     };
   },
 }).mount("#app");
