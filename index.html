@@ -654,6 +654,18 @@
     border: 1px solid #d8e0ec; border-radius: 8px; overflow: hidden;
     background: #eaf1ff; min-width: 0;
   }
+  /* 桌機：讓快拍地圖的闊度與主地圖（.map-wrap-desktop）完全一樣。
+     主地圖是 .panel.map-wrap，貼齊 .main-area 的左右邊界（實測 904px）；
+     快拍地圖在 .traffic-panel 之內，被面板的 1px 邊框 + 14px padding 縮窄，
+     而且面板自己是捲動容器，捲軸還會再吃掉 ~15px。所以這裡反向出血把這
+     29px 補回來（右邊多 15px 正好抵銷捲軸位置）。 */
+  @media (min-width: 901px) {
+    .tp-section-map .tp-cam-map {
+      margin-left: -14px; margin-right: -29px;
+      border-left: none; border-right: none;
+      border-radius: 0;
+    }
+  }
   .tp-cam-map .leaflet-container { background: #eaf1ff; font-family: inherit; }
   .tp-cam-map .leaflet-tooltip.tp-cam-tip {
     background: rgba(26,61,124,0.92); border: none; color: #fff;
@@ -671,6 +683,23 @@
   }
   .tp-cam-caption .dist { color: #7b879b; font-size: calc(12px * var(--font-scale)); flex-shrink: 0; }
   .tp-cam-hint { color: #7b879b; font-size: calc(12px * var(--font-scale)); margin: 0 0 8px; line-height: 1.45; }
+
+  /* --- 手機：特別交通消息卡片（取代原本的「最近三班候車時間」）--- */
+  .tp-news-list { list-style: none; padding: 0; margin: 0; }
+  .tp-news-list li {
+    display: flex; align-items: flex-start; gap: 8px; min-width: 0;
+    padding: 7px 0; border-bottom: 1px dashed #e8ecf3;
+  }
+  .tp-news-list li:last-child { border-bottom: none; padding-bottom: 0; }
+  .tp-news-text {
+    flex: 1 1 auto; min-width: 0; color: #2b3a55;
+    font-size: calc(14.5px * var(--font-scale)); line-height: 1.5;
+  }
+  .tp-news-list li.tp-status-closed .tp-news-text { color: #98a2b3; }
+  .tp-news-tag {
+    flex-shrink: 0; color: #98a2b3; font-size: calc(12px * var(--font-scale));
+    font-variant-numeric: tabular-nums;
+  }
 
   /* --- 行車時間顯示器 --- */
   .tp-journey-list { list-style: none; padding: 0; margin: 0; }
@@ -697,6 +726,9 @@
     .traffic-panel { max-height: 44vh; overflow-y: auto; }
     .traffic-panel.landing-wide { max-height: 78vh; }
     .traffic-panel .tp-section { max-width: 760px; }
+    /* 快拍地圖要和主地圖（.map-wrap-desktop）同寬，所以不受 760px 的
+       文字欄寬限制；容器本身就是面板的內容寬度，兩者必定一致。 */
+    .traffic-panel .tp-section.tp-section-map { max-width: none; }
   }
   /* 手機：交通面板本身只是 .layout 這個可捲動欄裡的一格，所以不再限高
      （限高會在 .layout 內產生第二層捲動，觸控上很難用）。 */
@@ -755,17 +787,31 @@
       display: flex; flex-direction: column; min-height: 0;
       background: #fff; box-shadow: 0 -4px 20px rgba(0,0,0,0.28);
     }
+    /* 面板標題列的高度／padding 與 header.app-header 完全一致（同一種藍、
+       同一個 safe-area 計算），這樣「交通快拍」與「X」就與 Ansum 小巴
+       的抬頭同一高度、同一位置，手機上不必再往上／往下摸。
+       之前這裡寫死 padding-top: 12px + safe-area，標題列比抬頭高一截，
+       右上角的 ✕ 被擠到拇指難以點到的位置。 */
     .tp-sheet-head {
       flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between;
-      gap: 10px; padding: 12px 12px calc(12px + env(safe-area-inset-top));
+      gap: 10px; padding: 8px 12px;
+      padding-top: max(8px, env(safe-area-inset-top), var(--status-inset));
       background: #1a3d7c; color: #fff;
     }
-    .tp-sheet-title { font-size: calc(17px * var(--font-scale)); font-weight: 800; }
-    .tp-sheet-close {
-      flex-shrink: 0; width: 34px; height: 34px; border-radius: 8px;
-      border: none; background: rgba(255,255,255,0.2); color: #fff;
-      font-size: 16px; line-height: 1; cursor: pointer;
+    .tp-sheet-title {
+      font-size: calc(15px * var(--font-scale)); font-weight: 700;
+      display: flex; align-items: center; gap: 8px; min-width: 0;
     }
+    .tp-sheet-close {
+      flex-shrink: 0; width: 30px; height: 30px; border-radius: 7px;
+      border: 1px solid rgba(255,255,255,0.4); background: rgba(255,255,255,0.15); color: #fff;
+      font-size: 15px; line-height: 1; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      /* 觸控目標最小 44px：視覺上 30px，但用 padding 把可點範圍撐大，
+         令拇指不用瞄準就點得到。 */
+      position: relative;
+    }
+    .tp-sheet-close::after { content: ""; position: absolute; inset: -7px; }
     .tp-sheet-body {
       flex: 1 1 auto; min-height: 0;
       overflow-y: auto; overflow-x: hidden;
@@ -1573,8 +1619,9 @@
       </div>
 
       <!-- 候車時間：landing（未輸入任何東西）時不出現；輸入巴士號碼 / 選好方向
-           之後才出現。桌機與手機一致。 -->
-      <div v-if="!isLanding" class="panel eta-box">
+           之後才出現。手機版因為要讓位給「特別交通消息」卡片（見下），所以
+           整張 ETA 面板在手機上不顯示。桌機與手機的 ETA 內容一致。 -->
+      <div v-if="!isLanding && !isMobile" class="panel eta-box">
         <div class="eta-header">
           <h3>
             最近三班候車時間
@@ -1629,13 +1676,32 @@
         </ul>
       </div>
 
+      <!-- 手機版：ETA 面板的位置改放「特別交通消息」。
+           landing 時這張卡顯示最新的即時路況，搜尋後 ETA 收起但消息仍在，
+           所以手機版任何時候都看得到交通資訊。內容用直向清單（不是跑馬燈），
+           因為跑馬燈只容得下一行、而且要量軌道闊度，兩張卡同時存在會打架。 -->
+      <div v-if="isMobile" class="panel traffic-panel tp-news-card">
+        <div class="tp-head">
+          <h3>特別交通消息</h3>
+          <span v-if="trafficNews.length" class="tp-updated">{{ trafficNews.length }} 則</span>
+        </div>
+        <ul v-if="trafficNews.length" class="tp-news-list">
+          <li v-for="n in newsCardItems" :key="n.id" :class="{ 'tp-status-closed': n.closed }">
+            <span class="tp-news-text">{{ n.text }}</span>
+            <span v-if="n.closed" class="tp-news-tag">已完結</span>
+          </li>
+        </ul>
+        <div v-else class="tp-empty">{{ trafficNewsError || "暫無特別交通消息" }}</div>
+      </div>
+
       <!-- ===== 交通情報面板（只在 landing page 顯示）=====
            手機版只有「特別交通消息」留在這裡；「交通快拍」與「行車時間」
            太長，會令側欄與面板互相蓋住，改由底部工具列開全螢幕面板。 -->
       <div v-if="isLanding" class="panel traffic-panel landing-wide">
 
-        <!-- 1. 特別交通消息（橫向滾動 ticker） -->
-        <div class="tp-section">
+        <!-- 1. 特別交通消息（橫向滾動 ticker）。手機版已在 ETA 的位置用
+             .tp-news-card 顯示同一份資料，所以這裡只留桌機。 -->
+        <div v-if="!isMobile" class="tp-section">
           <div class="tp-head">
             <h3>特別交通消息</h3>
             <span v-if="trafficNews.length" class="tp-updated">{{ trafficNews.length }} 則</span>
@@ -1653,7 +1719,7 @@
 
         <!-- 2. 交通快拍：地區分頁 + 可點擊的攝影機地圖（只桌機 inline 顯示；
                 手機版在 .tp-sheet 裡以同一個 #map-cameras 容器顯示） -->
-        <div v-if="!isMobile" class="tp-section">
+        <div v-if="!isMobile" class="tp-section tp-section-map">
           <div class="tp-head">
             <h3>交通快拍</h3>
             <span v-if="selectedCam" class="tp-updated">{{ snapshotUpdatedText }}</span>
@@ -1700,7 +1766,7 @@
             <li v-for="j in regionJourneys" :key="j.key">
               <span class="tp-journey-text" :title="j.fromTitle + ' → ' + j.destTitle">
                 <span v-if="j.regionLabel && j.regionLabel !== selectedRegion" class="tp-region-tag">{{ j.regionLabel }}</span>
-                <span class="tp-code">{{ j.fromText }}</span>
+                <span :class="{ 'tp-code': !j.fromMapped }">{{ j.fromText }}</span>
                 <span class="tp-journey-arrow"> → </span>
                 <span :class="{ 'tp-code': !j.destMapped }">{{ j.destText }}</span>
               </span>
@@ -1784,7 +1850,7 @@
               <li v-for="j in regionJourneys" :key="j.key">
                 <span class="tp-journey-text" :title="j.fromTitle + ' → ' + j.destTitle">
                   <span v-if="j.regionLabel && j.regionLabel !== selectedRegion" class="tp-region-tag">{{ j.regionLabel }}</span>
-                  <span class="tp-code">{{ j.fromText }}</span>
+                  <span :class="{ 'tp-code': !j.fromMapped }">{{ j.fromText }}</span>
                   <span class="tp-journey-arrow"> → </span>
                   <span :class="{ 'tp-code': !j.destMapped }">{{ j.destText }}</span>
                 </span>
@@ -2423,24 +2489,77 @@ function jtisRegionLabelOf(locationId) {
   return TD_JTIS_LABEL_BY_PREFIX[jtisPrefixOf(locationId)] || "";
 }
 
-/* 行車時間顯示器的目的地名稱對照表。
- *
- * ⚠️ 官方 XML 的 JOURNEY_DESC **83 筆全部是空字串**，所以名稱只能靠這張表；
- *    資料規格 PDF 的中文用 CID 子集字型，無法用程式抽取。
- *    因此這裡只收錄**確定無疑**的代碼（三條過海隧道 + 兩條主要隧道），
- *    其餘未收錄的把代碼原樣顯示並補上「(?)」，令畫面上清楚看得出
- *    那是原始代碼而不是路名。寧可顯示代碼，也不要憑猜測填錯的道路名。
+/* 行車時間顯示器的官方名稱對照表（資料來源：運輸署《行車時間顯示器（第二代）》
+ * 資料規格 dataspec_jtis_tc.pdf 的 LOCATION_ID / DESTINATION_ID 定義表，
+ * 位置的中文名另外對照運輸署「行車時間顯示系統」頁所列的 30 個顯示器位置）。
  *      short —— 顯示用的簡稱
  *      name  —— 完整名稱，供 title 提示
- *    TODO: 取得官方對照表後補齊 35 個 LOCATION_ID 與 27 個 DESTINATION_ID。
- */
-const TD_JTIS_LOCATION_NAMES = {};
+ * 35 個 LOCATION_ID 與 27 個 DESTINATION_ID 全部有權威名稱，畫面上
+ * 不再出現裸露的 H1 / WNG 這種代碼。 */
+const TD_JTIS_LOCATION_NAMES = {
+  H1: { short: "告士打道東行近稅務大樓", name: "告士打道東行近稅務大樓" },
+  H2: { short: "堅拿道天橋北行近香港仔隧道出口", name: "堅拿道天橋北行近香港仔隧道出口" },
+  H3: { short: "東區走廊西行近城市花園", name: "東區走廊西行近城市花園" },
+  H4: { short: "黃泥涌道北行近皇后大道東", name: "黃泥涌道北行近皇后大道東" },
+  H5: { short: "興發街北行近維多利亞公園", name: "興發街北行近維多利亞公園" },
+  H6: { short: "淺水灣道北行近香島道", name: "淺水灣道北行近香島道" },
+  H7: { short: "黃竹坑道北行近香港鄉村俱樂部", name: "黃竹坑道北行近香港鄉村俱樂部" },
+  H8: { short: "黃竹坑道東行近香港仔運動場", name: "黃竹坑道東行近香港仔運動場" },
+  H9: { short: "鴨脷洲橋道北行近黃竹坑道", name: "鴨脷洲橋道北行近黃竹坑道" },
+  H11: { short: "東區走廊西行近鯉景灣", name: "東區走廊西行近鯉景灣" },
+  K01: { short: "渡船街南行近富榮花園", name: "渡船街南行近富榮花園" },
+  K02: { short: "加士居道東行近香港理工大學", name: "加士居道東行近香港理工大學" },
+  K03: { short: "窩打老道南行近九龍醫院", name: "窩打老道南行近九龍醫院" },
+  K04: { short: "公主道南行近愛民邨", name: "公主道南行近愛民邨" },
+  K05: { short: "啟福道北行近油站", name: "啟福道北行近油站" },
+  K06: { short: "漆咸道北南行近佛光街遊樂場", name: "漆咸道北南行近佛光街遊樂場" },
+  K07: { short: "西九龍公路西行近港鐵南昌站", name: "西九龍公路西行近港鐵南昌站" },
+  K08: { short: "啓祥道西行近九龍灣消防總局", name: "啓祥道西行近九龍灣消防總局" },
+  N01: { short: "洪天路南行近洪志路", name: "洪天路南行近洪志路" },
+  N02: { short: "朗天路南行近柏麗豪園", name: "朗天路南行近柏麗豪園" },
+  N03: { short: "元朗公路東行近十八鄉交匯處", name: "元朗公路東行近十八鄉交匯處" },
+  N05: { short: "大埔公路東行近廣福邨", name: "大埔公路東行近廣福邨" },
+  N06: { short: "青沙公路西行近城門河道", name: "青沙公路西行近城門河道" },
+  N07: { short: "福民路北行近普通道", name: "福民路北行近普通道" },
+  N08: { short: "寶順路南行近頌明苑", name: "寶順路南行近頌明苑" },
+  N09: { short: "環保大道西行近香港單車館", name: "環保大道西行近香港單車館" },
+  N10: { short: "寶康路南行近九巴將軍澳車廠", name: "寶康路南行近九巴將軍澳車廠" },
+  N11: { short: "寶邑路西行近調景嶺體育館", name: "寶邑路西行近調景嶺體育館" },
+  N12: { short: "寶順路南行近調景嶺體育館", name: "寶順路南行近調景嶺體育館" },
+  N13: { short: "翠嶺路東行近調景嶺體育館", name: "翠嶺路東行近調景嶺體育館" },
+  SJ1: { short: "大埔公路近沙田馬場", name: "大埔公路近沙田馬場" },
+  SJ2: { short: "獅子山隧道公路南行近石門", name: "獅子山隧道公路南行近石門" },
+  SJ3: { short: "吐露港公路南行近科學園", name: "吐露港公路南行近科學園" },
+  SJ4: { short: "新田公路南行近茵怡花園", name: "新田公路南行近茵怡花園" },
+  SJ5: { short: "屯門公路南行近曾財街", name: "屯門公路南行近曾財街" },
+};
 const TD_JTIS_DEST_NAMES = {
-  CH: { short: "紅隧", name: "紅磡海底隧道" },
-  EH: { short: "東隧", name: "東區海底隧道" },
-  WH: { short: "西隧", name: "西區海底隧道" },
-  ABT: { short: "香港仔隧道", name: "香港仔隧道" },
-  TCT: { short: "大老山隧道", name: "大老山隧道" },
+  CH: { short: "紅磡海底隧道", name: "紅磡海底隧道" },
+  EH: { short: "東區海底隧道", name: "東區海底隧道" },
+  WH: { short: "西區海底隧道", name: "西區海底隧道" },
+  ABT: { short: "灣仔經香港仔隧道", name: "灣仔經香港仔隧道" },
+  WNCG: { short: "灣仔經黃泥涌峽道", name: "灣仔經黃泥涌峽道" },
+  PFL: { short: "中環經薄扶林道", name: "中環經薄扶林道" },
+  ACTT: { short: "機場經三號幹線", name: "機場經三號幹線" },
+  TMCLK: { short: "機場經屯門赤鱲角", name: "機場經屯門赤鱲角" },
+  ATL: { short: "機場經大欖隧道", name: "機場經大欖隧道" },
+  SSCPR: { short: "上水經青山公路", name: "上水經青山公路" },
+  SSYLH: { short: "上水經九號幹線", name: "上水經九號幹線" },
+  LRT: { short: "九龍（中）經獅子山隧道", name: "九龍（中）經獅子山隧道" },
+  SMT: { short: "荃灣經城門隧道", name: "荃灣經城門隧道" },
+  TCT: { short: "九龍（東）經大老山隧道", name: "九龍（東）經大老山隧道" },
+  TKTL: { short: "將軍澳經大欖隧道", name: "將軍澳經大欖隧道" },
+  TKTM: { short: "將軍澳經屯門路", name: "將軍澳經屯門路" },
+  TLH: { short: "沙田經吐露港公路", name: "沙田經吐露港公路" },
+  TPR: { short: "沙田經大埔公路", name: "沙田經大埔公路" },
+  KTPR: { short: "九龍經大埔公路", name: "九龍經大埔公路" },
+  TSCA: { short: "九龍（西）經八號幹線", name: "九龍（西）經八號幹線" },
+  TWCP: { short: "荃灣（西）經青山公路", name: "荃灣（西）經青山公路" },
+  TWTM: { short: "荃灣（西）經屯門路", name: "荃灣（西）經屯門路" },
+  CWBR: { short: "九龍經清水灣道", name: "九龍經清水灣道" },
+  MOS: { short: "九龍經二號幹線", name: "九龍經二號幹線" },
+  TKOLTT: { short: "九龍經將軍澳藍田隧道", name: "九龍經將軍澳藍田隧道" },
+  TKOT: { short: "九龍經將軍澳隧道", name: "九龍經將軍澳隧道" },
 };
 function parseJourneyTimes(text) {
   const doc = parseXmlDoc(text, "行車時間");
@@ -2451,6 +2570,7 @@ function parseJourneyTimes(text) {
     const minutes = parseInt(xmlChildText(rec, "JOURNEY_DATA"), 10);
     const colour = parseInt(xmlChildText(rec, "COLOUR_ID"), 10);
     const dest = TD_JTIS_DEST_NAMES[destId];
+    const loc = TD_JTIS_LOCATION_NAMES[locationId];
     out.push({
       key: locationId + ">" + destId,
       locationId,
@@ -2460,14 +2580,13 @@ function parseJourneyTimes(text) {
       minutes: Number.isFinite(minutes) ? minutes : null,
       /* COLOUR_ID 3 = 暢通、2 = 繁忙、1 = 擠塞（實測只出現 2 與 3）。 */
       colour: colour === 1 || colour === 2 ? colour : 3,
-      /* 對照得到 →「簡稱 (代碼)」；對照不到 →「代碼 (?)」。
-         未對照的一個「?」就講清楚，不必靠顏色或字體去猜。 */
-      destText: dest ? dest.short + " (" + destId + ")" : destId + " (?)",
+      /* 對照得到 →「簡稱」；對照不到 → 退回代碼（寧可顯示代碼，也不猜路名）。 */
+      destText: dest ? dest.short : destId,
       destTitle: dest ? dest.name + "（" + destId + "）" : destId + "：官方名稱待確認",
       destMapped: !!dest,
-      /* LOCATION_ID 目前一個都未有官方名稱，所以一律顯示代碼。 */
-      fromText: locationId,
-      fromTitle: locationId + "：官方位置名稱待確認",
+      fromText: loc ? loc.short : locationId,
+      fromTitle: loc ? loc.name + "（" + locationId + "）" : locationId + "：官方位置名稱待確認",
+      fromMapped: !!loc,
     });
   }
   return out;
@@ -3460,11 +3579,16 @@ createApp({
     })));
     /* 軌道內容重複一次，CSS 移到 -50% 就無縫接回開頭。 */
     const tickerLoop = computed(() => tickerItems.value.length ? tickerItems.value.concat(tickerItems.value) : []);
+    /* 手機「特別交通消息」卡片的直向清單：只取最新的 6 則，否則一張卡就
+       會長到要捲很久，位置又被底部工具列壓住。 */
+    const newsCardItems = computed(() => tickerItems.value.slice(0, 6));
     /* 量度軌道實際闊度再換算時間，令長短清單的滾動速度（像素／秒）一致；
        量不到（面板未顯示時闊度為 0）就退回按則數估算。 */
     const tickerTrack = ref(null);
     const tickerWidth = ref(0);
-    const TICKER_PX_PER_SEC = 55;
+    /* 每秒移動的像素。字幕要夠慢才讀得到 —— 55 px/s 大約是正常閱讀速度的
+       一倍半，中文逐字追很吃力；收到 30 px/s 之後明顯好讀。 */
+    const TICKER_PX_PER_SEC = 30;
     const tickerDuration = computed(() => {
       /* 軌道內容重複了一次，所以實際要行走的距離是軌道全長的一半。
          （CSS 給每一項都留了 margin-right，所以 -50% 剛好等於一個循環。） */
@@ -4877,7 +5001,7 @@ createApp({
       trafficNews, trafficNewsError, trafficCameras, trafficCamError,
       journeyTimes, journeyError, selectedCamKey, selectedCam,
       regionCameras, regionJourneys, snapshotUrl, snapshotLoaded, snapshotFailed,
-      snapshotUpdatedText, tickerLoop, tickerTrack, tickerDuration,
+      snapshotUpdatedText, tickerLoop, newsCardItems, tickerTrack, tickerDuration,
       camMapVisibleCount,
       trafficSheet, openTrafficSheet, closeTrafficSheet,
     };
