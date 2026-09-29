@@ -705,7 +705,15 @@
   .tp-journey-list { list-style: none; padding: 0; margin: 0; }
   .tp-journey-list li { display: flex; align-items: center; gap: 6px; padding: 5px 0; border-bottom: 1px dashed #f0f3f8; min-width: 0; }
   .tp-journey-list li:last-child { border-bottom: none; }
-  .tp-journey-text { flex: 1 1 auto; min-width: 0; color: #2b3a55; font-size: calc(14.5px * var(--font-scale)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* 行車時間的起訖點名經常很長（「洪天路南行近洪志路 → 機場經大欖隧道」），
+     單行加 ellipsis 會把目的地名切走，所以改成最多兩行（line-clamp），
+     超出的部分仍然收掉，避免一行長到要橫向捲。 */
+  .tp-journey-text {
+    flex: 1 1 auto; min-width: 0; color: #2b3a55;
+    font-size: calc(14.5px * var(--font-scale)); line-height: 1.4;
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+    overflow: hidden; overflow-wrap: anywhere;
+  }
   .tp-journey-arrow { color: #aab4c4; }
   /* 地區前綴：只在跟目前選取的地區不同時才顯示（例如新界 tab 下的 SJ = 新界南）。
      同一區每一行都印一次同樣的地區名會像 bug，所以只在有分別時才印。 */
@@ -725,10 +733,8 @@
   @media (min-width: 901px) {
     .traffic-panel { max-height: 44vh; overflow-y: auto; }
     .traffic-panel.landing-wide { max-height: 78vh; }
-    .traffic-panel .tp-section { max-width: 760px; }
-    /* 快拍地圖要和主地圖（.map-wrap-desktop）同寬，所以不受 760px 的
-       文字欄寬限制；容器本身就是面板的內容寬度，兩者必定一致。 */
-    .traffic-panel .tp-section.tp-section-map { max-width: none; }
+    /* 桌機：三個分區（特別交通消息／交通快拍／行車時間）都跟主地圖同寬，
+       所以不設文字欄上限——容器本身就是面板的內容寬度，必定一致。 */
   }
   /* 手機：交通面板本身只是 .layout 這個可捲動欄裡的一格，所以不再限高
      （限高會在 .layout 內產生第二層捲動，觸控上很難用）。 */

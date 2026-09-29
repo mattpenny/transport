@@ -653,6 +653,30 @@
   .eta-box .countdown { font-size: calc(11px * var(--font-scale)); color: #0d5e3a; display: flex; align-items: center; gap: 4px; font-weight: 600; }
   .eta-box .fresh-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #27ae60; margin-right: 5px; vertical-align: middle; }
   .eta-box .stale-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #e67e22; margin-right: 5px; vertical-align: middle; }
+
+  /* ===== 手機：特別交通消息卡片（取代「最近三班候車時間」）=====
+     資料與巴士頁同一來源（運輸署 trafficnews.xml），但手機版用直向
+     清單，不用跑馬燈：跑馬燈只容得下一行，且要量軌道闊度。 */
+  .tp-panel { padding: 10px 12px; flex-shrink: 0; min-width: 0; }
+  .tp-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+  .tp-head h3 { margin: 0; color: #0d5e3a; font-size: calc(16px * var(--font-scale)); }
+  .tp-updated { color: #7b879b; font-size: calc(12px * var(--font-scale)); flex-shrink: 0; }
+  .tp-empty { color: #7b879b; font-size: calc(14px * var(--font-scale)); padding: 3px 0; }
+  .tp-news-list { list-style: none; padding: 0; margin: 0; }
+  .tp-news-list li {
+    display: flex; align-items: flex-start; gap: 8px; min-width: 0;
+    padding: 7px 0; border-bottom: 1px dashed #e8ecf3;
+  }
+  .tp-news-list li:last-child { border-bottom: none; padding-bottom: 0; }
+  .tp-news-text {
+    flex: 1 1 auto; min-width: 0; color: #2b3a55;
+    font-size: calc(14.5px * var(--font-scale)); line-height: 1.5;
+  }
+  .tp-news-list li.tp-status-closed .tp-news-text { color: #98a2b3; }
+  .tp-news-tag {
+    flex-shrink: 0; color: #98a2b3; font-size: calc(12px * var(--font-scale));
+    font-variant-numeric: tabular-nums;
+  }
   .eta-box .stale { color: #e67e22; font-weight: 600; margin-left: 6px; }
 
   .stop-name-label {
@@ -1252,7 +1276,9 @@
         </div>
       </div>
 
-      <div class="panel eta-box">
+      <!-- 候車時間：手機版讓位給「特別交通消息」卡片（見下），所以整張
+           ETA 面板在手機上不顯示；桌機照舊顯示。 -->
+      <div v-if="!isMobile" class="panel eta-box">
         <div class="eta-header">
           <h3>
             最近三班候車時間
@@ -1298,6 +1324,21 @@
             </span>
           </li>
         </ul>
+      </div>
+
+      <!-- 手機版：ETA 面板的位置改放「特別交通消息」，內容用直向清單。 -->
+      <div v-if="isMobile" class="panel tp-panel tp-news-card">
+        <div class="tp-head">
+          <h3>特別交通消息</h3>
+          <span v-if="trafficNews.length" class="tp-updated">{{ trafficNews.length }} 則</span>
+        </div>
+        <ul v-if="trafficNews.length" class="tp-news-list">
+          <li v-for="n in newsCardItems" :key="n.id" :class="{ 'tp-status-closed': n.closed }">
+            <span class="tp-news-text">{{ n.text }}</span>
+            <span v-if="n.closed" class="tp-news-tag">已完結</span>
+          </li>
+        </ul>
+        <div v-else class="tp-empty">{{ trafficNewsError || "暫無特別交通消息" }}</div>
       </div>
     </main>
    </div>
@@ -1654,6 +1695,61 @@ function formatExactTime(t) {
   if (!d) return "";
   const p = (n) => String(n).padStart(2, "0");
   return `(${p(d.getHours())}:${p(d.getMinutes())})`;
+}
+
+/* ==================== 特別交通消息（運輸署）====================
+   與 index.html（巴士頁）同一份 XML 與同一套解析邏輯；手機版用它
+   取代「最近三班候車時間」卡片。顯示「過去 2 天 + 未來數週」的消息，
+   最新在最前。消息沒有地區欄位，所以不做地區篩選。 */
+const TD_NEWS_URL = "https://www.td.gov.hk/tc/special_news/trafficnews.xml";
+const TD_NEWS_LOOKBACK_MS = 2 * 864e5;
+/* parseFromString 遇到壞 XML 不會 throw，而是塞一個 <parsererror>，
+   不檢查就會靜靜當成「沒有資料」，所以一定要驗。 */
+function parseXmlDoc(text, what) {
+  const doc = new DOMParser().parseFromString(text, "text/xml");
+  if (!doc || doc.getElementsByTagName("parsererror").length) {
+    throw new Error(what + "：XML 格式錯誤");
+  }
+  return doc;
+}
+/* 用 localName 取子節點，因為來源 XML 帶 namespace。 */
+function xmlChildNodes(el, name) {
+  return Array.prototype.filter.call(el.childNodes || [], n =>
+    n.nodeType === 1 && n.localName === name);
+}
+function xmlChildText(el, name) {
+  const c = xmlChildNodes(el, name)[0];
+  return c && c.textContent ? c.textContent.trim() : "";
+}
+function parseTrafficNews(text) {
+  const doc = parseXmlDoc(text, "交通消息");
+  const out = [];
+  for (const msg of xmlChildNodes(doc.documentElement, "message")) {
+    const whenText = xmlChildText(msg, "ANNOUNCEMENT_DATE");
+    const when = whenText ? parseDate(whenText) : null;
+    const statusEn = xmlChildText(msg, "INCIDENT_STATUS_EN").toUpperCase();
+    const statusCn = xmlChildText(msg, "INCIDENT_STATUS_CN");
+    out.push({
+      id: xmlChildText(msg, "ID") || xmlChildText(msg, "INCIDENT_NUMBER"),
+      heading: xmlChildText(msg, "INCIDENT_HEADING_CN") || "交通消息",
+      detail: xmlChildText(msg, "CONTENT_CN") || xmlChildText(msg, "INCIDENT_DETAIL_CN"),
+      location: xmlChildText(msg, "LOCATION_CN"),
+      direction: xmlChildText(msg, "DIRECTION_CN"),
+      landmark: xmlChildText(msg, "NEAR_LANDMARK_CN"),
+      status: statusCn,
+      closed: /CLOSED|CANCELLED|完結|取消/.test(statusEn + statusCn),
+      whenMs: when ? when.getTime() : 0,
+    });
+  }
+  const cutoff = Date.now() - TD_NEWS_LOOKBACK_MS;
+  /* 未來的消息一律保留；解析不到日期的也保留，不因時間丟掉整條。 */
+  return out.filter(n => !n.whenMs || n.whenMs >= cutoff)
+             .sort((a, b) => b.whenMs - a.whenMs);
+}
+async function fetchTrafficNews() {
+  const res = await fetch(TD_NEWS_URL, { cache: "no-store" });
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  return parseTrafficNews(await res.text());
 }
 function isValidCoord(lat, lng) {
   return typeof lat === "number" && typeof lng === "number" && isFinite(lat) && isFinite(lng) &&
@@ -2775,6 +2871,23 @@ createApp({
     const favExpanded = ref(true);
     const favourites = ref(loadFavourites());
     const currentGmbFare = ref(null);
+    /* 特別交通消息（手機版的 ETA 位置）。只取最新 6 則，否則卡片會長到
+       要捲很久，位置又被底部工具列壓住。 */
+    const trafficNews = ref([]);
+    const trafficNewsError = ref("");
+    const newsCardItems = computed(() => trafficNews.value.map(n => ({
+      id: n.id,
+      closed: n.closed,
+      text: [n.heading, n.location, n.detail].filter(Boolean).join("｜"),
+    })).slice(0, 6));
+    async function loadTrafficNews() {
+      try {
+        trafficNews.value = await fetchTrafficNews();
+        trafficNewsError.value = "";
+      } catch (e) {
+        trafficNewsError.value = "交通消息載入失敗";
+      }
+    }
 
     /* 目的地搜尋（在輸入框打「旺角」之類）＋ GPS 定位。
        結果由 findStopsToDestination 產生：使用者附近 5 個「有車去該目的地」的小巴站。 */
@@ -3725,6 +3838,7 @@ createApp({
       refreshDesktopMapSize();
       fetchGmbCoordDb().catch(() => {});
       fetchGmbFareDb().catch(() => {});
+      loadTrafficNews();
       window.addEventListener("resize", handleResize);
       window.addEventListener("orientationchange", handleResize);
       window.addEventListener("resize", updateModalMaxHeight);
@@ -3757,6 +3871,7 @@ createApp({
       loadingStops, error, stopListRef, mapExpanded, mapRowText,
       isMobile, favExpanded, favourites, isLanding, isCurrentFavourite,
       clockText, currentGmbFare,
+      trafficNews, trafficNewsError, newsCardItems,
       currentDetail, detailVariantIndex, detailBoundIndex, detailOpen, detailLoading,
       openDetail, closeDetail,
       detailVariant, detailBounds, detailBound, detailOperator, detailNotices,
