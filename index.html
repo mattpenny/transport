@@ -641,15 +641,36 @@
     font-family: inherit; transition: background 0.15s, color 0.15s, border-color 0.15s;
   }
   .tp-tab.active { background: #1a3d7c; border-color: #1a3d7c; color: #fff; font-weight: 700; }
-  .tp-cam-select {
-    width: 100%; margin-bottom: 8px; padding: 6px 8px; min-width: 0;
-    border: 1px solid #d8e0ec; border-radius: 7px; background: #fff;
-    color: #33415c; font-size: calc(12px * var(--font-scale)); font-family: inherit;
-  }
   /* 面板位於 main 的寬欄，4:3 圖片若跟著欄寬放大會佔滿整個畫面，所以設上限。 */
   .tp-snapshot { position: relative; background: #0d1524; border-radius: 8px; overflow: hidden; aspect-ratio: 4 / 3; max-width: 420px; }
   .tp-snapshot img { display: block; width: 100%; height: 100%; object-fit: cover; }
   .tp-snapshot-msg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #8b95a8; font-size: calc(12px * var(--font-scale)); }
+
+  /* --- 交通快拍：地圖選點（取代原本的下拉選單）---
+     1,013 支快拍不可能逐一列出，所以用地圖上的點代表位置；
+     點一下就切換該點的即時影像，名稱常駐或懸停顯示。 */
+  .tp-cam-map {
+    position: relative; height: 260px; margin-bottom: 8px;
+    border: 1px solid #d8e0ec; border-radius: 8px; overflow: hidden;
+    background: #eaf1ff; min-width: 0;
+  }
+  .tp-cam-map .leaflet-container { background: #eaf1ff; font-family: inherit; }
+  .tp-cam-map .leaflet-tooltip.tp-cam-tip {
+    background: rgba(26,61,124,0.92); border: none; color: #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    font-size: calc(10.5px * var(--font-scale)); font-weight: 600;
+    padding: 2px 6px; border-radius: 5px; white-space: nowrap;
+  }
+  .tp-cam-map .leaflet-tooltip.tp-cam-tip::before { border-top-color: rgba(26,61,124,0.92); }
+  .tp-cam-caption {
+    display: flex; align-items: baseline; gap: 8px; min-width: 0; margin-bottom: 2px;
+  }
+  .tp-cam-caption .name {
+    color: #1a3d7c; font-weight: 700; font-size: calc(13px * var(--font-scale));
+    min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .tp-cam-caption .dist { color: #98a2b3; font-size: calc(10.5px * var(--font-scale)); flex-shrink: 0; }
+  .tp-cam-hint { color: #98a2b3; font-size: calc(10.5px * var(--font-scale)); margin: 0 0 8px; }
 
   /* --- 行車時間顯示器 --- */
   .tp-journey-list { list-style: none; padding: 0; margin: 0; }
@@ -676,10 +697,12 @@
     .traffic-panel { max-height: 44vh; overflow-y: auto; }
     .traffic-panel .tp-section { max-width: 760px; }
   }
-  /* 手機：單欄垂直堆疊；.sidebar 本身已可滾動。
-     斷點沿用專案一貫的 900px（desktop 是 min-width: 901px）。 */
+  /* 手機：交通面板本身只是 .layout 這個可捲動欄裡的一格，所以不再限高
+     （限高會在 .layout 內產生第二層捲動，觸控上很難用）。
+     地圖與快照改用 vh 為上限，確保在矮螢幕上仍看得到地圖。 */
   @media (max-width: 900px) {
     .traffic-panel { padding: 10px 12px; }
+    .tp-cam-map { height: 44vh; max-height: 360px; min-height: 200px; }
     .tp-snapshot { max-height: 48vh; }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -698,12 +721,34 @@
   .stop-name-label.selected { background: #ffe0e0; border-color: #e53935; color: #c0392b; }
   @keyframes busPulse { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
 
-  /* === MOBILE === */
+  /* === MOBILE ===
+     ⚠ 這裡是「交通面板蓋住巴士 landing page」的主因。
+     .main-area 在手機是 display:contents，它的子項（ETA 面板、交通面板、
+     隱藏中的地圖面板）會被提升成 .layout 的直接 grid item，於是 .layout
+     變成 3～4 個 item 的單欄 grid。舊設定寫死
+        grid-template-rows: minmax(0, 1fr)  ← 剛好只有一列
+     多出來的 item 只能自動開新列，但 .layout 自己是 flex:1 + overflow:hidden，
+     總高度被鎖在視窗內，於是最後一格溢出並與前一格重疊——正是截圖看到的
+     「交通快拍」疊在 ETA／搜尋區上面的現象。
+
+     修法：手機改為單一可捲動欄——每格用內容高度（auto），捲動交給 .layout。
+     側欄、ETA、交通面板依序排列，永遠不會互相覆蓋，內容再長捲下去就看得到。 */
   @media (max-width: 900px) {
-    .layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 8px; padding: 8px; }
+    .layout {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: none;         /* 取消單一 1fr 列 */
+      grid-auto-rows: auto;             /* 每格 = 內容高度 */
+      align-content: start;
+      gap: 8px; padding: 8px;
+      overflow-y: auto; overflow-x: hidden;   /* .layout 自己捲動 */
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+    }
     .main-area { display: contents; }
     .map-wrap-desktop { display: none !important; }
     .panel { padding: 10px; min-width: 0; max-width: 100%; }
+    /* 被 display:contents 提升上來的格子不能再靠父層撐高，自身也不能設
+       max-height（否則 .layout 內會多一層捲動，觸控上極難操作）。 */
     .sidebar { max-width: 100%; min-width: 0; max-height: none; overflow: visible; }
 
     .fav-slots.collapsed { max-height: 62px; overflow-y: auto; overflow-x: hidden; padding-right: 1px; }
@@ -718,7 +763,8 @@
     .stop-list .stop-map-btn { display: flex; width: 28px; height: 28px; }
     .stop-list .stop-map-btn svg { width: 15px; height: 15px; }
 
-    .eta-box { max-height: 260px; padding: 8px 12px; }
+    /* .layout 已是捲動容器，ETA 面板不再自己捲（否則就是巢狀捲動） */
+    .eta-box { max-height: none; padding: 8px 12px; }
     .eta-box .time { font-size: calc(18px * var(--font-scale)); }
     .eta-box .exact-time { font-size: calc(18px * var(--font-scale)); }
     .eta-box .rank { width: 68px; font-size: calc(18px * var(--font-scale)); }
@@ -1528,7 +1574,7 @@
           <div v-else class="tp-empty">{{ trafficNewsError || "暫無特別交通消息" }}</div>
         </div>
 
-        <!-- 2. 交通快拍（地區選擇 + 圖片檢視器） -->
+        <!-- 2. 交通快拍：地區分頁 + 可點擊的攝影機地圖 -->
         <div class="tp-section">
           <div class="tp-head">
             <h3>交通快拍</h3>
@@ -1541,11 +1587,18 @@
                     @click="selectRegion(r.key)">{{ r.label }}</button>
           </div>
           <template v-if="regionCameras.length">
-            <!-- :key 令換區時整個 select 重建。選項換了一批而 value 指著的
-                 攝影機不在新選項內時，DOM 不會自動跟上，會顯示錯的攝影機。 -->
-            <select class="tp-cam-select" :key="selectedRegion" :value="selectedCamKey" @change="onCamChange($event.target.value)">
-              <option v-for="c in regionCameras" :key="c.key" :value="c.key">{{ c.description }}</option>
-            </select>
+            <!-- 攝影機地圖。刻意不用 v-if：面板本身受 v-if="isLanding" 控制，
+                 面板出現／消失時用 mountCameraMap()／removeCameraMap() 掛載，
+                 絕對不讓 Leaflet 綁在已被移除的容器上。 -->
+            <div id="map-cameras" class="tp-cam-map"></div>
+            <div class="tp-cam-caption">
+              <span class="name">{{ selectedCam ? selectedCam.description : "請點地圖上的攝影機" }}</span>
+              <span v-if="selectedCam && selectedCam.district" class="dist">{{ selectedCam.district }}</span>
+            </div>
+            <p class="tp-cam-hint">
+              共 {{ regionCameras.length }} 支快拍，點地圖上的點即可查看即時影像
+              （目前畫面內 {{ camMapVisibleCount }} 支）
+            </p>
             <div class="tp-snapshot">
               <img v-if="snapshotUrl && !snapshotFailed"
                    :src="snapshotUrl"
@@ -3263,8 +3316,22 @@ createApp({
     }
     watch(tickerLoop, () => { nextTick(measureTicker); });
     watch(fontScale, () => { nextTick(measureTicker); });
-    /* 面板由 v-if="isLanding" 控制，重新出現時元素是新的，要重新量一次。 */
-    watch(isLanding, (v) => { if (v) nextTick(measureTicker); });
+    /* 面板由 v-if="isLanding" 控制，重新出現時元素是新的，要重新量一次，
+       同時把攝影機地圖掛到新的容器上（舊實例必須先銷毀）。 */
+    watch(isLanding, (v) => {
+      if (v) nextTick(() => { measureTicker(); mountCameraMap(); });
+      else removeCameraMap();
+    });
+    /* 攝影機清單載入完成 / 換區 → 重畫地圖上的點。
+       地區無攝影機時模板不會輸出 #map-cameras，所以要先確認元素存在。 */
+    watch(regionCameras, () => {
+      nextTick(() => {
+        if (document.getElementById("map-cameras")) { mountCameraMap(); renderCameraMarkers(); }
+        else removeCameraMap();
+      });
+    });
+    /* 換選中的攝影機（點地圖上的點）→ 更新標記樣式與常駐名稱。 */
+    watch(selectedCamKey, () => { nextTick(renderCameraMarkers); });
 
 
     const fareDisplay = computed(() => {
@@ -3601,12 +3668,109 @@ createApp({
       selectedCamKey.value = first ? first.key : "";
       snapshotLoaded.value = false;
       snapshotFailed.value = false;
+      /* 換區後把鏡頭移到新區，否則會停在上一區而看不到任何點。 */
+      nextTick(() => { fitCameraMapToRegion(); renderCameraMarkers(); });
     }
 
     function onCamChange(key) {
       selectedCamKey.value = key;
       snapshotLoaded.value = false;
       snapshotFailed.value = false;
+    }
+
+    /* ---------- 攝影機地圖 ----------
+       原本是一個 <select>，1,013 支快拍塞進選單既難捲又難對位置；
+       改成地圖上的點：每個點 = 一支攝影機，點一下就切換快照並把鏡頭帶過去。
+
+       這張地圖是**獨立**的一張（不是主地圖 mapDesktop）：主地圖在搜尋路線時
+       會被 place-panel 蓋住 / 在手機是另一個 overlay，共用會互相搶鏡頭，
+       所以自己 create 一個，容器是交通面板裡的 #map-cameras。
+
+       1,013 個 marker 同時掛上會拖慢低階手機，所以只畫「目前視野內 + 邊界緩衝」
+       的點（moveend/zoomend 時重畫），畫面上限 400 支，夠用又不會卡。 */
+    const CAM_MAP_MAX_MARKERS = 400;
+    const camMapVisibleCount = ref(0);
+    let camMap = null, camMarkerLayer = null, camMapUserMoved = false;
+
+    function camMapIsUsable() {
+      if (!camMap) return false;
+      try { const el = camMap.getContainer(); return !!el && el.isConnected && el.clientWidth > 0; }
+      catch (e) { return false; }
+    }
+
+    function mountCameraMap() {
+      const el = document.getElementById("map-cameras");
+      /* 面板是 v-if，元素可能還未插入 DOM；量不到寬高就不要建立實例。 */
+      if (!el || !el.clientWidth) return;
+      if (camMap && camMap.getContainer() === el) {
+        try { camMap.invalidateSize(); } catch (e) {}
+        fitCameraMapToRegion(true);
+        renderCameraMarkers();
+        return;
+      }
+      removeCameraMap();
+      camMap = L.map(el, {
+        zoomControl: false, attributionControl: false,
+        scrollWheelZoom: false,   /* 面板在可捲動欄內，滾輪要留給捲動頁面 */
+        tap: true,
+      }).setView(HK_CENTER, 12);
+      L.tileLayer(TILE_BASEMAP, { maxZoom: 19 }).addTo(camMap);
+      camMarkerLayer = L.layerGroup().addTo(camMap);
+      camMap.on('moveend zoomend', () => { camMapUserMoved = true; renderCameraMarkers(); });
+      camMapUserMoved = false;
+      fitCameraMapToRegion(true);
+      renderCameraMarkers();
+    }
+
+    /* 面板被 v-if 移除時，Leaflet 實例必須銷毀，否則它仍持有已脫離 DOM 的
+       容器，下次掛載會出現「Map container is already initialized」或空白地圖。 */
+    function removeCameraMap() {
+      if (camMap) { try { camMap.remove(); } catch (e) {} }
+      camMap = null; camMarkerLayer = null; camMapUserMoved = false;
+      camMapVisibleCount.value = 0;
+    }
+
+    function fitCameraMapToRegion(force) {
+      if (!camMapIsUsable()) return;
+      if (camMapUserMoved && !force) return;   /* 使用者自己調過視角就不要搶 */
+      const pts = regionCameras.value
+        .filter(c => Number.isFinite(c.lat) && Number.isFinite(c.lng))
+        .map(c => [c.lat, c.lng]);
+      if (!pts.length) return;
+      try {
+        if (pts.length === 1) camMap.setView(pts[0], 15);
+        else camMap.fitBounds(L.latLngBounds(pts).pad(0.12), { maxZoom: 15 });
+      } catch (e) {}
+    }
+
+    function renderCameraMarkers() {
+      if (!camMapIsUsable() || !camMarkerLayer) { camMapVisibleCount.value = 0; return; }
+      camMarkerLayer.clearLayers();
+      const all = regionCameras.value.filter(c => Number.isFinite(c.lat) && Number.isFinite(c.lng));
+      let b = null;
+      try { b = camMap.getBounds().pad(0.35); } catch (e) {}
+      const inView = b ? all.filter(c => b.contains([c.lat, c.lng])) : all;
+      const shown = inView.slice(0, CAM_MAP_MAX_MARKERS);
+      camMapVisibleCount.value = shown.length;
+      /* 選中中的那支一定要畫到，否則使用者捲走再回來會看不到自己選的點。 */
+      const sel = selectedCam.value;
+      if (sel && Number.isFinite(sel.lat) && shown.indexOf(sel) === -1) shown.push(sel);
+
+      for (const c of shown) {
+        const isSel = sel && c.key === sel.key;
+        const m = L.circleMarker([c.lat, c.lng], {
+          radius: isSel ? 9 : 5,
+          color: isSel ? "#c8102e" : "#1a3d7c",
+          weight: isSel ? 3 : 2,
+          fillColor: isSel ? "#ff4d4f" : "#4a86e8",
+          fillOpacity: 0.9,
+        });
+        m.bindTooltip(c.description, {
+          permanent: isSel, direction: "top", className: "tp-cam-tip", offset: [0, -4],
+        });
+        m.on("click", () => onCamChange(c.key));
+        camMarkerLayer.addLayer(m);
+      }
     }
 
     async function loadTrafficInfo() {
@@ -4398,6 +4562,9 @@ createApp({
     function handleResize() {
       if (mapDesktop) try { mapDesktop.invalidateSize(); } catch (e) {}
       if (mapMobile) try { mapMobile.invalidateSize(); } catch (e) {}
+      /* 交通面板的快拍地圖：面板在側欄之下，轉向後寬高都變了，要重新量。
+         轉向後視野已變，所以強制對回目前地區的範圍。 */
+      if (camMap) nextTick(() => { fitCameraMapToRegion(true); renderCameraMarkers(); });
       isMobile.value = window.matchMedia("(max-width: 900px)").matches;
       /* 詳請彈窗的高度用 --modal-max-h（避開手機網址欄造成的 100vh 偏差），
          所以視窗一變就要重算，否則轉向後彈窗會超出畫面。 */
@@ -4462,7 +4629,7 @@ createApp({
       loadRoutes();
       fetchFareDb().catch(() => {});
       /* 交通情報面板一開始就在 landing page 顯示，所以立即載入。 */
-      loadTrafficInfo();
+      loadTrafficInfo().then(() => { nextTick(mountCameraMap); });
       startTrafficTimer();
       window.addEventListener("resize", handleResize);
       window.addEventListener("orientationchange", handleResize);
@@ -4477,6 +4644,7 @@ createApp({
       clearInterval(tickTimer);
       stopTrafficTimer();
       clearTimeout(trafficVisibilityTimer);
+      removeCameraMap();            /* 連同 Leaflet 的事件監聽與圖層一起釋放 */
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("orientationchange", handleResize);
       window.removeEventListener("beforeunload", saveFavouritesOnExit);
@@ -4519,6 +4687,7 @@ createApp({
       journeyTimes, journeyError, selectedCamKey, selectedCam,
       regionCameras, regionJourneys, snapshotUrl, snapshotLoaded, snapshotFailed,
       snapshotUpdatedText, tickerLoop, tickerTrack, tickerDuration,
+      camMapVisibleCount,
     };
   },
 }).mount("#app");
