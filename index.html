@@ -684,23 +684,6 @@
   .tp-cam-caption .dist { color: #7b879b; font-size: calc(12px * var(--font-scale)); flex-shrink: 0; }
   .tp-cam-hint { color: #7b879b; font-size: calc(12px * var(--font-scale)); margin: 0 0 8px; line-height: 1.45; }
 
-  /* --- 手機：特別交通消息卡片（取代原本的「最近三班候車時間」）--- */
-  .tp-news-list { list-style: none; padding: 0; margin: 0; }
-  .tp-news-list li {
-    display: flex; align-items: flex-start; gap: 8px; min-width: 0;
-    padding: 7px 0; border-bottom: 1px dashed #e8ecf3;
-  }
-  .tp-news-list li:last-child { border-bottom: none; padding-bottom: 0; }
-  .tp-news-text {
-    flex: 1 1 auto; min-width: 0; color: #2b3a55;
-    font-size: calc(14.5px * var(--font-scale)); line-height: 1.5;
-  }
-  .tp-news-list li.tp-status-closed .tp-news-text { color: #98a2b3; }
-  .tp-news-tag {
-    flex-shrink: 0; color: #98a2b3; font-size: calc(12px * var(--font-scale));
-    font-variant-numeric: tabular-nums;
-  }
-
   /* --- 行車時間顯示器 --- */
   .tp-journey-list { list-style: none; padding: 0; margin: 0; }
   .tp-journey-list li { display: flex; align-items: center; gap: 6px; padding: 5px 0; border-bottom: 1px dashed #f0f3f8; min-width: 0; }
@@ -1628,9 +1611,8 @@
       </div>
 
       <!-- 候車時間：landing（未輸入任何東西）時不出現；輸入巴士號碼 / 選好方向
-           之後才出現。手機版因為要讓位給「特別交通消息」卡片（見下），所以
-           整張 ETA 面板在手機上不顯示。桌機與手機的 ETA 內容一致。 -->
-      <div v-if="!isLanding && !isMobile" class="panel eta-box">
+           之後才出現。手機與桌機一致。 -->
+      <div v-if="!isLanding" class="panel eta-box">
         <div class="eta-header">
           <h3>
             最近三班候車時間
@@ -1685,31 +1667,12 @@
         </ul>
       </div>
 
-      <!-- 手機版：ETA 面板的位置改放「特別交通消息」。
-           landing 時這張卡顯示最新的即時路況，搜尋後 ETA 收起但消息仍在，
-           所以手機版任何時候都看得到交通資訊。內容用直向清單（不是跑馬燈），
-           因為跑馬燈只容得下一行、而且要量軌道闊度，兩張卡同時存在會打架。 -->
-      <div v-if="isMobile" class="panel traffic-panel tp-news-card">
-        <div class="tp-head">
-          <h3>特別交通消息</h3>
-          <span v-if="trafficNews.length" class="tp-updated">{{ trafficNews.length }} 則</span>
-        </div>
-        <ul v-if="trafficNews.length" class="tp-news-list">
-          <li v-for="n in newsCardItems" :key="n.id" :class="{ 'tp-status-closed': n.closed }">
-            <span class="tp-news-text">{{ n.text }}</span>
-            <span v-if="n.closed" class="tp-news-tag">已完結</span>
-          </li>
-        </ul>
-        <div v-else class="tp-empty">{{ trafficNewsError || "暫無特別交通消息" }}</div>
-      </div>
-
       <!-- ===== 交通情報面板（只在 landing page 顯示）=====
-           手機版只有「特別交通消息」留在這裡；「交通快拍」與「行車時間」
-           太長，會令側欄與面板互相蓋住，改由底部工具列開全螢幕面板。 -->
+           手機版這三張卡太長，會令側欄與面板互相蓋住，改由底部工具列
+           開全螢幕面板（.tp-sheet）。 -->
       <div v-if="isLanding" class="panel traffic-panel landing-wide">
 
-        <!-- 1. 特別交通消息（橫向滾動 ticker）。手機版已在 ETA 的位置用
-             .tp-news-card 顯示同一份資料，所以這裡只留桌機。 -->
+        <!-- 1. 特別交通消息（橫向滾動 ticker）。手機版改由 .tp-sheet 顯示同一份資料。 -->
         <div v-if="!isMobile" class="tp-section">
           <div class="tp-head">
             <h3>特別交通消息</h3>
@@ -3589,9 +3552,6 @@ createApp({
     })));
     /* 軌道內容重複一次，CSS 移到 -50% 就無縫接回開頭。 */
     const tickerLoop = computed(() => tickerItems.value.length ? tickerItems.value.concat(tickerItems.value) : []);
-    /* 手機「特別交通消息」卡片的直向清單：只取最新的 6 則，否則一張卡就
-       會長到要捲很久，位置又被底部工具列壓住。 */
-    const newsCardItems = computed(() => tickerItems.value.slice(0, 6));
     /* 量度軌道實際闊度再換算時間，令長短清單的滾動速度（像素／秒）一致；
        量不到（面板未顯示時闊度為 0）就退回按則數估算。 */
     const tickerTrack = ref(null);
@@ -5011,7 +4971,7 @@ createApp({
       trafficNews, trafficNewsError, trafficCameras, trafficCamError,
       journeyTimes, journeyError, selectedCamKey, selectedCam,
       regionCameras, regionJourneys, snapshotUrl, snapshotLoaded, snapshotFailed,
-      snapshotUpdatedText, tickerLoop, newsCardItems, tickerTrack, tickerDuration,
+      snapshotUpdatedText, tickerLoop, tickerTrack, tickerDuration,
       camMapVisibleCount,
       trafficSheet, openTrafficSheet, closeTrafficSheet,
     };
