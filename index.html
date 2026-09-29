@@ -607,6 +607,85 @@
   .eta-box .fresh-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #27ae60; margin-right: 5px; vertical-align: middle; }
   .eta-box .stale-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #e67e22; margin-right: 5px; vertical-align: middle; }
 
+  /* ===== 交通情報面板（landing page 專用，ETA 面板下方）=====
+     藍色沿用專案一直用的 #1a3d7c（本專案沒有 --brand-blue 這個變數）。 */
+  .traffic-panel { padding: 10px 14px; flex-shrink: 0; min-width: 0; }
+  .tp-section { padding: 8px 0; border-bottom: 1px dashed #e8ecf3; min-width: 0; }
+  .tp-section:first-child { padding-top: 0; }
+  .tp-section:last-child { border-bottom: none; padding-bottom: 0; }
+  .tp-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 7px; min-width: 0; }
+  .tp-head h3 { margin: 0; color: #1a3d7c; font-size: calc(14px * var(--font-scale)); min-width: 0; }
+  .tp-updated { color: #98a2b3; font-size: calc(10px * var(--font-scale)); flex-shrink: 0; font-variant-numeric: tabular-nums; }
+  .tp-empty { color: #98a2b3; font-size: calc(12px * var(--font-scale)); padding: 3px 0; }
+
+  /* --- 特別交通消息：橫向滾動 ticker --- */
+  .tp-ticker { overflow: hidden; position: relative; min-width: 0; }
+  /* 用每一項的 margin-right 而不是 gap：gap 只在項與項之間留空位，
+     但這條軌道把內容重複了一次靠 translateX(-50%) 接回開頭，
+     尾項後面沒有空位就會令接縫少半個間距而跳一下。 */
+  .tp-ticker-track { display: inline-flex; align-items: center; white-space: nowrap; animation: tpMarquee linear infinite; will-change: transform; }
+  .tp-ticker:hover .tp-ticker-track { animation-play-state: paused; }
+  .tp-ticker-item { color: #33415c; font-size: calc(12px * var(--font-scale)); flex-shrink: 0; margin-right: 30px; }
+  .tp-ticker-item::before { content: "●"; color: #c8102e; margin-right: 7px; font-size: 10px; vertical-align: middle; }
+  .tp-ticker-item.tp-status-closed { color: #98a2b3; }
+  .tp-ticker-item.tp-status-closed::before { content: "○"; color: #b6bfcc; }
+  /* 由右至左；軌道內容重複一次，所以移到 -50% 就剛好無縫接回開頭。 */
+  @keyframes tpMarquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+  /* --- 交通快拍 --- */
+  .tp-region-tabs { display: flex; gap: 6px; margin-bottom: 8px; min-width: 0; }
+  .tp-tab {
+    flex: 1 1 0; min-width: 0; padding: 5px 4px; cursor: pointer;
+    border: 1px solid #d8e0ec; border-radius: 7px; background: #fff;
+    color: #4a5a75; font-size: calc(12px * var(--font-scale));
+    font-family: inherit; transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .tp-tab.active { background: #1a3d7c; border-color: #1a3d7c; color: #fff; font-weight: 700; }
+  .tp-cam-select {
+    width: 100%; margin-bottom: 8px; padding: 6px 8px; min-width: 0;
+    border: 1px solid #d8e0ec; border-radius: 7px; background: #fff;
+    color: #33415c; font-size: calc(12px * var(--font-scale)); font-family: inherit;
+  }
+  /* 面板位於 main 的寬欄，4:3 圖片若跟著欄寬放大會佔滿整個畫面，所以設上限。 */
+  .tp-snapshot { position: relative; background: #0d1524; border-radius: 8px; overflow: hidden; aspect-ratio: 4 / 3; max-width: 420px; }
+  .tp-snapshot img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .tp-snapshot-msg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #8b95a8; font-size: calc(12px * var(--font-scale)); }
+
+  /* --- 行車時間顯示器 --- */
+  .tp-journey-list { list-style: none; padding: 0; margin: 0; }
+  .tp-journey-list li { display: flex; align-items: center; gap: 6px; padding: 5px 0; border-bottom: 1px dashed #f0f3f8; min-width: 0; }
+  .tp-journey-list li:last-child { border-bottom: none; }
+  .tp-journey-text { flex: 1 1 auto; min-width: 0; color: #33415c; font-size: calc(12px * var(--font-scale)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tp-journey-arrow { color: #b6bfcc; }
+  /* 地區前綴：只在跟目前選取的地區不同時才顯示（例如新界 tab 下的 SJ = 新界南）。
+     同一區每一行都印一次同樣的地區名會像 bug，所以只在有分別時才印。 */
+  .tp-region-tag { color: #5b6b85; font-weight: 600; margin-right: 7px; }
+  /* 未收錄在對照表的代碼：用引號標示，提醒那是原始代碼而不是路名。 */
+  .tp-code { color: #98a2b3; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: calc(11px * var(--font-scale)); }
+  .tp-journey-mins { flex-shrink: 0; font-weight: 700; font-size: calc(13px * var(--font-scale)); font-variant-numeric: tabular-nums; }
+  .tp-colour-1 { color: #c8102e; }
+  .tp-colour-2 { color: #e67e22; }
+  .tp-colour-3 { color: #1a8f4a; }
+
+  /* 桌面：面板是 main-area 的第 3 個 grid 子項，而 main-area 是
+     `grid-template-rows: minmax(0,1fr) auto` + `overflow:hidden`——
+     本來只預算兩個子項（地圖 + ETA）。新面板若不限高，會被當成
+     內容高度的列，把地圖那一列（1fr）擠到 0 高，自己亦會被裁掉。
+     所以桌機給它高度上限並自行捲動，地圖才有空間。 */
+  @media (min-width: 901px) {
+    .traffic-panel { max-height: 44vh; overflow-y: auto; }
+    .traffic-panel .tp-section { max-width: 760px; }
+  }
+  /* 手機：單欄垂直堆疊；.sidebar 本身已可滾動。
+     斷點沿用專案一貫的 900px（desktop 是 min-width: 901px）。 */
+  @media (max-width: 900px) {
+    .traffic-panel { padding: 10px 12px; }
+    .tp-snapshot { max-height: 48vh; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tp-ticker-track { animation: none; }
+  }
+
   .stop-name-label {
     background: rgba(255,255,255,0.92); border: 1px solid #1a3d7c;
     border-radius: 4px; padding: 1px 5px;
@@ -811,7 +890,8 @@
   @media (min-width: 901px) {
     .main-area.showing-place { grid-template-rows: minmax(0, 1fr); }
     .main-area.showing-place > .map-wrap-desktop,
-    .main-area.showing-place > .eta-box { display: none; }
+    .main-area.showing-place > .eta-box,
+    .main-area.showing-place > .traffic-panel { display: none; }
 
     /* 右欄有 700px 以上可用，卡片不必再遷就 340px 側欄的尺寸，
        所以桌機的字級與內距大約是原本的兩倍（手機彈出層維持原尺寸）。 */
@@ -1427,6 +1507,82 @@
           </li>
         </ul>
       </div>
+
+      <!-- ===== 交通情報面板（只在 landing page 顯示，位置在 ETA 面板下方）===== -->
+      <div v-if="isLanding" class="panel traffic-panel">
+
+        <!-- 1. 特別交通消息（橫向滾動 ticker） -->
+        <div class="tp-section">
+          <div class="tp-head">
+            <h3>特別交通消息</h3>
+            <span v-if="trafficNews.length" class="tp-updated">{{ trafficNews.length }} 則</span>
+          </div>
+          <div v-if="trafficNews.length" class="tp-ticker">
+            <div class="tp-ticker-track" ref="tickerTrack" :style="{ animationDuration: tickerDuration }">
+              <span v-for="(n, i) in tickerLoop" :key="i"
+                    class="tp-ticker-item"
+                    :class="{ 'tp-status-closed': n.closed }"
+                    :title="n.detail || n.heading">{{ n.text }}</span>
+            </div>
+          </div>
+          <div v-else class="tp-empty">{{ trafficNewsError || "暫無特別交通消息" }}</div>
+        </div>
+
+        <!-- 2. 交通快拍（地區選擇 + 圖片檢視器） -->
+        <div class="tp-section">
+          <div class="tp-head">
+            <h3>交通快拍</h3>
+            <span v-if="selectedCam" class="tp-updated">{{ snapshotUpdatedText }}</span>
+          </div>
+          <div class="tp-region-tabs">
+            <button v-for="r in TD_REGIONS" :key="r.key"
+                    class="tp-tab"
+                    :class="{ active: selectedRegion === r.key }"
+                    @click="selectRegion(r.key)">{{ r.label }}</button>
+          </div>
+          <template v-if="regionCameras.length">
+            <!-- :key 令換區時整個 select 重建。選項換了一批而 value 指著的
+                 攝影機不在新選項內時，DOM 不會自動跟上，會顯示錯的攝影機。 -->
+            <select class="tp-cam-select" :key="selectedRegion" :value="selectedCamKey" @change="onCamChange($event.target.value)">
+              <option v-for="c in regionCameras" :key="c.key" :value="c.key">{{ c.description }}</option>
+            </select>
+            <div class="tp-snapshot">
+              <img v-if="snapshotUrl && !snapshotFailed"
+                   :src="snapshotUrl"
+                   :alt="selectedCam.description"
+                   @load="snapshotLoaded = true; snapshotFailed = false"
+                   @error="snapshotFailed = true" />
+              <div v-if="snapshotFailed" class="tp-snapshot-msg">暫時未能提供快拍圖片</div>
+              <div v-else-if="!snapshotLoaded" class="tp-snapshot-msg">載入中…</div>
+            </div>
+          </template>
+          <div v-else class="tp-empty">{{ trafficCamError || "此地區暫無快拍攝影機" }}</div>
+        </div>
+
+        <!-- 3. 行車時間顯示器（只顯示選取地區的隧道／道路） -->
+        <div class="tp-section">
+          <div class="tp-head">
+            <h3>行車時間</h3>
+            <span class="tp-updated">{{ selectedRegion }}</span>
+          </div>
+          <ul v-if="regionJourneys.length" class="tp-journey-list">
+            <li v-for="j in regionJourneys" :key="j.key">
+              <span class="tp-journey-text" :title="j.fromTitle + ' → ' + j.destTitle">
+                <span v-if="j.regionLabel && j.regionLabel !== selectedRegion" class="tp-region-tag">{{ j.regionLabel }}</span>
+                <span class="tp-code">{{ j.fromText }}</span>
+                <span class="tp-journey-arrow"> → </span>
+                <span :class="{ 'tp-code': !j.destMapped }">{{ j.destText }}</span>
+              </span>
+              <span class="tp-journey-mins" :class="'tp-colour-' + j.colour">
+                <template v-if="j.minutes !== null">{{ j.minutes }} 分鐘</template>
+                <template v-else>—</template>
+              </span>
+            </li>
+          </ul>
+          <div v-else class="tp-empty">{{ journeyError || "此地區暫無行車時間資料" }}</div>
+        </div>
+
+      </div>
     </main>
   </div>
 
@@ -1919,6 +2075,202 @@ async function fetchNlbEta(routeId, stopId) {
   const ageSeconds = arr.length && arr[0].generateTime
     ? Math.max(0, Math.round((Date.now() - parseDate(arr[0].generateTime).getTime()) / 1000)) : null;
   return { items, ageSeconds };
+}
+
+/* ========== 交通情報（運輸署開放數據）==========
+ * 三個獨立的運輸署（TD）資料源，只供 landing page 的「交通情報面板」使用：
+ *   1. 特別交通消息（第二代）  XML，實時       —— 約 1.4 KB
+ *   2. 交通快拍攝影機位置      XML，含地區分類 —— 約 375 KB（1,013 部）
+ *   3. 行車時間顯示器（第二代）XML，每 2 分鐘  —— 約 27 KB（83 條）
+ *
+ * 三個端點都回 `Access-Control-Allow-Origin: *`（已實測），所以可以由瀏覽器
+ * 直接 fetch，不需要代理或自行存放副本。
+ * 消息與行車時間屬實時資料 → no-store；攝影機清單數月才更新一次（來源有
+ * ETag / Last-Modified）→ 用 HTTP 快取，之後每次只回 304，省下近 375 KB。
+ */
+const TD_NEWS_URL = "https://www.td.gov.hk/tc/special_news/trafficnews.xml";
+const TD_CAMERA_URL = "https://static.data.gov.hk/td/traffic-snapshot-images/code/Traffic_Camera_Locations_Tc.xml";
+const TD_JTIS_URL = "https://resource.data.one.gov.hk/td/jss/Journeytimev2.xml";
+
+/* 快拍圖片每 2 分鐘更新一次，所以 URL 帶一個「2 分鐘一格」的時間戳：
+   同一格內用同一條 URL（可由快取供應），過了就換新 URL 強制重抓，
+   毋須手動清快取，也不會每分鐘都重新下載圖片。 */
+const TD_SNAPSHOT_BUCKET_MS = 120000;
+function tdSnapshotUrl(key) {
+  const bucket = Math.floor(Date.now() / TD_SNAPSHOT_BUCKET_MS);
+  return `https://tdcctv.data.one.gov.hk/${encodeURIComponent(key)}.JPG?t=${bucket}`;
+}
+
+/* 用瀏覽器原生 DOMParser 解 XML。
+   注意 parseFromString 遇到壞 XML **不會 throw**，而是在文件裡塞一個
+   <parsererror> 元素；不檢查的話會靜靜當成「沒有資料」，所以一定要驗。 */
+function parseXmlDoc(text, what) {
+  const doc = new DOMParser().parseFromString(text, "text/xml");
+  if (!doc || doc.getElementsByTagName("parsererror").length) {
+    throw new Error(what + "：XML 格式錯誤");
+  }
+  return doc;
+}
+/* 用 localName 取子節點。
+   行車時間顯示器的 XML 有 namespace（xmlns="http://data.one.gov.hk/td"），
+   getElementsByTagName("LOCATION_ID") 會一個都找不到，必須用 localName。 */
+function xmlChildNodes(el, name) {
+  const out = [];
+  if (!el) return out;
+  for (const c of el.children) { if (c.localName === name) out.push(c); }
+  return out;
+}
+function xmlChildText(el, name) {
+  const c = xmlChildNodes(el, name)[0];
+  return c && c.textContent ? c.textContent.trim() : "";
+}
+
+/* --- 1. 特別交通消息 ---
+   顯示「過去 2 天 + 未來數週」的消息，最新在最前。
+   消息沒有地區欄位（DISTRICT_CN 實測為空），所以不做地區篩選。 */
+const TD_NEWS_LOOKBACK_MS = 2 * 864e5;
+function parseTrafficNews(text) {
+  const doc = parseXmlDoc(text, "交通消息");
+  const out = [];
+  for (const msg of xmlChildNodes(doc.documentElement, "message")) {
+    const whenText = xmlChildText(msg, "ANNOUNCEMENT_DATE");
+    const when = whenText ? parseDate(whenText) : null;
+    const statusEn = xmlChildText(msg, "INCIDENT_STATUS_EN").toUpperCase();
+    const statusCn = xmlChildText(msg, "INCIDENT_STATUS_CN");
+    out.push({
+      id: xmlChildText(msg, "ID") || xmlChildText(msg, "INCIDENT_NUMBER"),
+      heading: xmlChildText(msg, "INCIDENT_HEADING_CN") || "交通消息",
+      detail: xmlChildText(msg, "CONTENT_CN") || xmlChildText(msg, "INCIDENT_DETAIL_CN"),
+      location: xmlChildText(msg, "LOCATION_CN"),
+      direction: xmlChildText(msg, "DIRECTION_CN"),
+      landmark: xmlChildText(msg, "NEAR_LANDMARK_CN"),
+      status: statusCn,
+      closed: /CLOSED|CANCELLED|完結|取消/.test(statusEn + statusCn),
+      whenMs: when ? when.getTime() : 0,
+      whenText,
+    });
+  }
+  const cutoff = Date.now() - TD_NEWS_LOOKBACK_MS;
+  /* 未來的消息（whenMs > now）一律保留，所以「未來數週」也顯示得到；
+     沒有日期的也保留，不要因為解析不到時間就丟掉整條消息。 */
+  return out
+    .filter(n => !n.whenMs || n.whenMs >= cutoff)
+    .sort((a, b) => b.whenMs - a.whenMs);
+}
+
+/* --- 2. 交通快拍攝影機 ---
+   官方 XML 本身已帶 region（香港島／九龍／新界）與 district（18 區），
+   所以直接分區即可，毋須由攝影機名稱自行歸類。
+   每筆亦有 url 欄位，但這裡改用 tdSnapshotUrl() 以便按時段更新。 */
+function parseTrafficCameras(text) {
+  const doc = parseXmlDoc(text, "交通快拍");
+  const out = [];
+  for (const img of xmlChildNodes(doc.documentElement, "image")) {
+    const key = xmlChildText(img, "key");
+    if (!key) continue;
+    out.push({
+      key,
+      region: xmlChildText(img, "region"),
+      district: xmlChildText(img, "district"),
+      description: xmlChildText(img, "description") || key,
+      lat: parseFloat(xmlChildText(img, "latitude")),
+      lng: parseFloat(xmlChildText(img, "longitude")),
+    });
+  }
+  return out;
+}
+
+/* --- 3. 行車時間顯示器 ---
+   LOCATION_ID / DESTINATION_ID 都是代碼，資料本身沒有地區欄位，
+   但前綴與 TD 公布的位置清單對得上：H = 香港島、K = 九龍、N = 新界、SJ = 新界南。
+   認不出的一律歸空字串，不會硬塞進某一區。
+
+   兩張表刻意分開：
+     FILTER —— 用來對應交通快拍的 region 字串（只有 3 個值），決定這條記錄
+               在選「新界」時會否出現。SJ 屬新界，所以值是「新界」。
+     LABEL  —— 顯示用的較細標籤（SJ 顯示「新界南」）。選單沒有這一個，
+               所以只作顯示，不參與篩選；同一區內可分辨子區。
+   官方 35 個 LOCATION_ID 的權威中文名尚未取得，故此處只由前綴推導；
+   前綴認不出時 LABEL 留空，模板便不會印出地區前綴。 */
+const TD_JTIS_FILTER_REGION_BY_PREFIX = { H: "香港島", K: "九龍", N: "新界", SJ: "新界" };
+const TD_JTIS_LABEL_BY_PREFIX = { H: "香港島", K: "九龍", N: "新界", SJ: "新界南" };
+function jtisPrefixOf(locationId) {
+  const s = String(locationId || "").toUpperCase();
+  /* SJ 要兩個字母才分得出，先判；否則取首字母。 */
+  if (s.startsWith("SJ")) return "SJ";
+  return s.charAt(0);
+}
+function jtisRegionOf(locationId) {
+  return TD_JTIS_FILTER_REGION_BY_PREFIX[jtisPrefixOf(locationId)] || "";
+}
+function jtisRegionLabelOf(locationId) {
+  return TD_JTIS_LABEL_BY_PREFIX[jtisPrefixOf(locationId)] || "";
+}
+
+/* 行車時間顯示器的目的地名稱對照表。
+ *
+ * ⚠️ 官方 XML 的 JOURNEY_DESC **83 筆全部是空字串**，所以名稱只能靠這張表；
+ *    資料規格 PDF 的中文用 CID 子集字型，無法用程式抽取。
+ *    因此這裡只收錄**確定無疑**的代碼（三條過海隧道 + 兩條主要隧道），
+ *    其餘未收錄的把代碼原樣顯示並補上「(?)」，令畫面上清楚看得出
+ *    那是原始代碼而不是路名。寧可顯示代碼，也不要憑猜測填錯的道路名。
+ *      short —— 顯示用的簡稱
+ *      name  —— 完整名稱，供 title 提示
+ *    TODO: 取得官方對照表後補齊 35 個 LOCATION_ID 與 27 個 DESTINATION_ID。
+ */
+const TD_JTIS_LOCATION_NAMES = {};
+const TD_JTIS_DEST_NAMES = {
+  CH: { short: "紅隧", name: "紅磡海底隧道" },
+  EH: { short: "東隧", name: "東區海底隧道" },
+  WH: { short: "西隧", name: "西區海底隧道" },
+  ABT: { short: "香港仔隧道", name: "香港仔隧道" },
+  TCT: { short: "大老山隧道", name: "大老山隧道" },
+};
+function parseJourneyTimes(text) {
+  const doc = parseXmlDoc(text, "行車時間");
+  const out = [];
+  for (const rec of xmlChildNodes(doc.documentElement, "jtis_journey_time")) {
+    const locationId = xmlChildText(rec, "LOCATION_ID");
+    const destId = xmlChildText(rec, "DESTINATION_ID");
+    const minutes = parseInt(xmlChildText(rec, "JOURNEY_DATA"), 10);
+    const colour = parseInt(xmlChildText(rec, "COLOUR_ID"), 10);
+    const dest = TD_JTIS_DEST_NAMES[destId];
+    out.push({
+      key: locationId + ">" + destId,
+      locationId,
+      destId,
+      region: jtisRegionOf(locationId),
+      regionLabel: jtisRegionLabelOf(locationId),
+      minutes: Number.isFinite(minutes) ? minutes : null,
+      /* COLOUR_ID 3 = 暢通、2 = 繁忙、1 = 擠塞（實測只出現 2 與 3）。 */
+      colour: colour === 1 || colour === 2 ? colour : 3,
+      /* 對照得到 →「簡稱 (代碼)」；對照不到 →「代碼 (?)」。
+         未對照的一個「?」就講清楚，不必靠顏色或字體去猜。 */
+      destText: dest ? dest.short + " (" + destId + ")" : destId + " (?)",
+      destTitle: dest ? dest.name + "（" + destId + "）" : destId + "：官方名稱待確認",
+      destMapped: !!dest,
+      /* LOCATION_ID 目前一個都未有官方名稱，所以一律顯示代碼。 */
+      fromText: locationId,
+      fromTitle: locationId + "：官方位置名稱待確認",
+    });
+  }
+  return out;
+}
+
+async function fetchTrafficNews() {
+  const res = await fetch(TD_NEWS_URL, { cache: "no-store" });
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  return parseTrafficNews(await res.text());
+}
+async function fetchTrafficCameras() {
+  const res = await fetch(TD_CAMERA_URL, { cache: "default" });
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  return parseTrafficCameras(await res.text());
+}
+async function fetchJourneyTimes() {
+  const res = await fetch(TD_JTIS_URL, { cache: "no-store" });
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  return parseJourneyTimes(await res.text());
 }
 
 /* ========== 票價 API ========== */
@@ -2833,6 +3185,88 @@ createApp({
     const isLanding = computed(() => !searched.value && !routeInput.value.trim() && !stops.value.length);
     const isHoliday = computed(() => isTodayHoliday());
 
+    /* ---------- 交通情報面板（只在 landing page 顯示）----------
+       地區選單用運輸署自己的 region 字串，與交通快拍 XML 的 region 欄位完全一致，
+       所以篩選是精確比對，毋須任何對照轉換。 */
+    const TD_REGIONS = [
+      { key: "香港島", label: "香港島" },
+      { key: "九龍", label: "九龍" },
+      { key: "新界", label: "新界" },
+    ];
+    const selectedRegion = ref(TD_REGIONS[0].key);
+    const trafficNews = ref([]);
+    const trafficNewsError = ref("");
+    const trafficCameras = ref([]);
+    const trafficCamError = ref("");
+    const journeyTimes = ref([]);
+    const journeyError = ref("");
+    const selectedCamKey = ref("");
+    const snapshotLoaded = ref(false);
+    const snapshotFailed = ref(false);
+    const trafficUpdated = ref(null);
+    let trafficTimer = null;
+    let trafficLoading = false;
+    /* 攝影機清單幾個月才更新一次，所以載入後一直沿用；但頁面若開著幾個鐘，
+       清單可能已過時（例如有攝影機停用），超過 TTL 就在下次刷新時重抓。 */
+    const CAMERA_LIST_TTL = 4 * 60 * 60 * 1000;
+    let camerasFetchedAt = 0;
+    /* 快速來回切換分頁會連續觸發 visibilitychange，用短延遲合併成一次。 */
+    let trafficVisibilityTimer = null;
+
+    const regionCameras = computed(() =>
+      trafficCameras.value.filter(c => c.region === selectedRegion.value));
+
+    /* 選中的攝影機：設定的 key 若不在本區（例如剛換區），退回該區第一支。 */
+    const selectedCam = computed(() =>
+      regionCameras.value.find(c => c.key === selectedCamKey.value) || regionCameras.value[0] || null);
+
+    /* trafficUpdated 只是用來當相依：每次刷新都重算一次，
+       令 URL 內的「2 分鐘一格」時間戳跟著更新，毋須手動清快取。 */
+    const snapshotUrl = computed(() => {
+      void trafficUpdated.value;
+      return selectedCam.value ? tdSnapshotUrl(selectedCam.value.key) : "";
+    });
+
+    const regionJourneys = computed(() =>
+      journeyTimes.value.filter(j => j.region === selectedRegion.value));
+
+    const snapshotUpdatedText = computed(() =>
+      trafficUpdated.value ? "更新於 " + formatClock(trafficUpdated.value).slice(0, 5) : "");
+
+    /* 每則消息的 ticker 文字：標題 + 位置 + 內容，最新在最前（parseTrafficNews 已排序）。 */
+    const tickerItems = computed(() => trafficNews.value.map(n => ({
+      text: [n.heading, n.location, n.detail].filter(Boolean).join("｜"),
+      detail: [n.detail, n.direction, n.landmark].filter(Boolean).join("　"),
+      closed: n.closed,
+    })));
+    /* 軌道內容重複一次，CSS 移到 -50% 就無縫接回開頭。 */
+    const tickerLoop = computed(() => tickerItems.value.length ? tickerItems.value.concat(tickerItems.value) : []);
+    /* 量度軌道實際闊度再換算時間，令長短清單的滾動速度（像素／秒）一致；
+       量不到（面板未顯示時闊度為 0）就退回按則數估算。 */
+    const tickerTrack = ref(null);
+    const tickerWidth = ref(0);
+    const TICKER_PX_PER_SEC = 55;
+    const tickerDuration = computed(() => {
+      /* 軌道內容重複了一次，所以實際要行走的距離是軌道全長的一半。
+         （CSS 給每一項都留了 margin-right，所以 -50% 剛好等於一個循環。） */
+      const secs = tickerWidth.value > 0
+        ? (tickerWidth.value / 2) / TICKER_PX_PER_SEC
+        : Math.max(20, tickerItems.value.length * 9);
+      return Math.max(12, Math.round(secs)) + "s";
+    });
+    function measureTicker() {
+      const el = tickerTrack.value;
+      const w = el ? el.scrollWidth : 0;
+      /* 只在闊度真的變了才寫入：改 animationDuration 會令跑動中的字幕跳位，
+         每分鐘一次的資料刷新不應該動到它。 */
+      if (w !== tickerWidth.value) tickerWidth.value = w;
+    }
+    watch(tickerLoop, () => { nextTick(measureTicker); });
+    watch(fontScale, () => { nextTick(measureTicker); });
+    /* 面板由 v-if="isLanding" 控制，重新出現時元素是新的，要重新量一次。 */
+    watch(isLanding, (v) => { if (v) nextTick(measureTicker); });
+
+
     const fareDisplay = computed(() => {
       const entry = currentFareEntry.value;
       if (!entry) return null;
@@ -3160,6 +3594,89 @@ createApp({
     }
 
     /* 返回主頁：清空搜尋狀態，回到初始 landing 畫面 */
+    /* ---------- 交通情報面板：載入與自動刷新 ---------- */
+    function selectRegion(key) {
+      selectedRegion.value = key;
+      const first = trafficCameras.value.find(c => c.region === key);
+      selectedCamKey.value = first ? first.key : "";
+      snapshotLoaded.value = false;
+      snapshotFailed.value = false;
+    }
+
+    function onCamChange(key) {
+      selectedCamKey.value = key;
+      snapshotLoaded.value = false;
+      snapshotFailed.value = false;
+    }
+
+    async function loadTrafficInfo() {
+      /* 一次只跑一個：相機清單近 375 KB，若同時被多處觸發（分頁切換 + 計時器），
+         同一個端點會被連開幾條請求。 */
+      if (trafficLoading) return;
+      trafficLoading = true;
+      try { await runTrafficLoad(); }
+      finally { trafficLoading = false; }
+    }
+
+    /* 三個資料源各自獨立載入，任何一個失敗都不會令另外兩個空白。
+       失敗原因寫進各自的 error ref，由模板顯示，不會靜靜吞掉。 */
+    async function runTrafficLoad() {
+      const jobs = [
+        fetchTrafficNews()
+          .then(list => { trafficNews.value = list; trafficNewsError.value = ""; })
+          .catch(() => { trafficNewsError.value = "交通消息載入失敗"; }),
+        fetchJourneyTimes()
+          .then(list => { journeyTimes.value = list; journeyError.value = ""; })
+          .catch(() => { journeyError.value = "行車時間載入失敗"; }),
+      ];
+      /* 攝影機清單近 375 KB 且幾個月才更新一次，所以第一次抓完就一直沿用；
+         但頁面開著幾個鐘的話清單可能已過時，超過 TTL 就重抓一次。
+         重抓靠 HTTP 快取（來源有 ETag / Last-Modified），通常只回 304。 */
+      const camerasStale = trafficCameras.value.length
+        && Date.now() - camerasFetchedAt > CAMERA_LIST_TTL;
+      if (!trafficCameras.value.length || camerasStale) {
+        jobs.push(
+          fetchTrafficCameras()
+            .then(list => {
+              trafficCameras.value = list;
+              trafficCamError.value = "";
+              camerasFetchedAt = Date.now();
+              /* 原選取的攝影機若已不在新清單（停用、改編號），重設為該區第一支；
+                 仍在的話就不要動，否則每次清單刷新都會搶走使用者的選擇。 */
+              if (!list.some(c => c.key === selectedCamKey.value)) selectRegion(selectedRegion.value);
+            })
+            .catch(() => { trafficCamError.value = "快拍清單載入失敗"; })
+        );
+      }
+      await Promise.all(jobs);
+      /* 觸發 snapshotUrl 重算，令快拍圖片的 2 分鐘時間格前進。 */
+      trafficUpdated.value = new Date();
+    }
+
+    /* 面板可見（landing page 且分頁在前景）時每 60 秒刷新一次。
+       用 setInterval 而不是在 tick() 內倒數，因為 tick 只負責 ETA 面板；
+       分頁在背景時不刷新，避免白耗流量與電。 */
+    function startTrafficTimer() {
+      if (trafficTimer) return;
+      trafficTimer = setInterval(() => {
+        if (isLanding.value && document.visibilityState === "visible") loadTrafficInfo();
+      }, 60000);
+    }
+    function stopTrafficTimer() {
+      clearInterval(trafficTimer);
+      trafficTimer = null;
+    }
+
+    /* 快速來回切換分頁會連續觸發幾次 visibilitychange，用短延遲合併成一次，
+       避免同一時間對三個端點各開幾條重複請求。 */
+    function scheduleTrafficLoad() {
+      clearTimeout(trafficVisibilityTimer);
+      trafficVisibilityTimer = setTimeout(() => {
+        trafficVisibilityTimer = null;
+        if (isLanding.value && document.visibilityState === "visible") loadTrafficInfo();
+      }, 400);
+    }
+
     function goToLanding() {
       routeInput.value = "";
       lastSearched.value = "";
@@ -3916,6 +4433,8 @@ createApp({
       if (visible && selectedStop.value) refreshEta();
       if (visible) { if (stops.value.length) startGeoWatch(); }
       else { stopGeoWatch(); saveFavouritesOnExit(); }
+      /* 回到前景時順手更新交通情報（背景期間計時器不會刷新）。 */
+      if (visible && isLanding.value) scheduleTrafficLoad();
     }
 
     /* The boot shell keeps #app at display:none (data-booting) until the very
@@ -3942,6 +4461,9 @@ createApp({
       refreshDesktopMapSize();
       loadRoutes();
       fetchFareDb().catch(() => {});
+      /* 交通情報面板一開始就在 landing page 顯示，所以立即載入。 */
+      loadTrafficInfo();
+      startTrafficTimer();
       window.addEventListener("resize", handleResize);
       window.addEventListener("orientationchange", handleResize);
       window.addEventListener("beforeunload", saveFavouritesOnExit);
@@ -3953,6 +4475,8 @@ createApp({
     onUnmounted(() => {
       stopGeoWatch();               /* 連續定位要關掉，否則離開頁面還在耗電 */
       clearInterval(tickTimer);
+      stopTrafficTimer();
+      clearTimeout(trafficVisibilityTimer);
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("orientationchange", handleResize);
       window.removeEventListener("beforeunload", saveFavouritesOnExit);
@@ -3990,6 +4514,11 @@ createApp({
       placeLoading, placeResults, placeQuery, placeOpen, placeError,
       placeStops, placeRouteCount, placeHasGmb, destSubtitle,
       placeSearch, placePickRoute, closePlace, clearPlace,
+      TD_REGIONS, selectedRegion, selectRegion, onCamChange,
+      trafficNews, trafficNewsError, trafficCameras, trafficCamError,
+      journeyTimes, journeyError, selectedCamKey, selectedCam,
+      regionCameras, regionJourneys, snapshotUrl, snapshotLoaded, snapshotFailed,
+      snapshotUpdatedText, tickerLoop, tickerTrack, tickerDuration,
     };
   },
 }).mount("#app");
