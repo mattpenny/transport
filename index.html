@@ -635,6 +635,24 @@
   /* 只有一則時的靜態顯示（不跑馬燈），可正常換行，不會被裁走。 */
   .tp-ticker-single .tp-ticker-item { display: block; white-space: normal; margin-right: 0; }
 
+  /* --- 較早日子的摺疊卡片 ---
+     每個日期一張卡，預設摺起。head 是一個 button（語意上真的可點、可 Tab、
+     可 Enter/Space），所以不要再加 tabindex。 */
+  .tp-day { margin-top: 8px; border-top: 1px solid #e8ecf3; }
+  .tp-day-head {
+    width: 100%; display: flex; align-items: center; gap: 8px; cursor: pointer;
+    padding: 7px 2px; background: none; border: 0; font-family: inherit;
+    color: #3c4c68; font-size: calc(14px * var(--font-scale));
+    -webkit-tap-highlight-color: transparent;
+  }
+  .tp-day-head:active { opacity: 0.6; }
+  .tp-day-date { font-weight: 700; color: #1a3d7c; }
+  .tp-day-count { color: #7b879b; font-size: calc(12px * var(--font-scale)); font-variant-numeric: tabular-nums; }
+  /* caret 靠右；旋轉 180° 表示展開。transition 令摺／展有動感。 */
+  .tp-day-caret { margin-left: auto; flex-shrink: 0; color: #7b879b; transition: transform 0.15s; }
+  .tp-day-caret.open { transform: rotate(180deg); }
+  .tp-day .tp-news-list { padding-bottom: 4px; }
+
   /* --- 交通快拍 --- */
   .tp-region-tabs { display: flex; gap: 6px; margin-bottom: 8px; min-width: 0; }
   .tp-tab {
@@ -1737,10 +1755,9 @@
             <h3>特別交通消息</h3>
             <span v-if="trafficNews.length" class="tp-updated">{{ trafficNews.length }} 則</span>
           </div>
-          <!-- 手機：整條 ticker 都可以點，開 .tp-sheet 看全文清單。
-               桌機：內容太長，逐則展開反而更易讀，而且 ticker 可以 hover 暫停，
-               所以桌機維持純顯示（tp-tap 樣式只在 ≤900px 生效）。 -->
-          <div v-if="trafficNews.length" class="tp-ticker"
+          <!-- 跑馬燈只播「今日」的消息；較早的日子在下面的卡片，按一下展開。
+               今日一則都沒有時（例如全部都在前幾日）就完全唔顯示跑馬燈。 -->
+          <div v-if="newsToday.length" class="tp-ticker"
                :class="{ 'tp-tap': isMobile }"
                :role="isMobile ? 'button' : null"
                :tabindex="isMobile ? 0 : null"
@@ -1760,8 +1777,34 @@
                     :title="tickerItems[0].detail || tickerItems[0].heading">{{ tickerItems[0].text }}</span>
             </div>
           </div>
-          <div v-if="isMobile && trafficNews.length" class="tp-tap-hint">點擊查看全部 ›</div>
-          <div v-else-if="!trafficNews.length" class="tp-empty">{{ trafficNewsError || "暫無特別交通消息" }}</div>
+          <div v-if="isMobile && newsToday.length" class="tp-tap-hint">點擊查看全部 ›</div>
+          <div v-if="!trafficNews.length" class="tp-empty">{{ trafficNewsError || "暫無特別交通消息" }}</div>
+
+          <!-- 較早的日子：每個日期一張卡，預設摺起，點一下展開該日所有消息。
+               兩邊都顯示（手機桌機一致），因為這裡是收合式的，不像快拍那樣佔位太多。 -->
+          <div v-for="d in newsPastDays" :key="d.key" class="tp-day">
+            <button class="tp-day-head" type="button"
+                    :aria-expanded="isNewsDayOpen(d.key) ? 'true' : 'false'"
+                    @click="toggleNewsDay(d.key)">
+              <span class="tp-day-date">{{ d.label }}</span>
+              <span class="tp-day-count">{{ d.items.length }} 則</span>
+              <span class="tp-day-caret" :class="{ open: isNewsDayOpen(d.key) }">▾</span>
+            </button>
+            <ul v-if="isNewsDayOpen(d.key)" class="tp-news-list">
+              <li v-for="n in d.items" :key="n.id || n.heading"
+                  class="tp-news-item" :class="{ closed: n.closed }">
+                <span class="tp-news-dot">{{ n.closed ? '○' : '●' }}</span>
+                <div class="tp-news-main">
+                  <div class="tp-news-heading">{{ n.heading }}</div>
+                  <div v-if="n.location || n.direction || n.landmark" class="tp-news-meta">
+                    {{ [n.location, n.direction, n.landmark].filter(Boolean).join('　') }}
+                  </div>
+                  <div v-if="n.detail" class="tp-news-detail">{{ n.detail }}</div>
+                  <div v-if="n.whenText" class="tp-news-when">{{ newsWhen(n) }}</div>
+                </div>
+              </li>
+            </ul>
+          </div>
         </div>
 
         <!-- 2. 交通快拍：地區分頁 + 可點擊的攝影機地圖（只桌機 inline 顯示；
@@ -2483,7 +2526,7 @@ function xmlChildText(el, name) {
 /* --- 1. 特別交通消息 ---
    顯示「過去 2 天 + 未來數週」的消息，最新在最前。
    消息沒有地區欄位（DISTRICT_CN 實測為空），所以不做地區篩選。 */
-const TD_NEWS_LOOKBACK_MS = 2 * 864e5;
+const TD_NEWS_LOOKBACK_MS = 3 * 864e5;
 function parseTrafficNews(text) {
   const doc = parseXmlDoc(text, "交通消息");
   const out = [];
@@ -2520,13 +2563,16 @@ function parseTrafficNews(text) {
 /* --- 特別交通消息：保留最近 3 則 ---
    運輸署的 XML 只載「仍然生效」的消息，完結的隨即從來源消失，所以它
    經常只有一則，跑馬燈也就無從顯示多則。這裡把每次抓到的消息合併存到
-   localStorage：新的加在前面、相同的以 id 去重更新、最多留 NEWS_STORE_MAX 則。
-   這樣即使來源當下只有一則，使用者仍看得到最近幾則不同消息。
-   只存在瀏覽器本機、不會上傳；每則加 storedAt 逾時（NEWS_STORE_TTL_MS）就丟棄，
-   免得幾天前的舊消息一直霸佔著三個位置。 */
+   localStorage：新的加在前面、相同的以 id 去重更新，保留 3 日內所有消息
+   （NEWS_ARCHIVE_MAX 只是防止 localStorage 被灌爆的保險上限）。
+   這樣來源當下只有一則時，使用者仍看得到過去幾日的消息。
+   只存在瀏覽器本機、不會上傳；每則加 storedAt，逾 3 日（NEWS_ARCHIVE_TTL_DAYS）
+   就丟棄，免得舊消息一直霸佔著位置。今日的留在跑馬燈，較早的按日摺成卡片。 */
 const NEWS_STORE_KEY = "hk-bus-traffic-news";
-const NEWS_STORE_MAX = 3;
-const NEWS_STORE_TTL_MS = 6 * 3600 * 1000;   // 6 小時
+/* 三日內的消息全部保留（每日數則，3 日總量遠少於此）。這個上限只用來防止
+   localStorage 被灌爆 —— 來源若日後改為歷史資料集，數量可能大增。 */
+const NEWS_ARCHIVE_MAX = 80;
+const NEWS_ARCHIVE_TTL_DAYS = 3;
 
 function loadNewsStore() {
   try {
@@ -2535,15 +2581,16 @@ function loadNewsStore() {
     const now = Date.now();
     return arr
       .filter(n => n && typeof n === "object" && (n.id || n.heading))
-      .filter(n => !n.storedAt || now - n.storedAt < NEWS_STORE_TTL_MS)
-      .slice(0, NEWS_STORE_MAX);
+      .filter(n => !n.storedAt || now - n.storedAt < NEWS_ARCHIVE_TTL_DAYS * 864e5)
+      .slice(0, NEWS_ARCHIVE_MAX);
   } catch (e) { return []; }
 }
 function saveNewsStore(list) {
-  try { localStorage.setItem(NEWS_STORE_KEY, JSON.stringify(list.slice(0, NEWS_STORE_MAX))); }
+  try { localStorage.setItem(NEWS_STORE_KEY, JSON.stringify(list.slice(0, NEWS_ARCHIVE_MAX))); }
   catch (e) { /* localStorage 滿／被封（私隱模式）→ 略過，功能照常，只是沒有跨次保留 */ }
 }
-/* 把新抓到的消息與已存的合併：新的在前、舊的補在後（最多 3 則），以 id 去重。 */
+/* 把新抓到的消息與已存的合併：新的在前、舊的補在後，以 id 去重。
+   依日期新→舊排（沒有日期的 whenMs 當 0，排在最後）。 */
 function mergeNewsStore(stored, fresh) {
   const now = Date.now();
   const out = [];
@@ -2553,9 +2600,23 @@ function mergeNewsStore(stored, fresh) {
     if (!key || seen[key]) continue;
     seen[key] = true;
     out.push(Object.assign({}, n, { storedAt: n.storedAt || now }));
-    if (out.length >= NEWS_STORE_MAX) break;
+    if (out.length >= NEWS_ARCHIVE_MAX) break;
   }
   return out.sort((a, b) => (b.whenMs || 0) - (a.whenMs || 0));
+}
+
+/* --- 按日分組：今日留給跑馬燈，較早的日子摺成可展開的卡片 --- */
+function newsDayKey(n) {
+  const d = n.whenMs ? new Date(n.whenMs) : null;
+  if (!d || isNaN(d.getTime())) return "unknown";
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+function newsDayLabel(key) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(key);
+  if (!m) return "日期不詳";
+  /* 今年的略去年份，跨年才顯示，好讓標題保持短。 */
+  const yr = +m[1];
+  return (yr === new Date().getFullYear() ? "" : yr + "年") + (+m[2]) + "月" + (+m[3]) + "日";
 }
 
 /* --- 2. 交通快拍攝影機 ---
@@ -3690,8 +3751,38 @@ createApp({
     const snapshotUpdatedText = computed(() =>
       trafficUpdated.value ? "更新於 " + formatClock(trafficUpdated.value).slice(0, 5) : "");
 
-    /* 每則消息的 ticker 文字：標題 + 位置 + 內容，最新在最前（parseTrafficNews 已排序）。 */
-    const tickerItems = computed(() => trafficNews.value.map(n => ({
+    /* --- 按日分組：今日的留在跑馬燈，較早的日子摺成可展開的卡片 ---
+       trafficNews 已是新→舊排好（mergeNewsStore 排過），所以過濾出今日的
+       之後，剩下的日子自然由新至舊。展開狀態只記錄日期 key，所以刷新後
+       仍會保持展開。 */
+    /* 「今日」是哪一天：每次交通資料刷新都重算（trafficUpdated 每分鐘更新），
+       這樣分頁整晚开着、跨過午夜之後，舊的消息仍會正確地變成「較早的日子」
+       收進卡片，而不是繼續當作今日顯示。 */
+    const newsTodayKey = computed(() => newsDayKey({ whenMs: trafficUpdated.value || Date.now() }));
+    const newsToday = computed(() => trafficNews.value.filter(n => newsDayKey(n) === newsTodayKey.value));
+    const newsPastDays = computed(() => {
+      const today = newsTodayKey.value;
+      const order = [];
+      const byDay = Object.create(null);
+      for (const n of trafficNews.value) {
+        const k = newsDayKey(n);
+        if (k === today) continue;
+        if (!byDay[k]) { byDay[k] = []; order.push(k); }
+        byDay[k].push(n);
+      }
+      return order.map(k => ({ key: k, label: newsDayLabel(k), items: byDay[k] }));
+    });
+    const openNewsDays = ref({});
+    function toggleNewsDay(k) {
+      const next = Object.assign({}, openNewsDays.value);
+      if (next[k]) delete next[k]; else next[k] = true;
+      openNewsDays.value = next;
+    }
+    function isNewsDayOpen(k) { return !!openNewsDays.value[k]; }
+
+    /* 每則消息的 ticker 文字：標題 + 位置 + 內容，最新在最前（parseTrafficNews 已排序）。
+       只跑「今日」的消息 —— 舊日的已摺進卡片，不該在跑馬燈重複出現。 */
+    const tickerItems = computed(() => newsToday.value.map(n => ({
       text: [n.heading, n.location, n.detail].filter(Boolean).join("｜"),
       detail: [n.detail, n.direction, n.landmark].filter(Boolean).join("　"),
       closed: n.closed,
@@ -5158,6 +5249,7 @@ createApp({
       journeyTimes, journeyError, selectedCamKey, selectedCam,
       regionCameras, regionJourneys, snapshotUrl, snapshotLoaded, snapshotFailed,
       snapshotUpdatedText, tickerLoop, tickerTrack, tickerDuration, tickerItems,
+      newsToday, newsPastDays, openNewsDays, toggleNewsDay, isNewsDayOpen,
       camMapVisibleCount,
       trafficSheet, openTrafficSheet, closeTrafficSheet,
       trafficSheetTitle, newsWhen, isFutureNews,
