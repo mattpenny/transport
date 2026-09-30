@@ -890,11 +890,6 @@
        max-height（否則 .layout 內會多一層捲動，觸控上極難操作）。 */
     .sidebar { max-width: 100%; min-width: 0; max-height: none; overflow: visible; }
 
-    /* 「可選擇其他交通工具」上方的留白在手機太空曠（截圖中它與搜尋列之間
-       有一大段空白），而且標題本身已有 margin，所以把上邊距壓到 2px。
-       只在手機覆寫，桌機版式不變。 */
-    .other-modes { margin: 2px 0 10px; }
-
     .fav-slots.collapsed { max-height: 62px; overflow-y: auto; overflow-x: hidden; padding-right: 1px; }
     .fav-slot { height: 62px; min-height: 0; padding: 4px 3px; gap: 1px; overflow: hidden; }
     .fav-slot .fav-remove { top: 1px; right: 1px; width: 16px; height: 16px; font-size: 10px; border-width: 1.5px; }
@@ -942,7 +937,12 @@
     .row.landing input[type="text"] { font-size: max(16px, calc(16px * var(--font-scale))); padding: 12px 12px; }
     .row.landing .search-btn { padding: 12px 14px; font-size: calc(14px * var(--font-scale)); }
 
-    .other-modes { margin: 12px 0 10px; }
+    /* 「可選擇其他交通工具」上方的留白在手機太空曠（它與搜尋列之間有一大段
+       空白），而且標題 .mode-section-title 自己已有 margin，所以把上邊距壓到 2px。
+       ⚠ 這條必須是本 media block 內「唯一」的 .other-modes 規則：同一個 block
+       較後位置的同優先序規則會贏，之前就因此被後面的 margin 蓋掉而沒生效。
+       桌機版式不變（base 仍是 14px 0 12px）。 */
+    .other-modes { margin: 2px 0 10px; }
   }
 
   /* === 平板 / 窄視窗（601–900px）：標籤 + 輸入框 + 查詢 同一行 ===
