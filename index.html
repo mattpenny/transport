@@ -2517,6 +2517,47 @@ function parseTrafficNews(text) {
        面板的完整清單。若日後要顯示更多歷史，把上面的 lookback 調長即可。 */
 }
 
+/* --- 特別交通消息：保留最近 3 則 ---
+   運輸署的 XML 只載「仍然生效」的消息，完結的隨即從來源消失，所以它
+   經常只有一則，跑馬燈也就無從顯示多則。這裡把每次抓到的消息合併存到
+   localStorage：新的加在前面、相同的以 id 去重更新、最多留 NEWS_STORE_MAX 則。
+   這樣即使來源當下只有一則，使用者仍看得到最近幾則不同消息。
+   只存在瀏覽器本機、不會上傳；每則加 storedAt 逾時（NEWS_STORE_TTL_MS）就丟棄，
+   免得幾天前的舊消息一直霸佔著三個位置。 */
+const NEWS_STORE_KEY = "hk-bus-traffic-news";
+const NEWS_STORE_MAX = 3;
+const NEWS_STORE_TTL_MS = 6 * 3600 * 1000;   // 6 小時
+
+function loadNewsStore() {
+  try {
+    const arr = JSON.parse(localStorage.getItem(NEWS_STORE_KEY));
+    if (!Array.isArray(arr)) return [];
+    const now = Date.now();
+    return arr
+      .filter(n => n && typeof n === "object" && (n.id || n.heading))
+      .filter(n => !n.storedAt || now - n.storedAt < NEWS_STORE_TTL_MS)
+      .slice(0, NEWS_STORE_MAX);
+  } catch (e) { return []; }
+}
+function saveNewsStore(list) {
+  try { localStorage.setItem(NEWS_STORE_KEY, JSON.stringify(list.slice(0, NEWS_STORE_MAX))); }
+  catch (e) { /* localStorage 滿／被封（私隱模式）→ 略過，功能照常，只是沒有跨次保留 */ }
+}
+/* 把新抓到的消息與已存的合併：新的在前、舊的補在後（最多 3 則），以 id 去重。 */
+function mergeNewsStore(stored, fresh) {
+  const now = Date.now();
+  const out = [];
+  const seen = Object.create(null);
+  for (const n of fresh.concat(stored)) {
+    const key = String(n.id || n.heading || n.whenText || "");
+    if (!key || seen[key]) continue;
+    seen[key] = true;
+    out.push(Object.assign({}, n, { storedAt: n.storedAt || now }));
+    if (out.length >= NEWS_STORE_MAX) break;
+  }
+  return out.sort((a, b) => (b.whenMs || 0) - (a.whenMs || 0));
+}
+
 /* --- 2. 交通快拍攝影機 ---
    官方 XML 本身已帶 region（香港島／九龍／新界）與 district（18 區），
    所以直接分區即可，毋須由攝影機名稱自行歸類。
@@ -4197,8 +4238,28 @@ createApp({
     async function runTrafficLoad() {
       const jobs = [
         fetchTrafficNews()
-          .then(list => { trafficNews.value = list; trafficNewsError.value = ""; })
-          .catch(() => { trafficNewsError.value = "交通消息載入失敗"; }),
+          .then(list => {
+            /* 來源通常只有一則，合併本機已存的最近幾則，跑馬燈才有東西可跑。
+               舊消息標成「已完結」的外觀，令使用者分得清哪些是當前生效的。 */
+            const stored = loadNewsStore();
+            const merged = mergeNewsStore(stored, list);
+            saveNewsStore(merged);
+            const live = new Set(list.map(n => String(n.id || n.heading || "")));
+            trafficNews.value = merged.map(n =>
+              live.has(String(n.id || n.heading || "")) ? n : Object.assign({}, n, { closed: true }));
+            trafficNewsError.value = "";
+          })
+          /* 抓不到時不要清空：顯示本機存的（可能過期但仍有參考價值），
+             只有連存的都沒有才顯示錯誤。 */
+          .catch(() => {
+            const stored = loadNewsStore();
+            if (stored.length) {
+              trafficNews.value = stored.map(n => Object.assign({}, n, { closed: true }));
+              trafficNewsError.value = "";
+            } else {
+              trafficNewsError.value = "交通消息載入失敗";
+            }
+          }),
         fetchJourneyTimes()
           .then(list => { journeyTimes.value = list; journeyError.value = ""; })
           .catch(() => { journeyError.value = "行車時間載入失敗"; }),
