@@ -766,6 +766,26 @@
     .mt-bar-btn .ico { font-size: 17px; line-height: 1; }
     .mt-bar-btn.ghost { background: #fff; color: #1a3d7c; }
 
+    /* --- 特別交通消息（只出現在手機的全螢幕面板 .tp-sheet 裏）---
+       桌機那邊是橫向滾動的 ticker；在全螢幕觸控面板裏橫向跑馬燈幾乎讀不到，
+       所以手機版改成直向清單：逐則列出標題／位置／內容／時間，拇指可慢慢捲。 */
+    .tp-news-list { list-style: none; padding: 0; margin: 0; }
+    .tp-news-list li {
+      display: flex; gap: 9px; align-items: flex-start;
+      padding: 9px 0; border-bottom: 1px dashed #f0f3f8; min-width: 0;
+    }
+    .tp-news-list li:last-child { border-bottom: none; }
+    /* 狀態圓點沿用 ticker 的 ●／○ 視覺語言，完結的消息整行淡出。 */
+    .tp-news-dot { flex-shrink: 0; color: #c8102e; font-size: 12px; line-height: 1.7; }
+    .tp-news-item.closed .tp-news-dot { color: #b6bfcc; }
+    .tp-news-item.closed .tp-news-heading { color: #98a2b3; }
+    .tp-news-main { min-width: 0; flex: 1 1 auto; }
+    .tp-news-heading { font-weight: 700; font-size: calc(15px * var(--font-scale)); line-height: 1.45; color: #1f2a3d; }
+    .tp-news-meta { color: #7b879b; font-size: calc(13px * var(--font-scale)); line-height: 1.5; margin-top: 2px; }
+    .tp-news-detail { color: #2b3a55; font-size: calc(14px * var(--font-scale)); line-height: 1.5; margin-top: 3px; }
+    .tp-news-when { color: #98a2b3; font-size: calc(12px * var(--font-scale)); margin-top: 3px; }
+    .tp-news-when.future { color: #c8102e; }
+
     /* 全螢幕面板：.tp-sheet-body 自己是唯一的捲動容器，
        裏面不再有任何 max-height/overflow 的面板，否則會變成巢狀捲動，
        在觸控上幾乎捲不動（這正是原本「捲唔到」的成因）。 */
@@ -1687,7 +1707,8 @@
            開全螢幕面板（.tp-sheet）。 -->
       <div v-if="isLanding" class="panel traffic-panel landing-wide">
 
-        <!-- 1. 特別交通消息（橫向滾動 ticker）。手機版改由 .tp-sheet 顯示同一份資料。 -->
+        <!-- 1. 特別交通消息（橫向滾動 ticker）。手機版改由 .tp-sheet 顯示同一份資料
+                （底部工具列的「特別消息」按鈕），以直向清單而非 ticker 呈現。 -->
         <div v-if="!isMobile" class="tp-section">
           <div class="tp-head">
             <h3>特別交通消息</h3>
@@ -1773,6 +1794,9 @@
            側欄（巴士／GMB／RMB）被推走甚至互相蓋住，所以改成按這兩個
            按鈕開全螢幕面板；面板自己是唯一的捲動容器。 -->
       <div v-if="isLanding && isMobile" class="mobile-traffic-bar">
+        <button class="mt-bar-btn" @click="openTrafficSheet('news')">
+          <span class="ico">📢</span><span>特別消息</span>
+        </button>
         <button class="mt-bar-btn" @click="openTrafficSheet('cams')">
           <span class="ico">📷</span><span>交通快拍</span>
         </button>
@@ -1787,15 +1811,40 @@
   <Teleport to="body">
     <div v-if="isMobile && trafficSheet" class="tp-sheet-overlay" @click.self="closeTrafficSheet">
       <div class="tp-sheet" role="dialog" aria-modal="true"
-           :aria-label="trafficSheet === 'cams' ? '交通快拍' : '行車時間'">
+           :aria-label="trafficSheetTitle">
         <div class="tp-sheet-head">
-          <span class="tp-sheet-title">{{ trafficSheet === 'cams' ? '交通快拍' : '行車時間' }}</span>
+          <span class="tp-sheet-title">{{ trafficSheetTitle }}</span>
           <button class="tp-sheet-close" @click="closeTrafficSheet" aria-label="關閉">✕</button>
         </div>
         <div class="tp-sheet-body">
 
+          <!-- 特別交通消息：桌機是橫向 ticker，這裏改成直向清單（見 .tp-news-list 的註解）。
+               同一份 trafficNews 資料，欄位與桌機一致。 -->
+          <div v-if="trafficSheet === 'news'" class="tp-section">
+            <div v-if="trafficNews.length" class="tp-head">
+              <h3>特別交通消息</h3>
+              <span class="tp-updated">{{ trafficNews.length }} 則</span>
+            </div>
+            <ul v-if="trafficNews.length" class="tp-news-list">
+              <li v-for="n in trafficNews" :key="n.id || n.heading"
+                  class="tp-news-item" :class="{ closed: n.closed }">
+                <span class="tp-news-dot">{{ n.closed ? '○' : '●' }}</span>
+                <div class="tp-news-main">
+                  <div class="tp-news-heading">{{ n.heading }}</div>
+                  <div v-if="n.location || n.direction || n.landmark" class="tp-news-meta">
+                    {{ [n.location, n.direction, n.landmark].filter(Boolean).join('　') }}
+                  </div>
+                  <div v-if="n.detail" class="tp-news-detail">{{ n.detail }}</div>
+                  <div v-if="n.whenText" class="tp-news-when"
+                       :class="{ future: isFutureNews(n) }">{{ newsWhen(n) }}</div>
+                </div>
+              </li>
+            </ul>
+            <div v-else class="tp-empty">{{ trafficNewsError || "暫無特別交通消息" }}</div>
+          </div>
+
           <!-- 交通快拍 -->
-          <div v-if="trafficSheet === 'cams'" class="tp-section">
+          <div v-else-if="trafficSheet === 'cams'" class="tp-section">
             <div class="tp-region-tabs">
               <button v-for="r in TD_REGIONS" :key="r.key"
                       class="tp-tab"
@@ -3622,6 +3671,22 @@ createApp({
       if (trafficNews.value.length) loadTrafficInfo();
     }
     function closeTrafficSheet() { trafficSheet.value = null; }
+    /* 面板標題（.tp-sheet-title 與 aria-label 共用）。原本是寫死在模板裏的
+       兩層三元，現在有第三個面板（特別交通消息），再疊三元會很難讀。 */
+    const SHEET_TITLES = { news: "特別交通消息", cams: "交通快拍", journey: "行車時間" };
+    const trafficSheetTitle = computed(() => SHEET_TITLES[trafficSheet.value] || "交通情報");
+
+    /* 每則消息的時間：解析得到就用中文本地格式，否則退回 XML 原始字串。
+       未來的消息加「將於」前綴，避免看起來像已經發生。 */
+    function isFutureNews(n) { return n.whenMs > Date.now(); }
+    function newsWhen(n) {
+      if (!n.whenMs) return n.whenText || "";
+      const d = new Date(n.whenMs);
+      const s = d.toLocaleString("zh-HK", {
+        month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false,
+      });
+      return isFutureNews(n) ? "將於 " + s + " 生效" : s;
+    }
     /* 攝影機清單載入完成 / 換區 → 重畫地圖上的點。
        地區無攝影機時模板不會輸出 #map-cameras，所以要先確認元素存在。 */
     watch(regionCameras, () => {
@@ -4989,6 +5054,7 @@ createApp({
       snapshotUpdatedText, tickerLoop, tickerTrack, tickerDuration,
       camMapVisibleCount,
       trafficSheet, openTrafficSheet, closeTrafficSheet,
+      trafficSheetTitle, newsWhen, isFutureNews,
     };
   },
 }).mount("#app");
