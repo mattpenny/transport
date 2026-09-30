@@ -766,6 +766,15 @@
     .mt-bar-btn .ico { font-size: 17px; line-height: 1; }
     .mt-bar-btn.ghost { background: #fff; color: #1a3d7c; }
 
+    /* 手機：特別交通消息的 ticker 本身是「看全文」的入口，
+       所以要讓它看起來可以點（桌機沒有這個 class，不受影響）。 */
+    .tp-ticker.tp-tap { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .tp-ticker.tp-tap:focus-visible { outline: 2px solid #1a3d7c; outline-offset: 3px; border-radius: 4px; }
+
+    /* 「看全文」的提示。放在 .tp-section 而不是 .tp-ticker 裏面 ——
+       後者 overflow:hidden 且內部軌道在動，塞 pseudo-element 會被裁切。 */
+    .tp-tap-hint { color: #7b879b; font-size: calc(11px * var(--font-scale)); text-align: right; margin-top: 3px; }
+
     /* --- 特別交通消息（只出現在手機的全螢幕面板 .tp-sheet 裏）---
        桌機那邊是橫向滾動的 ticker；在全螢幕觸控面板裏橫向跑馬燈幾乎讀不到，
        所以手機版改成直向清單：逐則列出標題／位置／內容／時間，拇指可慢慢捲。 */
@@ -880,6 +889,11 @@
     /* 被 display:contents 提升上來的格子不能再靠父層撐高，自身也不能設
        max-height（否則 .layout 內會多一層捲動，觸控上極難操作）。 */
     .sidebar { max-width: 100%; min-width: 0; max-height: none; overflow: visible; }
+
+    /* 「可選擇其他交通工具」上方的留白在手機太空曠（截圖中它與搜尋列之間
+       有一大段空白），而且標題本身已有 margin，所以把上邊距壓到 2px。
+       只在手機覆寫，桌機版式不變。 */
+    .other-modes { margin: 2px 0 10px; }
 
     .fav-slots.collapsed { max-height: 62px; overflow-y: auto; overflow-x: hidden; padding-right: 1px; }
     .fav-slot { height: 62px; min-height: 0; padding: 4px 3px; gap: 1px; overflow: hidden; }
@@ -1703,18 +1717,29 @@
       </div>
 
       <!-- ===== 交通情報面板（只在 landing page 顯示）=====
-           手機版這三張卡太長，會令側欄與面板互相蓋住，改由底部工具列
-           開全螢幕面板（.tp-sheet）。 -->
+           手機版「交通快拍」與「行車時間」兩張卡太長，會令側欄與面板互相蓋住，
+           改由底部工具列開全螢幕面板（.tp-sheet）。
+           「特別交通消息」則兩邊都 inline 顯示（手機點一下可看全文）。 -->
       <div v-if="isLanding" class="panel traffic-panel landing-wide">
 
-        <!-- 1. 特別交通消息（橫向滾動 ticker）。手機版改由 .tp-sheet 顯示同一份資料
-                （底部工具列的「特別消息」按鈕），以直向清單而非 ticker 呈現。 -->
-        <div v-if="!isMobile" class="tp-section">
+        <!-- 1. 特別交通消息（橫向滾動 ticker）。手機版一樣 inline 顯示；
+                點一下就開 .tp-sheet 看完整清單（底部工具列沒有這個按鈕，
+                入口就是這條 ticker 本身）。 -->
+        <div class="tp-section">
           <div class="tp-head">
             <h3>特別交通消息</h3>
             <span v-if="trafficNews.length" class="tp-updated">{{ trafficNews.length }} 則</span>
           </div>
-          <div v-if="trafficNews.length" class="tp-ticker">
+          <!-- 手機：整條 ticker 都可以點，開 .tp-sheet 看全文清單。
+               桌機：內容太長，逐則展開反而更易讀，而且 ticker 可以 hover 暫停，
+               所以桌機維持純顯示（tp-tap 樣式只在 ≤900px 生效）。 -->
+          <div v-if="trafficNews.length" class="tp-ticker"
+               :class="{ 'tp-tap': isMobile }"
+               :role="isMobile ? 'button' : null"
+               :tabindex="isMobile ? 0 : null"
+               @click="isMobile && openTrafficSheet('news')"
+               @keydown.enter="isMobile && openTrafficSheet('news')"
+               :aria-label="isMobile ? '查看全部特別交通消息' : null">
             <div class="tp-ticker-track" ref="tickerTrack" :style="{ animationDuration: tickerDuration }">
               <span v-for="(n, i) in tickerLoop" :key="i"
                     class="tp-ticker-item"
@@ -1722,7 +1747,8 @@
                     :title="n.detail || n.heading">{{ n.text }}</span>
             </div>
           </div>
-          <div v-else class="tp-empty">{{ trafficNewsError || "暫無特別交通消息" }}</div>
+          <div v-if="isMobile && trafficNews.length" class="tp-tap-hint">點擊查看全部 ›</div>
+          <div v-else-if="!trafficNews.length" class="tp-empty">{{ trafficNewsError || "暫無特別交通消息" }}</div>
         </div>
 
         <!-- 2. 交通快拍：地區分頁 + 可點擊的攝影機地圖（只桌機 inline 顯示；
@@ -1792,11 +1818,9 @@
       <!-- ===== 手機：底部工具列（只在 landing 出現）=====
            「交通快拍」與「行車時間」兩塊內容很長，放在 landing 欄會令
            側欄（巴士／GMB／RMB）被推走甚至互相蓋住，所以改成按這兩個
-           按鈕開全螢幕面板；面板自己是唯一的捲動容器。 -->
+           按鈕開全螢幕面板；面板自己是唯一的捲動容器。
+           「特別交通消息」不放這裏：它本身就是上面那條 ticker，點一下即可。 -->
       <div v-if="isLanding && isMobile" class="mobile-traffic-bar">
-        <button class="mt-bar-btn" @click="openTrafficSheet('news')">
-          <span class="ico">📢</span><span>特別消息</span>
-        </button>
         <button class="mt-bar-btn" @click="openTrafficSheet('cams')">
           <span class="ico">📷</span><span>交通快拍</span>
         </button>
