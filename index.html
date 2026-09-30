@@ -632,6 +632,9 @@
   /* 由右至左；軌道內容重複一次，所以移到 -50% 就剛好無縫接回開頭。 */
   @keyframes tpMarquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
+  /* 只有一則時的靜態顯示（不跑馬燈），可正常換行，不會被裁走。 */
+  .tp-ticker-single .tp-ticker-item { display: block; white-space: normal; margin-right: 0; }
+
   /* --- 交通快拍 --- */
   .tp-region-tabs { display: flex; gap: 6px; margin-bottom: 8px; min-width: 0; }
   .tp-tab {
@@ -938,11 +941,15 @@
     .row.landing .search-btn { padding: 12px 14px; font-size: calc(14px * var(--font-scale)); }
 
     /* 「可選擇其他交通工具」上方的留白在手機太空曠（它與搜尋列之間有一大段
-       空白），而且標題 .mode-section-title 自己已有 margin，所以把上邊距壓到 2px。
+       空白）。這裡的空隙其實由兩部分組成，兩者都要壓：
+         (a) .row.landing 自己的 margin-bottom（原本 14px，佔了大半）
+         (b) .other-modes 的 margin-top
+       .mode-section-title 自己已有 margin-bottom，所以 (b) 可以歸零。
        ⚠ 這條必須是本 media block 內「唯一」的 .other-modes 規則：同一個 block
        較後位置的同優先序規則會贏，之前就因此被後面的 margin 蓋掉而沒生效。
-       桌機版式不變（base 仍是 14px 0 12px）。 */
-    .other-modes { margin: 2px 0 10px; }
+       桌機版式不變（base 仍是 14px 0 12px / row.landing 14px）。 */
+    .row.landing { margin-bottom: 4px; }
+    .other-modes { margin: 0 0 10px; }
   }
 
   /* === 平板 / 窄視窗（601–900px）：標籤 + 輸入框 + 查詢 同一行 ===
@@ -1740,11 +1747,17 @@
                @click="isMobile && openTrafficSheet('news')"
                @keydown.enter="isMobile && openTrafficSheet('news')"
                :aria-label="isMobile ? '查看全部特別交通消息' : null">
-            <div class="tp-ticker-track" ref="tickerTrack" :style="{ animationDuration: tickerDuration }">
+            <div v-if="tickerLoop.length" class="tp-ticker-track" ref="tickerTrack" :style="{ animationDuration: tickerDuration }">
               <span v-for="(n, i) in tickerLoop" :key="i"
                     class="tp-ticker-item"
                     :class="{ 'tp-status-closed': n.closed }"
                     :title="n.detail || n.heading">{{ n.text }}</span>
+            </div>
+            <!-- 只有一則時不跑馬燈（跑馬燈最少要兩則才成段），靜態顯示一次即可。 -->
+            <div v-else-if="tickerItems.length === 1" class="tp-ticker-single">
+              <span class="tp-ticker-item"
+                    :class="{ 'tp-status-closed': tickerItems[0].closed }"
+                    :title="tickerItems[0].detail || tickerItems[0].heading">{{ tickerItems[0].text }}</span>
             </div>
           </div>
           <div v-if="isMobile && trafficNews.length" class="tp-tap-hint">點擊查看全部 ›</div>
@@ -2498,6 +2511,10 @@ function parseTrafficNews(text) {
   return out
     .filter(n => !n.whenMs || n.whenMs >= cutoff)
     .sort((a, b) => b.whenMs - a.whenMs);
+    /* 註：運輸署這個 XML 只載「目前仍然生效」的消息，完結的隨即移除，
+       所以它本身經常只有一至數則，並不是我們把消息濾走 ——
+       實測同一時間整份 XML 只有 1 個 <message>。要看齊全記錄請點開
+       面板的完整清單。若日後要顯示更多歷史，把上面的 lookback 調長即可。 */
 }
 
 /* --- 2. 交通快拍攝影機 ---
@@ -3638,8 +3655,12 @@ createApp({
       detail: [n.detail, n.direction, n.landmark].filter(Boolean).join("　"),
       closed: n.closed,
     })));
-    /* 軌道內容重複一次，CSS 移到 -50% 就無縫接回開頭。 */
-    const tickerLoop = computed(() => tickerItems.value.length ? tickerItems.value.concat(tickerItems.value) : []);
+    /* 軌道內容重複一次，CSS 移到 -50% 就無縫接回開頭。
+       只有一則時重複一次會變成「同一句連播兩次」，看起來像卡住；
+       這種情況不做無縫循環，改由 .tp-ticker-single 直接靜態顯示一次。 */
+    const tickerLoop = computed(() => tickerItems.value.length > 1
+      ? tickerItems.value.concat(tickerItems.value)
+      : []);
     /* 量度軌道實際闊度再換算時間，令長短清單的滾動速度（像素／秒）一致；
        量不到（面板未顯示時闊度為 0）就退回按則數估算。 */
     const tickerTrack = ref(null);
@@ -5075,7 +5096,7 @@ createApp({
       trafficNews, trafficNewsError, trafficCameras, trafficCamError,
       journeyTimes, journeyError, selectedCamKey, selectedCam,
       regionCameras, regionJourneys, snapshotUrl, snapshotLoaded, snapshotFailed,
-      snapshotUpdatedText, tickerLoop, tickerTrack, tickerDuration,
+      snapshotUpdatedText, tickerLoop, tickerTrack, tickerDuration, tickerItems,
       camMapVisibleCount,
       trafficSheet, openTrafficSheet, closeTrafficSheet,
       trafficSheetTitle, newsWhen, isFutureNews,
