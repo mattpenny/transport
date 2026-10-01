@@ -1820,7 +1820,7 @@
                target="_blank" rel="noopener noreferrer" title="在 Google 街景查看這個站的實景">街景</a>
             <a class="stop-link-btn" v-if="googleMapsUrl(selectedStop)"
                :href="googleMapsUrl(selectedStop)"
-               target="_blank" rel="noopener noreferrer" title="在 Google 地圖開啟這個站">地圖</a>
+               target="_blank" rel="noopener noreferrer" title="在 OpenStreetMap 開啟這個站">地圖</a>
             <button class="refresh-btn"
                     :class="{ spinning: refreshing }"
                     :disabled="refreshing"
@@ -5368,21 +5368,22 @@ createApp({
       return "https://www.google.com/maps/@?api=1&map_action=pano&viewpoint="
         + c[0] + "," + c[1];
     }
-    /* Google 地圖：開啟這個站的地圖頁。
-       站名會先去掉括號內容 —— 括號編碼成 %EF%BC%88/%EF%BC%89 之後，
-       部分瀏覽器／內置 webview 會把它當成壞 URL；而且「元朗（西）總站」這種
-       括號名對 Google 的地點比對幫助不大。沒有可用站名就用座標。 */
+    /* Google Maps：開啟這個站的地圖頁。
+       ⚠️ Android 上要用「避開 Google 官網」，否則一定壞：
+       Chrome／多數 Android 瀏覽器見到 google.com/maps 的網址，會自動改寫成
+       intent://…;package=com.google.android.apps.maps;S.browser_fallback_url=…
+       打算用原生 Google 地圖 App 開啟。若機上沒有 Google 地圖 App、
+       或該瀏覽器不支援 intent://（很多國產 ROM 的內置瀏覽器），
+       就會直接跳 net::ERR_UNKNOWN_URL_SCHEME 死掉 —— 桌機沒有這套 App Link
+       機制，所以桌機正常、手機死，正是這個原因。
+
+       街景按鈕仍然用 Google（要看真正的實景相片就只此一家），但「地圖」改用
+       OpenStreetMap：純網頁、沒有 App 關聯，保證任何瀏覽器都開得到。 */
     function googleMapsUrl(stop) {
       const c = stopCoordPair(stop);
-      if (!stop) return "";
-      const name = String(stop.en || stop.name || "")
-        .replace(/[（(][^)）]*[)）]/g, " ")     /* 去掉括號及內容 */
-        .replace(/\s+/g, " ")
-        .trim();
-      if (name) return "https://www.google.com/maps/search/?api=1&query="
-        + encodeURIComponent(name + " 巴士站 香港");
       if (!c) return "";
-      return "https://www.google.com/maps/search/?api=1&query=" + c[0] + "," + c[1];
+      return "https://www.openstreetmap.org/?mlat=" + c[0] + "&mlon=" + c[1]
+        + "#map=18/" + c[0] + "/" + c[1];
     }
 
     async function applySelection(stop) {
