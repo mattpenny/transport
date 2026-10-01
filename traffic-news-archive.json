@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-01T05:42:25.467Z",
+  "generated": "2026-10-01T12:03:31.101Z",
   "retainDays": 3,
-  "count": 2,
+  "count": 3,
   "messages": [
+    {
+      "id": "147159",
+      "heading": "渡輪事故",
+      "detail": "以下渡輪服務於2026年10⽉2⽇作出臨時調整： 珀麗灣客運有限公司 「⾺灣-中環」航線： -⾺灣⾄中環：下午5時及下午7時30分開出的班次由巴⼠服務(路線NR338S)代替營運 -中環⾄⾺灣：下午5時30分及下午8時開出的班次由巴⼠服務(路線NR338S)代替營運 「⾺灣-荃灣」航線： -⾺灣⾄荃灣：取消上午8時10分開出的班次 -荃灣⾄⾺灣：取消上午8時30分開出的班次",
+      "location": "",
+      "direction": "",
+      "landmark": "",
+      "status": "更新情況",
+      "closed": false,
+      "whenText": "2026-10-01T19:50:00",
+      "whenMs": 1790855400000,
+      "storedAt": 1790856210035
+    },
     {
       "id": "147141",
       "heading": "道路事故",
