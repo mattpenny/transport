@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-01T05:37:21.288Z",
+  "generated": "2026-10-01T05:42:25.467Z",
   "retainDays": 3,
-  "count": 1,
+  "count": 2,
   "messages": [
+    {
+      "id": "147141",
+      "heading": "道路事故",
+      "detail": "因車輛故障，東區走廊(往柴灣方向)近東區海底隧道的慢線現已封閉。 駕駛人士只可使用餘下行車線行車。 現時上址交通繁忙。",
+      "location": "東區走廊",
+      "direction": "柴灣",
+      "landmark": "東區海底隧道",
+      "status": "最新情況",
+      "closed": false,
+      "whenText": "2026-10-01T13:35:00",
+      "whenMs": 1790832900000,
+      "storedAt": 1790833344065
+    },
     {
       "id": "147140",
       "heading": "道路事故",
