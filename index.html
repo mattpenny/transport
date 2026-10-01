@@ -700,6 +700,9 @@
   .tp-news-detail { color: #2b3a55; font-size: calc(14px * var(--font-scale)); line-height: 1.5; margin-top: 3px; }
   .tp-news-when { color: #98a2b3; font-size: calc(12px * var(--font-scale)); margin-top: 3px; }
   .tp-news-when.future { color: #c8102e; }
+  /* 桌機分組標題（「今日」／「過往兩天交通消息」），與手機的叫法一致。 */
+  .tp-news-group { margin: 12px 0 4px; color: #1a3d7c; font-weight: 700; font-size: calc(14px * var(--font-scale)); }
+  .tp-news-group-block:first-child .tp-news-group { margin-top: 0; }
 
   /* --- 交通快拍 --- */
   .tp-region-tabs { display: flex; gap: 6px; margin-bottom: 8px; min-width: 0; }
@@ -1843,24 +1846,30 @@
             </div>
           </template>
 
-          <!-- 桌機：一次列出全部消息（今日 + 過往兩天），因為整個右欄就是這塊專區。 -->
+          <!-- 桌機：與手機一樣分「今日」／「過往兩天交通消息」兩組，一次列全部，
+               因為整個右欄就是這塊專區。 -->
           <template v-else>
-            <ul v-if="trafficNews.length" class="tp-news-list">
-              <li v-for="n in trafficNews" :key="n.id || n.heading"
-                  class="tp-news-item" :class="{ closed: n.closed }">
-                <span class="tp-news-dot">{{ n.closed ? '○' : '●' }}</span>
-                <div class="tp-news-main">
-                  <div class="tp-news-heading">{{ n.heading }}</div>
-                  <div v-if="n.location || n.direction || n.landmark" class="tp-news-meta">
-                    {{ [n.location, n.direction, n.landmark].filter(Boolean).join('　') }}
-                  </div>
-                  <div v-if="n.detail" class="tp-news-detail">{{ n.detail }}</div>
-                  <div v-if="n.whenText" class="tp-news-when"
-                       :class="{ future: isFutureNews(n) }">{{ newsWhen(n) }}</div>
-                </div>
-              </li>
-            </ul>
-            <div v-else class="tp-empty">{{ trafficNewsError || "暫無特別交通消息" }}</div>
+            <div v-if="!trafficNews.length" class="tp-empty">{{ trafficNewsError || "暫無特別交通消息" }}</div>
+            <template v-else>
+              <div v-for="g in newsGroups" :key="g.key" class="tp-news-group-block">
+                <p class="tp-news-group">{{ g.label }}</p>
+                <ul class="tp-news-list">
+                  <li v-for="n in g.items" :key="n.id || n.heading"
+                      class="tp-news-item" :class="{ closed: n.closed }">
+                    <span class="tp-news-dot">{{ n.closed ? '○' : '●' }}</span>
+                    <div class="tp-news-main">
+                      <div class="tp-news-heading">{{ n.heading }}</div>
+                      <div v-if="n.location || n.direction || n.landmark" class="tp-news-meta">
+                        {{ [n.location, n.direction, n.landmark].filter(Boolean).join('　') }}
+                      </div>
+                      <div v-if="n.detail" class="tp-news-detail">{{ n.detail }}</div>
+                      <div v-if="n.whenText" class="tp-news-when"
+                           :class="{ future: isFutureNews(n) }">{{ newsWhen(n) }}</div>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+            </template>
           </template>
         </div>
 
@@ -3819,6 +3828,15 @@ createApp({
       return trafficNews.value.filter(n => newsDayKey(n) !== today);
     });
 
+    /* 桌機面板：把消息分成「今日」與「過往兩天交通消息」兩組（與手機同一套叫法），
+       一次列出全部；沒有該組就不顯示該標題。 */
+    const newsGroups = computed(() => {
+      const groups = [];
+      if (newsToday.value.length) groups.push({ key: "today", label: "今日", items: newsToday.value });
+      if (newsPastAll.value.length) groups.push({ key: "past", label: "過往兩天交通消息", items: newsPastAll.value });
+      return groups;
+    });
+
     /* --- 桌機：特別交通消息改成側欄底部的入口，預設收起。 ---
        showNewsSection：手機永遠 inline 顯示；桌機只在展開時才顯示。
        展開時右欄只放新聞（交通快拍／行車時間收起，見模板的 v-if）。 */
@@ -5303,7 +5321,7 @@ createApp({
       journeyTimes, journeyError, selectedCamKey, selectedCam,
       regionCameras, regionJourneys, snapshotUrl, snapshotLoaded, snapshotFailed,
       snapshotUpdatedText, tickerLoop, tickerTrack, tickerDuration, tickerItems,
-      newsToday, newsPastAll,
+      newsToday, newsPastAll, newsGroups,
       desktopNewsOpen, showNewsSection, toggleDesktopNews,
       camMapVisibleCount,
       trafficSheet, openTrafficSheet, closeTrafficSheet,
