@@ -619,6 +619,24 @@
   .refresh-btn .icon { display: inline-block; font-size: 14px; line-height: 1; }
   @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
+  /* ETA 標題列右邊的一排按鈕（街景／相片／更新）。
+     h3 佔彈走其餘空間（flex:1 + ellipsis），按鈕組固定靠右、不被壓縮。 */
+  .eta-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .eta-header h3 { flex: 1 1 auto; }
+
+  /* 街景／相片：<a> 本身沒有 button 的樣式，要對齊 .refresh-btn 的外觀。
+     用 <a> 而非 button 是為了保留「中鍵／右鍵另開分頁」等瀏覽器原生行為。 */
+  .stop-link-btn {
+    padding: 6px 10px; border: 1px solid #ccd; border-radius: 6px;
+    background: white; color: #1a3d7c; text-decoration: none;
+    font-size: calc(12px * var(--font-scale)); font-weight: 600;
+    cursor: pointer; flex-shrink: 0;
+    display: flex; align-items: center; gap: 4px;
+    white-space: nowrap;
+  }
+  .stop-link-btn:hover { background: #eaf1ff; border-color: #1a3d7c; }
+  .stop-link-btn:focus-visible { outline: 2px solid #1a3d7c; outline-offset: 1px; }
+
   .eta-box ul { list-style: none; padding: 0; margin: 0; }
   .eta-box li { display: flex; align-items: center; gap: 12px; padding: 7px 0; border-bottom: 1px dashed #eee; min-width: 0; }
   .eta-box li:last-child { border-bottom: none; }
@@ -1793,14 +1811,21 @@
             最近三班候車時間
             <small v-if="selectedStop">— {{ selectedStop.name }}</small>
           </h3>
-          <button v-if="selectedStop"
-                  class="refresh-btn"
-                  :class="{ spinning: refreshing }"
-                  :disabled="refreshing"
-                  @click="manualRefresh">
-            <span class="icon">⟳</span>
-            <span>{{ refreshing ? '更新中' : '更新' }}</span>
-          </button>
+          <div class="eta-actions" v-if="selectedStop">
+            <!-- 站點相片：官方 API 沒有相片欄位，所以連到 Google 街景／地圖
+                 的站點頁（用戶相片）。純連結，不抓圖、不需要 API key。 -->
+            <a class="stop-link-btn" :href="streetViewUrl(selectedStop)"
+               target="_blank" rel="noopener noreferrer" title="在 Google 街景查看這個站">街景</a>
+            <a class="stop-link-btn" :href="googleMapsUrl(selectedStop)"
+               target="_blank" rel="noopener noreferrer" title="在 Google 地圖查看這個站（含相片）">相片</a>
+            <button class="refresh-btn"
+                    :class="{ spinning: refreshing }"
+                    :disabled="refreshing"
+                    @click="manualRefresh">
+              <span class="icon">⟳</span>
+              <span>{{ refreshing ? '更新中' : '更新' }}</span>
+            </button>
+          </div>
         </div>
 
         <div v-if="fareDisplay" class="fare-line">
@@ -1938,7 +1963,7 @@
             <button v-for="r in TD_REGIONS" :key="r.key"
                     class="tp-tab"
                     :class="{ active: selectedRegion === r.key }"
-                    @click="selectRegion(r.key)">{{ r.label }}</button>
+                    @click="selectRegion(r.key, true)">{{ r.label }}</button>
           </div>
           <template v-if="regionCameras.length">
             <!-- 攝影機地圖 + 即時影像排成同一行（.tp-cam-row），地圖不再獨佔整個
@@ -2064,7 +2089,7 @@
               <button v-for="r in TD_REGIONS" :key="r.key"
                       class="tp-tab"
                       :class="{ active: selectedRegion === r.key }"
-                      @click="selectRegion(r.key)">{{ r.label }}</button>
+                      @click="selectRegion(r.key, true)">{{ r.label }}</button>
             </div>
             <template v-if="regionCameras.length">
               <div class="tp-cam-map-wrap">
@@ -2105,7 +2130,7 @@
               <button v-for="r in TD_REGIONS" :key="r.key"
                       class="tp-tab"
                       :class="{ active: selectedRegion === r.key }"
-                      @click="selectRegion(r.key)">{{ r.label }}</button>
+                      @click="selectRegion(r.key, true)">{{ r.label }}</button>
             </div>
             <ul v-if="regionJourneys.length" class="tp-journey-list">
               <li v-for="j in regionJourneys" :key="j.key">
@@ -4391,7 +4416,9 @@ createApp({
 
     /* 返回主頁：清空搜尋狀態，回到初始 landing 畫面 */
     /* ---------- 交通情報面板：載入與自動刷新 ---------- */
-    function selectRegion(key) {
+    function selectRegion(key, byUser) {
+      /* byUser = 使用者自己按分頁籤。之後即使定位再更新，也不會把他的選擇搶走。 */
+      if (byUser) camRegionTouchedByUser = true;
       selectedRegion.value = key;
       const first = trafficCameras.value.find(c => c.region === key);
       selectedCamKey.value = first ? first.key : "";
@@ -4443,6 +4470,38 @@ createApp({
        再按 📍 就直接重用，不必再問使用者要一次授權。 */
     let camUserPosAt = 0;
     const CAM_LOCATE_TTL_MS = 120000;
+    /* 使用者是否自己按過分區籤。只要按過，GPS 自動選區就不再搶他的選擇
+       （定位每秒都會回報，否則他按了「九龍」兩秒後又自己跳回「香港島」）。 */
+    let camRegionTouchedByUser = false;
+    /* 自動選區只做一次，且只在第一次開啟面板時做。 */
+    let camAutoRegionDone = false;
+
+    /* 由座標推斷分區：找最近的一支攝影機，用它的分區。
+       不用經緯度方框判斷（荔支角一帶方框橫跨海維港，界線附近的座標會掉進錯的區），
+       攝影機本身就有分區欄位，而且密度足夠（1,013 支），
+       「最近的一支屬於哪一區」自然就等於「我在哪一區」。
+       附帶的好處：順便知道離我最近的鏡頭是哪一支。 */
+    function nearestCamToPos(lat, lng) {
+      let best = null, bestD = Infinity;
+      for (const c of trafficCameras.value) {
+        if (!Number.isFinite(c.lat) || !Number.isFinite(c.lng)) continue;
+        const d = haversineMeters(lat, lng, c.lat, c.lng);
+        if (d < bestD) { bestD = d; best = c; }
+      }
+      return best ? { cam: best, dist: bestD } : null;
+    }
+
+    /* 定位更新後自動切到使用者所在分區。只做一次，且尊重使用者手動選擇。 */
+    function autoSelectRegionForPos(lat, lng) {
+      if (camAutoRegionDone || camRegionTouchedByUser) return;
+      if (!trafficCameras.value.length) return;   /* 清單未載入，等 fetch 完再試 */
+      const near = nearestCamToPos(lat, lng);
+      if (!near) return;
+      camAutoRegionDone = true;
+      const r = near.cam.region;
+      if (r && r !== selectedRegion.value) selectRegion(r);
+      nextTick(() => { panCamMapToUser(); renderCameraMarkers(); updateCamSelDistance(); });
+    }
 
     function camMapIsUsable() {
       if (!camMap) return false;
@@ -4511,6 +4570,8 @@ createApp({
       camUserKnown.value = true;
       renderCamUserMarker();
       updateCamSelDistance();
+      /* 荔支角 → 自動開「九龍」：分區由位置推斷，不用手動切。 */
+      autoSelectRegionForPos(lat, lng);
     }
 
     /* 鏡頭帶到使用者位置。camMapUserMoved 一併歸零，否則下一次
@@ -4549,6 +4610,36 @@ createApp({
         camLocateError.value = "";
       } catch (e) {
         camLocateError.value = (e && e.message) || "定位失敗";
+      } finally {
+        camLocating.value = false;
+      }
+    }
+
+    /* 開頁自動定位 → 自動開使用者所在分區。
+       ⚠️ 只在「使用者之前已授權」時才定位。用 Permissions API 先查狀態：
+          granted → 直接定位（不會彈任何對話框）；prompt / denied → 什麼都不做。
+       為什麼不直接呼叫 getCurrentPosition：第一次造訪時它會在頁面一開就彈出
+       位置權限視窗，使用者還沒做任何事就被要求開位置，體驗很差而且容易被拒。
+       既然拒絕了的話功能一樣沒了，不如讓他按 📍 或搜尋時再問。 */
+    async function silentLocateForRegion() {
+      if (!("geolocation" in navigator)) return;
+      try {
+        if (navigator.permissions && navigator.permissions.query) {
+          const st = await navigator.permissions.query({ name: "geolocation" });
+          if (st.state !== "granted") return;
+        } else {
+          return;   /* 查不到權限狀態就不主動打擾（舊 Safari） */
+        }
+      } catch (e) { return; }
+      if (camLocating.value) return;
+      camLocating.value = true;
+      try {
+        const me = await getUserPosition();
+        camUserPosAt = Date.now();
+        setCamUserPos(me.lat, me.lng);     /* → 自動選區 + 對到我的位置 */
+        startGeoWatch();
+      } catch (e) {
+        /* 靜默失敗不顯示錯誤：使用者沒有主動要求過定位，沒必要紅字 */
       } finally {
         camLocating.value = false;
       }
@@ -4673,6 +4764,11 @@ createApp({
               /* 原選取的攝影機若已不在新清單（停用、改編號），重設為該區第一支；
                  仍在的話就不要動，否則每次清單刷新都會搶走使用者的選擇。 */
               if (!list.some(c => c.key === selectedCamKey.value)) selectRegion(selectedRegion.value);
+              /* 定位可能比清單早到（清單 375 KB，要等一會兒）。
+                 此時 autoSelectRegionForPos 會因為清單是空的而跳過，
+                 所以在清單到位後補一次。 */
+              const up = camUserPos.value;
+              if (up) autoSelectRegionForPos(up.lat, up.lng);
             })
             .catch(() => { trafficCamError.value = "快拍清單載入失敗"; })
         );
@@ -5168,6 +5264,27 @@ createApp({
       return (m / 1000).toFixed(1) + " km";
     }
 
+    /* ===== 車站相片／街景 =====
+       運輸署／九巴／城巴的 API 只有站名、編號與座標，沒有任何相片欄位，
+       所以「顯示站長怎樣」這件事沒有第一方資料可用。
+
+       這裡用 Google Maps 的 URL scheme（不需要 API key、不算呼叫 Places API）：
+         · StreetViewUrl → 開 Google 街景，該站的實景（對找路最實用）
+         · googleMapsUrl → 開 Google 地圖的站點頁（有用戶上載的相片）
+       兩者都只是普通連結，不做爬取、不快取圖片。 */
+    function streetViewUrl(stop) {
+      if (!stop || !isValidCoord(stop.lat, stop.lng)) return "";
+      return "https://www.google.com/maps/@?api=1&map_action=pano&viewpoint="
+        + stop.lat + "," + stop.lng;
+    }
+    function googleMapsUrl(stop) {
+      if (!stop || !isValidCoord(stop.lat, stop.lng)) return "";
+      /* 帶上站名做關鍵字，比純座標更容易對到那個站。 */
+      const q = (stop.name || "").trim();
+      const query = q ? encodeURIComponent(q + ", 香港") : (stop.lat + "," + stop.lng);
+      return "https://www.google.com/maps/search/?api=1&query=" + query;
+    }
+
     async function applySelection(stop) {
       if (!stop || !isValidCoord(stop.lat, stop.lng)) return;
       const current = stops.value.find(s => s.id === stop.id);
@@ -5497,7 +5614,11 @@ createApp({
       loadRoutes();
       fetchFareDb().catch(() => {});
       /* 交通情報面板一開始就在 landing page 顯示，所以立即載入。 */
-      loadTrafficInfo().then(() => { nextTick(mountCameraMap); });
+      loadTrafficInfo().then(() => {
+        nextTick(mountCameraMap);
+        /* 清單就緒、地圖已掛載後才自動定位：先拿到攝影機清單才能由座標推斷分區。 */
+        silentLocateForRegion();
+      });
       startTrafficTimer();
       window.addEventListener("resize", handleResize);
       window.addEventListener("orientationchange", handleResize);
@@ -5528,6 +5649,7 @@ createApp({
       searchRowRef, onSearchRowFocus, onSearchRowBlur, onSearchRowPointerLeave,
       allRoutes, matchedRoutes, routeKey, stops, selectedStop, etas,
       dataAge, countdown, refreshing, clockText,
+      streetViewUrl, googleMapsUrl,
       loadingStops, error, stopListRef, mapExpanded, mapRowText,
       pickingDirection, selectedDirectionLabel, isMobile,
       showCompanyPicker, mobileSearching, pickerCompanyIds,
