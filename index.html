@@ -721,19 +721,36 @@
   /* --- 交通快拍：地圖選點（取代原本的下拉選單）---
      1,013 支快拍不可能逐一列出，所以用地圖上的點代表位置；
      點一下就切換該點的即時影像，名稱常駐或懸停顯示。 */
+  /* #map-cameras 就是 Leaflet 的容器（Leaflet 會親自加 .leaflet-container 並接管
+     它的子節點），所以「定位」按鈕不能放進去 —— 會被 Leaflet 當成自己的圖層。
+     改用 .tp-cam-map-wrap 當定位錨點，地圖與按鈕都是它的子項。 */
+  .tp-cam-map-wrap { position: relative; min-width: 0; margin-bottom: 8px; }
   .tp-cam-map {
-    position: relative; height: 260px; margin-bottom: 8px;
+    position: relative; height: 260px;
     border: 1px solid #d8e0ec; border-radius: 8px; overflow: hidden;
     background: #eaf1ff; min-width: 0;
   }
+  /* 定位按鈕：與主地圖的 .map-zoom-btn 同一種格調，只是小一號 */
+  .tp-cam-locate {
+    position: absolute; top: 10px; right: 10px; z-index: 1000;
+    width: 34px; height: 34px; padding: 0; border-radius: 8px;
+    border: 1px solid #d8e0ec; background: #fff; color: #1a3d7c;
+    font-size: 16px; line-height: 1; cursor: pointer; font-family: inherit;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.22);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tp-cam-locate.on { background: #1a3d7c; border-color: #1a3d7c; color: #fff; }
+  .tp-cam-locate[disabled] { opacity: 0.65; cursor: default; }
   /* 桌機：讓快拍地圖的闊度與主地圖（.map-wrap-desktop）完全一樣。
      主地圖是 .panel.map-wrap，貼齊 .main-area 的左右邊界（實測 904px）；
      快拍地圖在 .traffic-panel 之內，被面板的 1px 邊框 + 14px padding 縮窄，
      而且面板自己是捲動容器，捲軸還會再吃掉 ~15px。所以這裡反向出血把這
      29px 補回來（右邊多 15px 正好抵銷捲軸位置）。 */
   @media (min-width: 901px) {
-    .tp-section-map .tp-cam-map {
+    .tp-section-map .tp-cam-map-wrap {
       margin-left: -14px; margin-right: -29px;
+    }
+    .tp-section-map .tp-cam-map {
       border-left: none; border-right: none;
       border-radius: 0;
     }
@@ -750,8 +767,11 @@
     }
     /* 同一行內就不需要（也不能）反向出血，否則地圖會溢出格線。
        選擇器多加一層 .tp-cam-row，確保蓋過上面的出血規則。 */
+    .tp-section-map .tp-cam-row .tp-cam-map-wrap {
+      margin: 0; margin-bottom: 0;
+    }
     .tp-section-map .tp-cam-row .tp-cam-map {
-      margin: 0; height: 330px;
+      height: 330px;
       border-left: 1px solid #d8e0ec; border-right: 1px solid #d8e0ec;
       border-radius: 8px;
     }
@@ -1926,7 +1946,16 @@
                  面板出現／消失時用 mountCameraMap()／removeCameraMap() 掛載，
                  絕對不讓 Leaflet 綁在已被移除的容器上。 -->
             <div class="tp-cam-row">
-              <div id="map-cameras" class="tp-cam-map"></div>
+              <div class="tp-cam-map-wrap">
+                <div id="map-cameras" class="tp-cam-map"></div>
+                <!-- 定位按鈕放在 wrap（不是 Leaflet 容器）內，見 .tp-cam-map-wrap 的註解 -->
+                <button class="tp-cam-locate" type="button"
+                        :class="{ on: camUserKnown }"
+                        :title="camLocating ? '正在取得位置…' : (camUserKnown ? '重新定位到我的位置' : '顯示我的位置')"
+                        aria-label="顯示我的位置"
+                        :disabled="camLocating"
+                        @click.stop="locateOnCamMap">📍</button>
+              </div>
               <div class="tp-snapshot">
                 <img v-if="snapshotUrl && !snapshotFailed"
                      :src="snapshotUrl"
@@ -1940,10 +1969,12 @@
             <div class="tp-cam-caption">
               <span class="name">{{ selectedCam ? selectedCam.description : "請點地圖上的攝影機" }}</span>
               <span v-if="selectedCam && selectedCam.district" class="dist">{{ selectedCam.district }}</span>
+              <span v-if="camSelDistance" class="dist">距你 {{ camSelDistance }}</span>
             </div>
             <p class="tp-cam-hint">
               共 {{ regionCameras.length }} 支快拍，點地圖上的點即可查看即時影像
               （目前畫面內 {{ camMapVisibleCount }} 支）
+              <template v-if="camLocateError"> · {{ camLocateError }}</template>
             </p>
           </template>
           <div v-else class="tp-empty">{{ trafficCamError || "此地區暫無快拍攝影機" }}</div>
@@ -2036,14 +2067,24 @@
                       @click="selectRegion(r.key)">{{ r.label }}</button>
             </div>
             <template v-if="regionCameras.length">
-              <div id="map-cameras" class="tp-cam-map"></div>
+              <div class="tp-cam-map-wrap">
+                <div id="map-cameras" class="tp-cam-map"></div>
+                <button class="tp-cam-locate" type="button"
+                        :class="{ on: camUserKnown }"
+                        :title="camLocating ? '正在取得位置…' : (camUserKnown ? '重新定位到我的位置' : '顯示我的位置')"
+                        aria-label="顯示我的位置"
+                        :disabled="camLocating"
+                        @click.stop="locateOnCamMap">📍</button>
+              </div>
               <div class="tp-cam-caption">
                 <span class="name">{{ selectedCam ? selectedCam.description : "請點地圖上的攝影機" }}</span>
                 <span v-if="selectedCam && selectedCam.district" class="dist">{{ selectedCam.district }}</span>
+                <span v-if="camSelDistance" class="dist">距你 {{ camSelDistance }}</span>
               </div>
               <p class="tp-cam-hint">
                 共 {{ regionCameras.length }} 支快拍，點地圖上的點即可查看即時影像
                 （目前畫面內 {{ camMapVisibleCount }} 支）
+                <template v-if="camLocateError"> · {{ camLocateError }}</template>
               </p>
               <div class="tp-snapshot">
                 <img v-if="snapshotUrl && !snapshotFailed"
@@ -3830,6 +3871,20 @@ createApp({
       { key: "九龍", label: "九龍" },
       { key: "新界", label: "新界" },
     ];
+    /* 每個分區的固定範圍（南/西 → 北/東），用來決定快拍地圖「開啟時看多遠」。
+       單靠 fitBounds(該區所有攝影機) 有兩個問題：
+         1. 點全部集中在一角時（部分資料、某區只有幾支鏡頭），fitBounds 會把鏡頭
+            拉到 maxZoom，使用者以為只有那幾支鏡頭。
+         2. 每次載入點數不同，開啟時的視野就不一樣。
+       改成「攝影機點位 ∪ 分區外框」的聯集，視野至少涵蓋整個分區。
+       ⚠️ 外框必須貼近真實資料範圍，不可隨手放大：地政總署地圖服務最低只到
+       zoom 10（z9 回 204 空圖），範圍過大會令 fitBounds 算出的 zoom 低於 10，
+       整張地圖就變成一片空白灰底。下表按官方 XML 的實際座標範圍訂。 */
+    const TD_REGION_BOUNDS = {
+      "香港島": { sw: [22.2300, 114.1100], ne: [22.3100, 114.2600] },
+      "九龍":   { sw: [22.2750, 114.1100], ne: [22.3650, 114.2600] },
+      "新界":   { sw: [22.2700, 113.9150], ne: [22.5700, 114.2900] },
+    };
     const selectedRegion = ref(TD_REGIONS[0].key);
     const trafficNews = ref([]);
     const trafficNewsError = ref("");
@@ -4342,14 +4397,17 @@ createApp({
       selectedCamKey.value = first ? first.key : "";
       snapshotLoaded.value = false;
       snapshotFailed.value = false;
-      /* 換區後把鏡頭移到新區，否則會停在上一區而看不到任何點。 */
-      nextTick(() => { fitCameraMapToRegion(); renderCameraMarkers(); });
+      /* 換區後把鏡頭移到新區，否則會停在上一區而看不到任何點。
+         強制對位（force）：使用者是主動換區，應該看到新區的全貌，
+         而不是保留上一區自己調出來的視角。 */
+      nextTick(() => { fitCameraMapToRegion(true); renderCameraMarkers(); updateCamSelDistance(); });
     }
 
     function onCamChange(key) {
       selectedCamKey.value = key;
       snapshotLoaded.value = false;
       snapshotFailed.value = false;
+      updateCamSelDistance();   /* 「距你…」跟著換成新選中鏡頭的距離 */
     }
 
     /* ---------- 攝影機地圖 ----------
@@ -4365,6 +4423,26 @@ createApp({
     const CAM_MAP_MAX_MARKERS = 400;
     const camMapVisibleCount = ref(0);
     let camMap = null, camMarkerLayer = null, camMapUserMoved = false;
+    /* 快拍地圖上的「我在哪」藍點。它與主地圖的 activeUserMarker 是兩張不同的
+       Leaflet 地圖，所以要各自維護一份標記（同一個圖層掛到第二張地圖會被 Leaflet
+       覆寫 _map，兩邊都會消失 —— 見 showUserMarker 的註解）。 */
+    let camUserMarker = null;
+    /* 定位狀態：camLocating 讓按鈕在等待時變灰；camLocateError 只在失敗時顯示，
+       成功後自動清走（免得一直留著紅字）。camUserKnown 驅動按鈕的 .on 深色狀態，
+       表示「已經知道使用者在那裡了」。 */
+    const camLocating = ref(false);
+    const camLocateError = ref("");
+    const camUserKnown = ref(false);
+    /* 選中攝影機與使用者的距離（顯示為「距你 850 m」）。使用者位置未知的時候
+       顯示空字串，模板的 v-if 就會把這一段藏起來。 */
+    const camSelDistance = ref("");
+    /* 把 lastUserPos 同步成一個 ref，讓「距你…」與按鈕狀態能隨定位更新而重算。
+       lastUserPos 本身是跨主地圖／小巴共用的一般變數，不是 ref。 */
+    const camUserPos = ref(null);
+    /* 最後一次成功定位的時間（ms）。定位結果兩分鐘內視為仍然新鮮，
+       再按 📍 就直接重用，不必再問使用者要一次授權。 */
+    let camUserPosAt = 0;
+    const CAM_LOCATE_TTL_MS = 120000;
 
     function camMapIsUsable() {
       if (!camMap) return false;
@@ -4387,13 +4465,93 @@ createApp({
         zoomControl: false, attributionControl: false,
         scrollWheelZoom: false,   /* 面板在可捲動欄內，滾輪要留給捲動頁面 */
         tap: true,
+        /* 地政總署圖磚最低只到 zoom 10（z9 回 204 空圖），所以設 minZoom: 10。
+           分區外框萬一再放大，也不會讓 fitBounds 落到沒有圖磚的層級而整片空白。 */
+        minZoom: 10, maxZoom: 19,
       }).setView(HK_CENTER, 12);
-      L.tileLayer(TILE_BASEMAP, { maxZoom: 19 }).addTo(camMap);
+      L.tileLayer(TILE_BASEMAP, { minZoom: 10, maxZoom: 19 }).addTo(camMap);
       camMarkerLayer = L.layerGroup().addTo(camMap);
       camMap.on('moveend zoomend', () => { camMapUserMoved = true; renderCameraMarkers(); });
       camMapUserMoved = false;
       fitCameraMapToRegion(true);
       renderCameraMarkers();
+      renderCamUserMarker();        /* 位置可能早於地圖掛載就拿到了 */
+      updateCamSelDistance();
+    }
+
+    /* 把使用者的位置畫在快拍地圖上。與 showUserMarker 同一道理：已經有標記就只是
+       移動它，不要每次刪掉重建（watchPosition 會不斷回報，重建會一直閃）。
+       地圖尚未掛載（面板是 v-if）時什麼都不做，等 mountCameraMap 再畫。 */
+    function renderCamUserMarker() {
+      if (!camMapIsUsable()) return;
+      const p = camUserPos.value;
+      const ll = p ? safeLatLng(p.lat, p.lng) : null;
+      if (!ll) return;
+      try {
+        if (camUserMarker) { camUserMarker.setLatLng(ll); return; }
+        camUserMarker = L.marker(ll, { icon: USER_ICON, interactive: false, keyboard: false }).addTo(camMap);
+      } catch (e) {}
+    }
+
+    /* 選中攝影機與使用者的距離（「距你 850 m」）。位置未知的時候顯示空字串，
+       模板的 v-if 就會把這一段藏起來。 */
+    function updateCamSelDistance() {
+      const c = selectedCam.value;
+      const p = camUserPos.value;
+      const ll = c ? safeLatLng(c.lat, c.lng) : null;
+      if (!ll || !p) { camSelDistance.value = ""; return; }
+      try { camSelDistance.value = formatDistance(haversineMeters(p.lat, p.lng, ll[0], ll[1])); }
+      catch (e) { camSelDistance.value = ""; }
+    }
+
+    /* 記錄一次位置更新：同步給快拍地圖的藍點與「距你…」。 */
+    function setCamUserPos(lat, lng) {
+      if (!isValidCoord(lat, lng)) return;
+      camUserPos.value = { lat, lng };
+      camUserKnown.value = true;
+      renderCamUserMarker();
+      updateCamSelDistance();
+    }
+
+    /* 鏡頭帶到使用者位置。camMapUserMoved 一併歸零，否則下一次
+       fitCameraMapToRegion() 會因為「使用者自己動過視角」而不再對回分區範圍。 */
+    function panCamMapToUser() {
+      if (!camMapIsUsable()) return;
+      const p = camUserPos.value;
+      const ll = p ? safeLatLng(p.lat, p.lng) : null;
+      if (!ll) return;
+      try {
+        camMapUserMoved = false;
+        camMap.setView(ll, Math.max(camMap.getZoom(), 14));
+        renderCameraMarkers();
+      } catch (e) {}
+    }
+
+    /* 按 📍：取得位置 → 畫藍點 → 把鏡頭帶過去，成功後開 watchPosition，
+       行走時藍點會跟著走（與主地圖一致）。
+       兩分鐘內定位過就直接沿用（重新問一次要使用者再授權一次，麻煩又耗電）。 */
+    async function locateOnCamMap() {
+      if (camLocating.value) return;
+      const cached = camUserPos.value;
+      if (cached && Date.now() - camUserPosAt < CAM_LOCATE_TTL_MS) {
+        setCamUserPos(cached.lat, cached.lng);
+        panCamMapToUser();
+        return;
+      }
+      camLocating.value = true;
+      camLocateError.value = "";
+      try {
+        const me = await getUserPosition();
+        camUserPosAt = Date.now();
+        setCamUserPos(me.lat, me.lng);
+        panCamMapToUser();
+        startGeoWatch();                 /* 之後每一次移動都自動更新藍點 */
+        camLocateError.value = "";
+      } catch (e) {
+        camLocateError.value = (e && e.message) || "定位失敗";
+      } finally {
+        camLocating.value = false;
+      }
     }
 
     /* 面板被 v-if 移除時，Leaflet 實例必須銷毀，否則它仍持有已脫離 DOM 的
@@ -4401,19 +4559,28 @@ createApp({
     function removeCameraMap() {
       if (camMap) { try { camMap.remove(); } catch (e) {} }
       camMap = null; camMarkerLayer = null; camMapUserMoved = false;
+      camUserMarker = null;           /* 已隨 camMap.remove() 一起銷毀 */
       camMapVisibleCount.value = 0;
     }
 
+    /* 把鏡頭對到「整個分區」。範圍 = 分區固定外框 ∪ 該區攝影機的實際點位：
+       外框保證「預設地區一定看得到全貌」（不會因為某區點位集中而縮成一角），
+       額外的點（例如離島、大嶼山）則自動把範圍撐大。
+       使用者已定位而且人在畫面附近時，把他的位置也算進去。 */
     function fitCameraMapToRegion(force) {
       if (!camMapIsUsable()) return;
       if (camMapUserMoved && !force) return;   /* 使用者自己調過視角就不要搶 */
       const pts = regionCameras.value
         .filter(c => Number.isFinite(c.lat) && Number.isFinite(c.lng))
         .map(c => [c.lat, c.lng]);
+      const box = TD_REGION_BOUNDS[selectedRegion.value];
+      if (box) { pts.push(box.sw); pts.push(box.ne); }
+      const u = camUserPos.value;
+      if (u && isValidCoord(u.lat, u.lng)) pts.push([u.lat, u.lng]);
       if (!pts.length) return;
       try {
         if (pts.length === 1) camMap.setView(pts[0], 15);
-        else camMap.fitBounds(L.latLngBounds(pts).pad(0.12), { maxZoom: 15 });
+        else camMap.fitBounds(L.latLngBounds(pts).pad(0.06), { maxZoom: 15 });
       } catch (e) {}
     }
 
@@ -5198,6 +5365,9 @@ createApp({
        它」，不要每次刪掉重建 —— 重建會閃爍，也會令地圖不停重排。 */
     function showUserMarker(lat, lng) {
       lastUserPos = { lat, lng };
+      /* 快拍地圖是另一張 Leaflet 地圖，同一個圖層不能同時掛兩張（Leaflet 會覆寫
+         _map，結果兩邊都不見），所以這裡各自更新自己那一份。 */
+      setCamUserPos(lat, lng);
       if (!isMapUsable(activeMap)) return;
       const ll = safeLatLng(lat, lng);
       if (!ll) return;
@@ -5388,6 +5558,7 @@ createApp({
       newsToday, newsPastAll, newsGroups,
       desktopNewsOpen, showNewsSection, toggleDesktopNews,
       camMapVisibleCount,
+      camUserKnown, camLocating, camLocateError, camSelDistance, locateOnCamMap,
       trafficSheet, openTrafficSheet, closeTrafficSheet,
       trafficSheetTitle, newsWhen, isFutureNews,
     };
