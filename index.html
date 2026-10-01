@@ -802,14 +802,23 @@
   .tp-colour-2 { color: #e67e22; }
   .tp-colour-3 { color: #1a8f4a; }
 
-  /* 桌面：面板是 main-area 的最後一個 grid 子項，而 main-area 是
-     `grid-template-rows: minmax(0,1fr) auto` + `overflow:hidden`。
-     landing 時地圖與 ETA 都被隱藏，整欄淨得可以給交通面板，所以
-     landing 專用一個較高的上限（.landing-wide）；搜尋之後地圖回來，
-     面板就要讓位，回到 44vh 並自行捲動。 */
+  /* 桌機：側欄固定為一屏，自身不再捲動。
+     .panel 本身已是 flex column，所以各區塊由上而下排好；只有「沿線巴士站」
+     清單（.stop-list，flex:1）在站數多時才在它自己內部捲動 ——
+     整欄的捲動條會令最愛／搜尋框跟著滾走，很難用。 */
   @media (min-width: 901px) {
-    .traffic-panel { max-height: 44vh; overflow-y: auto; }
-    .traffic-panel.landing-wide { max-height: 78vh; }
+    .sidebar { overflow: hidden; }
+  }
+
+  /* 桌面：交通面板在 landing 時是 .main-area 唯一仍在場的 grid 子項
+     （主地圖 display:none、ETA 面板 v-if="!isLanding"），而 .main-area 是
+     `grid-template-rows: minmax(0,1fr) auto` + `overflow:hidden`。
+     所以不設任何高度上限：卡片自動填滿整欄，剛好就是一屏（扣掉 header 與
+     .layout 的 padding），下方不會留一段空白；內容真的超出螢幕時才由
+     overflow-y:auto 在卡片內捲動。 */
+  @media (min-width: 901px) {
+    .traffic-panel { overflow-y: auto; }
+    .traffic-panel.landing-wide { max-height: none; }
     /* 桌機：三個分區（特別交通消息／交通快拍／行車時間）都跟主地圖同寬，
        所以不設文字欄上限——容器本身就是面板的內容寬度，必定一致。 */
   }
