@@ -88,6 +88,12 @@
        瀏覽器則維持 0px，改由 env(safe-area-inset-*) 負責。 */
     --status-inset: 0px;
     --nav-inset: 0px;
+    /* 標題列頂部內距的唯一來源，由 STATUS-INSET RESOLVER 寫入。
+       這裡必須先宣告 0px：否則 padding-top: max(8px, var(--inset-top))
+       在 resolver 跑之前是「無效宣告」會被整條丟棄，第一畫格與之後
+       的值不一致 = 使用者看到的閃跳。 */
+    --inset-top: 0px;
+    --inset-bottom: 0px;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
   html, body {
@@ -1565,35 +1571,41 @@
 /* ==================== STATUS-INSET RESOLVER ====================
    Resolves --inset-top: the single value the header's top padding consumes.
 
-   Two failure modes this closes:
+   WHY THIS IS SUBTLE (read before changing):
 
-   1. The installed APK shell writes --status-inset straight onto <html> from
-      Java (evaluateJavascript on every onPageFinished), with no clamp of its
-      own. A shell build that passed PHYSICAL px where CSS px was expected sent
-      132, and the header became ~170px tall on a real 1080x2400 phone.
+   The app is NOT edge-to-edge. Its theme is Theme.Material.Light.NoActionBar
+   with no FLAG_LAYOUT_NO_LIMITS, so Android already lays the WebView out
+   BELOW the status bar. The status bar occupies zero pixels of the page.
+   In that situation env(safe-area-inset-top) is 0 and the header needs NO
+   status-bar padding at all.
 
-   2. The header padding used to be
-          max(8px, env(safe-area-inset-top), var(--status-inset))
-      and max() takes the LARGEST. So clamping --status-inset did nothing when
-      the WebView reported a large env(safe-area-inset-top) - the env value
-      simply won and the header stayed ~100 CSS px tall.
+   The old shell, however, measured the status bar height and pushed it into
+   --status-inset on every onPageFinished. The page padded itself by that much
+   ON TOP of already being below the bar, i.e. it double-counted, and the
+   header grew by ~24 CSS px. Because the write lands AFTER first paint, the
+   user sees exactly this: the header starts in the right place, then FLASHES
+   LOWER. Measured: 46px -> 62px, a 16-20px jump.
 
-   Resolving both here means one capped number governs the padding, whatever the
-   shell sends and whatever env() reports. Because it is page-side, it repairs
-   ALREADY-INSTALLED APKs with no reinstall. */
+   So the shell's --status-inset must be treated as a claim about a bar the
+   page is not underneath, and IGNORED. Only a real env(safe-area-inset-top)
+   — which a WebView reports when the content genuinely does extend under a
+   cutout or a translucent bar — may add padding. That makes the padding
+   correct whether or not the APK is edge-to-edge, and repairs already-
+   installed shells with no reinstall.
+
+   Failure mode also closed: the header padding used to be
+       max(8px, env(safe-area-inset-top), var(--status-inset))
+   and max() takes the LARGEST, so clamping --status-inset did nothing when
+   env() was larger. One resolved variable now governs the padding. */
 (function () {
-  var MAX_STATUS = 28;   /* CSS px; 24 is the real value, 28 leaves headroom */
+  /* CSS px. This is a claim ceiling, not a target: in the non-edge-to-edge
+     app the true value is 0. */
+  var MAX_STATUS = 28;
   var MAX_NAV = 72;
 
-  function readPx(prop, fallback) {
-    var v = parseFloat(document.documentElement.style.getPropertyValue(prop));
-    if (!isFinite(v) || v < 0) v = 0;
-    return Math.min(v, fallback);
-  }
-
-  /* Measure env(safe-area-inset-top) exactly as the browser resolves it, then
-     cap it too - a bad shell can inflate this the same way it inflates the
-     variable. */
+  /* Measure env(safe-area-inset-top) exactly as the engine resolves it.
+     This is the ONLY legitimate reason to pad: it is non-zero only when the
+     viewport really does extend under a system bar or display cutout. */
   function envTop() {
     var probe = document.createElement("div");
     probe.style.cssText =
@@ -1605,29 +1617,29 @@
     return isFinite(h) && h > 0 ? Math.min(h, MAX_STATUS) : 0;
   }
 
-  function cap(name, limit) {
-    var cur = parseFloat(document.documentElement.style.getPropertyValue(name));
-    if (isFinite(cur) && cur > limit) {
-      document.documentElement.style.setProperty(name, limit + "px");
+  /* Zero out the shell's status-inset claim so nothing downstream consumes it.
+     Kept as a variable (rather than just ignoring it) because other rules
+     reference it and an inflated value there is the same bug elsewhere. */
+  function neutraliseShellClaim() {
+    var el = document.documentElement;
+    var cur = parseFloat(el.style.getPropertyValue("--status-inset"));
+    if (isFinite(cur) && cur !== 0) {
+      el.style.setProperty("--status-inset", "0px");
     }
   }
 
   function enforce() {
-    cap("--status-inset", MAX_STATUS);
-    cap("--nav-inset", MAX_NAV);
-    /* Single source of truth for the header's top padding. Whichever of the
-       three inputs is biggest is still capped, so the header cannot exceed
-       MAX_STATUS + the content row. */
-    var top = Math.max(readPx("--status-inset", MAX_STATUS), envTop());
-    document.documentElement.style.setProperty("--inset-top", top + "px");
-    var nav = parseFloat(document.documentElement.style.getPropertyValue("--nav-inset"));
-    document.documentElement.style.setProperty(
-      "--inset-bottom", (isFinite(nav) && nav > 0 ? Math.min(nav, MAX_NAV) : 0) + "px");
+    neutraliseShellClaim();
+    /* The single source of truth for the header's top padding. env() already
+       reports 0 in the current non-edge-to-edge app, so this is 0 there and
+       the header sits hard against the WebView's top edge — exactly where it
+       looked right before the flash. */
+    document.documentElement.style.setProperty("--inset-top", envTop() + "px");
   }
 
-  /* Re-cap on every write. The observer callback fires async (microtask), so a
-     flag alone is not enough - the work is coalesced onto the next frame and
-     the live value is re-read rather than trusting a stale one. */
+  /* Re-assert on every write. The observer callback fires async (microtask),
+     so a flag alone is not enough - the work is coalesced onto the next frame
+     and the live value is re-read rather than trusting a stale one. */
   var queued = false;
   function schedule() {
     if (queued) return;
@@ -1644,6 +1656,7 @@
      onPageFinished has had time to fire. */
   window.addEventListener("load", enforce);
   enforce();
+  setTimeout(enforce, 300);
   setTimeout(enforce, 1200);
   setTimeout(enforce, 3000);
 })();

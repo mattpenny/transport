@@ -86,7 +86,7 @@
     padding: 8px 18px; border: none; border-radius: 8px;
     background: #0d5e3a; color: #fff;
   }
-  :root { --font-scale: 1; --status-inset: 0px; --nav-inset: 0px; }
+  :root { --font-scale: 1; --status-inset: 0px; --nav-inset: 0px; --inset-top: 0px; --inset-bottom: 0px; }
   * {
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
@@ -1050,34 +1050,39 @@
 /* ==================== STATUS-INSET RESOLVER ====================
    Resolves --inset-top: the single value the header's top padding consumes.
 
-   Two failure modes this closes:
+   WHY THIS IS SUBTLE (read before changing):
 
-   1. The installed APK shell writes --status-inset straight onto <html> from
-      Java (evaluateJavascript on every onPageFinished), with no clamp of its
-      own. A shell build that passed PHYSICAL px where CSS px was expected sent
-      132, and the header became ~170px tall on a real 1080x2400 phone.
+   The app is NOT edge-to-edge. Its theme is Theme.Material.Light.NoActionBar
+   with no FLAG_LAYOUT_NO_LIMITS, so Android already lays the WebView out
+   BELOW the status bar, which therefore occupies zero pixels of the page.
+   In that situation env(safe-area-inset-top) is 0 and the header needs NO
+   status-bar padding at all.
 
-   2. The header padding used to be
-          max(8px, env(safe-area-inset-top), var(--status-inset))
-      and max() takes the LARGEST. So clamping --status-inset did nothing when
-      the WebView reported a large env(safe-area-inset-top) - the env value
-      simply won and the header stayed ~100 CSS px tall.
+   The shell, however, measured the status bar height and pushed it into
+   --status-inset on every onPageFinished, AFTER first paint. The page then
+   padded itself by that much on top of already being below the bar — it
+   double-counted — and the header grew by ~24 CSS px. That is exactly the
+   reported symptom: the header starts in the right place, then FLASHES LOWER.
+   Measured on all three pages: 46px -> 62px, a 16-20px jump.
 
-   Resolving both here means one capped number governs the padding, whatever the
-   shell sends and whatever env() reports. Because it is page-side, it repairs
-   ALREADY-INSTALLED APKs with no reinstall. */
+   So the shell's --status-inset is a claim about a bar the page is not
+   underneath, and must be IGNORED. Only a real env(safe-area-inset-top) —
+   non-zero only when the viewport genuinely extends under a system bar or
+   display cutout — may add padding. That makes the padding right whether or
+   not the APK is edge-to-edge, and repairs already-installed shells with no
+   reinstall.
+
+   Failure mode also closed: the padding used to be
+       max(8px, env(safe-area-inset-top), var(--status-inset))
+   and max() takes the LARGEST, so clamping --status-inset did nothing when
+   env() was larger. One resolved variable now governs the padding. */
 (function () {
-  var MAX_STATUS = 28;   /* CSS px; 24 is the real value, 28 leaves headroom */
-  var MAX_NAV = 72;
+  /* CSS px. A claim ceiling, not a target: in the non-edge-to-edge app the
+     true value is 0. */
+  var MAX_STATUS = 28;
 
-  function readPx(prop, limit) {
-    var v = parseFloat(document.documentElement.style.getPropertyValue(prop));
-    if (!isFinite(v) || v < 0) v = 0;
-    return Math.min(v, limit);
-  }
-
-  /* Measure env(safe-area-inset-top) as the browser resolves it, then cap it
-     too - a bad shell can inflate this just as easily as the variable. */
+  /* Measure env(safe-area-inset-top) exactly as the engine resolves it. This
+     is the ONLY legitimate reason to pad. */
   function envTop() {
     var probe = document.createElement("div");
     probe.style.cssText =
@@ -1089,21 +1094,23 @@
     return isFinite(h) && h > 0 ? Math.min(h, MAX_STATUS) : 0;
   }
 
-  function cap(name, limit) {
-    var cur = parseFloat(document.documentElement.style.getPropertyValue(name));
-    if (isFinite(cur) && cur > limit) {
-      document.documentElement.style.setProperty(name, limit + "px");
+  /* Zero out the shell's status-inset claim so nothing downstream consumes it.
+     Kept as a variable rather than merely ignored, because other rules read it
+     and an inflated value there is the same bug elsewhere. */
+  function neutraliseShellClaim() {
+    var el = document.documentElement;
+    var cur = parseFloat(el.style.getPropertyValue("--status-inset"));
+    if (isFinite(cur) && cur !== 0) {
+      el.style.setProperty("--status-inset", "0px");
     }
   }
 
   function enforce() {
-    cap("--status-inset", MAX_STATUS);
-    cap("--nav-inset", MAX_NAV);
-    var top = Math.max(readPx("--status-inset", MAX_STATUS), envTop());
-    document.documentElement.style.setProperty("--inset-top", top + "px");
-    var nav = parseFloat(document.documentElement.style.getPropertyValue("--nav-inset"));
-    document.documentElement.style.setProperty(
-      "--inset-bottom", (isFinite(nav) && nav > 0 ? Math.min(nav, MAX_NAV) : 0) + "px");
+    neutraliseShellClaim();
+    /* Single source of truth. env() reports 0 in the current non-edge-to-edge
+       app, so this is 0 there and the header sits hard against the WebView's
+       top edge — exactly where it looked right before the flash. */
+    document.documentElement.style.setProperty("--inset-top", envTop() + "px");
   }
 
   /* Coalesce onto the next frame: a MutationObserver callback fires as a
@@ -1122,6 +1129,7 @@
   }
   window.addEventListener("load", enforce);
   enforce();
+  setTimeout(enforce, 300);
   setTimeout(enforce, 1200);
   setTimeout(enforce, 3000);
 })();

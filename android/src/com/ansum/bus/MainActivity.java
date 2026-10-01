@@ -313,37 +313,34 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * Status bar height, in the unit the page consumes: CSS px.
+     * REMOVED: statusBarInset().
      *
-     * The page feeds this straight into `--status-inset`, so the unit is the
-     * whole ballgame. Three traps; the first two shipped and inflated the
-     * header to ~170 CSS px on a real 1080x2400 phone:
+     * It measured the status bar height and handed it to the page as
+     * --status-inset. That was wrong for this app: the window is not
+     * edge-to-edge, so the WebView is already laid out below the bar and the
+     * page must not pad for it. Sending the height made the page double-count
+     * and the header visibly jumped down after first paint.
      *
-     *   1. getDimensionPixelSize() already returns PHYSICAL px — the density is
-     *      baked in. Emitting it unchanged makes the page read "72 CSS px" on a
-     *      3x screen, ~3x too tall.
-     *   2. Multiplying by getDisplayMetrics().density is worse: it is a second
-     *      density multiply on top of the one already applied.
-     *   3. The correct conversion is NOT /devicePixelRatio either. In a WebView
-     *      1 CSS px ≈ 1 dp, and getDimensionPixelSize()/density recovers exactly
-     *      that dp value. density is also the only factor Java can see — the
-     *      WebView's devicePixelRatio is not readable from here, and on several
-     *      devices it differs from density (density is capped for compatibility
-     *      while the viewport keeps the real ratio).
+     * It is deleted rather than left unused on purpose — dead code that
+     * "looks right" is how this bug would come back. If the app is ever made
+     * genuinely edge-to-edge, the page reads env(safe-area-inset-top) itself
+     * and still needs nothing from here.
      *
-     * So: physical px / density = dp ≈ CSS px. 24dp -> 24, matching the 24 CSS
-     * px the page expects. The page still clamps to MAX_STATUS_INSET as a
-     * second line of defence, so a mistake here degrades instead of breaking.
+     * The unit trap it documented is still worth remembering if it is ever
+     * reinstated for a real edge-to-edge window: getDimensionPixelSize()
+     * returns PHYSICAL px (density already baked in), so dividing by density
+     * is what recovers dp ≈ CSS px. Emitting it unchanged made the header
+     * 170 CSS px tall on a 1080x2400 phone; multiplying by density is worse.
      */
-    private int statusBarInset() {
-        return Math.round(dimenPx("status_bar_height") / density());
-    }
 
     private float density() {
         return getResources().getDisplayMetrics().density;
     }
 
-    /* Same unit contract as statusBarInset(): dp, i.e. CSS px for the page. */
+    /* Navigation bar height, in the unit the page consumes: dp, i.e. CSS px.
+       Unlike the status bar this one IS still sent: the page uses it for
+       bottom scroll padding, and under a gesture nav bar the real value keeps
+       that correct. Same unit contract as above (physical px / density). */
     private int navBarInset() {
         return Math.round(dimenPx("navigation_bar_height") / density());
     }
@@ -356,7 +353,12 @@ public class MainActivity extends Activity {
     private class InsetBridge {
         @android.webkit.JavascriptInterface
         public int getStatusInset() {
-            return statusBarInset();
+            /* 0, for the same reason injectSafeArea() sends 0: this window is
+               not edge-to-edge, so the status bar is not occupying any of the
+               page. Reporting the measured bar height here would invite the
+               page to pad for a bar it is already below — the exact
+               double-count that caused the visible downward flash. */
+            return 0;
         }
 
         @android.webkit.JavascriptInterface
@@ -391,11 +393,33 @@ public class MainActivity extends Activity {
      * first-paint application, keeping the ordering deterministic.
      */
     private void injectSafeArea(final WebView view) {
-        final int top = statusBarInset();
         final int bottom = navBarInset();
+        /* DELIBERATELY NOT SENDING A STATUS INSET.
+         *
+         * This window is not edge-to-edge: the theme is
+         * Theme.Material.Light.NoActionBar and FLAG_LAYOUT_NO_LIMITS is never
+         * set, so Android already lays the WebView out BELOW the status bar.
+         * The bar therefore occupies zero pixels of the page, env() reports 0,
+         * and the header needs no top padding for it.
+         *
+         * We used to push the measured status bar height in as --status-inset
+         * anyway. The page then padded itself by that much on top of already
+         * being below the bar — double-counting — and because this write lands
+         * AFTER first paint, the header visibly STARTED CORRECT AND THEN
+         * JUMPED DOWN ~16-24px. That is the flash users reported, and it was
+         * caused by this line, not by the page.
+         *
+         * So we send 0. If the app is ever made genuinely edge-to-edge, the
+         * page's resolver derives its padding from env(safe-area-inset-top),
+         * which starts reporting the real value at that point — nothing here
+         * needs to change.
+         *
+         * --nav-inset is still sent: the bottom inset behaves the same way, but
+         * the page consumes it only for scroll padding, and sending the real
+         * height keeps that correct under a gesture navigation bar. */
         final String js =
                 "(function(){var d=document.documentElement;" +
-                "d.style.setProperty('--status-inset','" + top + "px');" +
+                "d.style.setProperty('--status-inset','0px');" +
                 "d.style.setProperty('--nav-inset','" + bottom + "px');})();";
         view.postDelayed(new Runnable() {
             @Override
