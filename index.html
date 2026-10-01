@@ -182,6 +182,34 @@
   }
   .sidebar { overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; min-width: 0; min-height: 0; }
 
+  /* === 側欄底部的「特別交通消息」入口（只桌機、只 landing）===
+     新聞區塊在右欄交通面板頂部，預設收起；這顆按鈕是唯一的開關。
+     .sidebar 本身是 flex column，所以 margin-top:auto 會把這格推到側欄底部
+     （landing 時沿線巴士站清單是空的，於是它就落在最底）。 */
+  .sidebar-news-entry { margin-top: auto; padding-top: 10px; border-top: 1px solid #eef; }
+  .sidebar-news-btn {
+    width: 100%; display: flex; align-items: center; gap: 8px;
+    padding: 10px 12px; cursor: pointer; text-align: left;
+    border: 1px solid #1a3d7c; border-radius: 9px;
+    background: #eaf1ff; color: #1a3d7c;
+    font-family: inherit; font-weight: 700;
+    font-size: calc(15px * var(--font-scale));
+    min-width: 0; transition: background 0.15s, color 0.15s;
+  }
+  .sidebar-news-btn:hover { background: #dbe9ff; }
+  .sidebar-news-btn:active { transform: scale(0.99); }
+  .sidebar-news-btn.active { background: #1a3d7c; color: #fff; }
+  .sidebar-news-btn .ico { font-size: 17px; line-height: 1; flex-shrink: 0; }
+  .sidebar-news-btn .label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sidebar-news-btn .count {
+    flex-shrink: 0; font-size: calc(12px * var(--font-scale)); font-weight: 700;
+    background: #1a3d7c; color: #fff; border-radius: 10px; padding: 1px 8px;
+    font-variant-numeric: tabular-nums;
+  }
+  .sidebar-news-btn.active .count { background: rgba(255,255,255,0.28); }
+  .sidebar-news-btn .caret { flex-shrink: 0; color: inherit; transition: transform 0.15s; }
+  .sidebar-news-btn .caret.open { transform: rotate(180deg); }
+
   /* === FAVOURITES === */
   .fav-section { margin-bottom: 8px; margin-top: 0; min-width: 0; }
   .fav-section .title {
@@ -653,6 +681,26 @@
   .tp-day-caret.open { transform: rotate(180deg); }
   .tp-day .tp-news-list { padding-bottom: 4px; }
 
+  /* --- 特別交通消息清單（逐則列出標題／位置／內容／時間）。
+     原本只在手機的 .tp-sheet 內定義；桌機的交通面板現在也會顯示新聞，
+     所以提升為全域樣式，兩邊共用同一套視覺。 --- */
+  .tp-news-list { list-style: none; padding: 0; margin: 0; }
+  .tp-news-list li {
+    display: flex; gap: 9px; align-items: flex-start;
+    padding: 9px 0; border-bottom: 1px dashed #f0f3f8; min-width: 0;
+  }
+  .tp-news-list li:last-child { border-bottom: none; }
+  /* 狀態圓點沿用 ticker 的 ●／○ 視覺語言，完結的消息整行淡出。 */
+  .tp-news-dot { flex-shrink: 0; color: #c8102e; font-size: 12px; line-height: 1.7; }
+  .tp-news-item.closed .tp-news-dot { color: #b6bfcc; }
+  .tp-news-item.closed .tp-news-heading { color: #98a2b3; }
+  .tp-news-main { min-width: 0; flex: 1 1 auto; }
+  .tp-news-heading { font-weight: 700; font-size: calc(15px * var(--font-scale)); line-height: 1.45; color: #1f2a3d; }
+  .tp-news-meta { color: #7b879b; font-size: calc(13px * var(--font-scale)); line-height: 1.5; margin-top: 2px; }
+  .tp-news-detail { color: #2b3a55; font-size: calc(14px * var(--font-scale)); line-height: 1.5; margin-top: 3px; }
+  .tp-news-when { color: #98a2b3; font-size: calc(12px * var(--font-scale)); margin-top: 3px; }
+  .tp-news-when.future { color: #c8102e; }
+
   /* --- 交通快拍 --- */
   .tp-region-tabs { display: flex; gap: 6px; margin-bottom: 8px; min-width: 0; }
   .tp-tab {
@@ -796,25 +844,8 @@
        後者 overflow:hidden 且內部軌道在動，塞 pseudo-element 會被裁切。 */
     .tp-tap-hint { color: #7b879b; font-size: calc(11px * var(--font-scale)); text-align: right; margin-top: 3px; }
 
-    /* --- 特別交通消息（只出現在手機的全螢幕面板 .tp-sheet 裏）---
-       桌機那邊是橫向滾動的 ticker；在全螢幕觸控面板裏橫向跑馬燈幾乎讀不到，
-       所以手機版改成直向清單：逐則列出標題／位置／內容／時間，拇指可慢慢捲。 */
-    .tp-news-list { list-style: none; padding: 0; margin: 0; }
-    .tp-news-list li {
-      display: flex; gap: 9px; align-items: flex-start;
-      padding: 9px 0; border-bottom: 1px dashed #f0f3f8; min-width: 0;
-    }
-    .tp-news-list li:last-child { border-bottom: none; }
-    /* 狀態圓點沿用 ticker 的 ●／○ 視覺語言，完結的消息整行淡出。 */
-    .tp-news-dot { flex-shrink: 0; color: #c8102e; font-size: 12px; line-height: 1.7; }
-    .tp-news-item.closed .tp-news-dot { color: #b6bfcc; }
-    .tp-news-item.closed .tp-news-heading { color: #98a2b3; }
-    .tp-news-main { min-width: 0; flex: 1 1 auto; }
-    .tp-news-heading { font-weight: 700; font-size: calc(15px * var(--font-scale)); line-height: 1.45; color: #1f2a3d; }
-    .tp-news-meta { color: #7b879b; font-size: calc(13px * var(--font-scale)); line-height: 1.5; margin-top: 2px; }
-    .tp-news-detail { color: #2b3a55; font-size: calc(14px * var(--font-scale)); line-height: 1.5; margin-top: 3px; }
-    .tp-news-when { color: #98a2b3; font-size: calc(12px * var(--font-scale)); margin-top: 3px; }
-    .tp-news-when.future { color: #c8102e; }
+    /* 特別交通消息清單樣式（.tp-news-*）已提升為全域定義（見上方），
+       因為桌機的交通面板現在也會用到，不再只是手機面板專屬。 */
 
     /* 全螢幕面板：.tp-sheet-body 自己是唯一的捲動容器，
        裏面不再有任何 max-height/overflow 的面板，否則會變成巢狀捲動，
@@ -1636,6 +1667,20 @@
         </ul>
       </div>
       <p v-if="error" class="error">{{ error }}</p>
+
+      <!-- 桌機：特別交通消息入口（推到底部，見 .sidebar-news-entry 的 margin-top:auto）。
+           手機版新聞本來就 inline 顯示，所以只在桌機 + landing 顯示這顆按鈕。 -->
+      <div v-if="isLanding && !isMobile" class="sidebar-news-entry">
+        <button class="sidebar-news-btn" type="button"
+                :class="{ active: desktopNewsOpen }"
+                :aria-expanded="desktopNewsOpen ? 'true' : 'false'"
+                @click="toggleDesktopNews">
+          <span class="ico">📢</span>
+          <span class="label">特別交通消息</span>
+          <span v-if="trafficNews.length" class="count">{{ trafficNews.length }}</span>
+          <span class="caret" :class="{ open: desktopNewsOpen }">▾</span>
+        </button>
+      </div>
     </aside>
 
     <main class="main-area" :class="{ 'showing-place': placeResults && placeStops.length }">
@@ -1747,10 +1792,12 @@
            「特別交通消息」則兩邊都 inline 顯示（手機點一下可看全文）。 -->
       <div v-if="isLanding" class="panel traffic-panel landing-wide">
 
-        <!-- 1. 特別交通消息（橫向滾動 ticker）。手機版一樣 inline 顯示；
-                點一下就開 .tp-sheet 看完整清單（底部工具列沒有這個按鈕，
-                入口就是這條 ticker 本身）。 -->
-        <div class="tp-section">
+        <!-- 1. 特別交通消息。
+                手機：inline 顯示（橫向 ticker + 「過往兩天交通消息」），點 ticker 開
+                      .tp-sheet 看完整清單。
+                桌機：預設收起，由側欄底部的入口（.sidebar-news-btn）開啟；展開後就在
+                      這個交通面板頂部，交通快拍／行車時間仍在下方。 -->
+        <div v-if="showNewsSection" class="tp-section">
           <div class="tp-head">
             <h3>特別交通消息</h3>
             <span v-if="trafficNews.length" class="tp-updated">{{ trafficNews.length }} 則</span>
@@ -1780,31 +1827,59 @@
           <div v-if="isMobile && newsToday.length" class="tp-tap-hint">點擊查看全部 ›</div>
           <div v-if="!trafficNews.length" class="tp-empty">{{ trafficNewsError || "暫無特別交通消息" }}</div>
 
-          <!-- 較早的日子：每個日期一張卡，預設摺起，點一下展開該日所有消息。
-               兩邊都顯示（手機桌機一致），因為這裡是收合式的，不像快拍那樣佔位太多。 -->
-          <div v-for="d in newsPastDays" :key="d.key" class="tp-day">
-            <button class="tp-day-head" type="button"
-                    :aria-expanded="isNewsDayOpen(d.key) ? 'true' : 'false'"
-                    @click="toggleNewsDay(d.key)">
-              <span class="tp-day-date">{{ d.label }}</span>
-              <span class="tp-day-count">{{ d.items.length }} 則</span>
-              <span class="tp-day-caret" :class="{ open: isNewsDayOpen(d.key) }">▾</span>
-            </button>
-            <ul v-if="isNewsDayOpen(d.key)" class="tp-news-list">
-              <li v-for="n in d.items" :key="n.id || n.heading"
-                  class="tp-news-item" :class="{ closed: n.closed }">
-                <span class="tp-news-dot">{{ n.closed ? '○' : '●' }}</span>
-                <div class="tp-news-main">
-                  <div class="tp-news-heading">{{ n.heading }}</div>
-                  <div v-if="n.location || n.direction || n.landmark" class="tp-news-meta">
-                    {{ [n.location, n.direction, n.landmark].filter(Boolean).join('　') }}
+          <!-- 較早的日子（不含今日）：
+               手機——合成單一塊「過往兩天交通消息」，點標題展開全部、再點收起；
+               桌機——每個日期一張可摺疊卡（新聞在右欄面板頂部，桌面空間較大）。 -->
+          <template v-if="isMobile">
+            <div v-if="newsPastAll.length" class="tp-day">
+              <button class="tp-day-head" type="button"
+                      :aria-expanded="mobilePastOpen ? 'true' : 'false'"
+                      @click="toggleMobilePast">
+                <span class="tp-day-date">過往兩天交通消息</span>
+                <span class="tp-day-count">{{ newsPastAll.length }} 則</span>
+                <span class="tp-day-caret" :class="{ open: mobilePastOpen }">▾</span>
+              </button>
+              <ul v-if="mobilePastOpen" class="tp-news-list">
+                <li v-for="n in newsPastAll" :key="n.id || n.heading"
+                    class="tp-news-item" :class="{ closed: n.closed }">
+                  <span class="tp-news-dot">{{ n.closed ? '○' : '●' }}</span>
+                  <div class="tp-news-main">
+                    <div class="tp-news-heading">{{ n.heading }}</div>
+                    <div v-if="n.location || n.direction || n.landmark" class="tp-news-meta">
+                      {{ [n.location, n.direction, n.landmark].filter(Boolean).join('　') }}
+                    </div>
+                    <div v-if="n.detail" class="tp-news-detail">{{ n.detail }}</div>
+                    <div v-if="n.whenText" class="tp-news-when">{{ newsWhen(n) }}</div>
                   </div>
-                  <div v-if="n.detail" class="tp-news-detail">{{ n.detail }}</div>
-                  <div v-if="n.whenText" class="tp-news-when">{{ newsWhen(n) }}</div>
-                </div>
-              </li>
-            </ul>
-          </div>
+                </li>
+              </ul>
+            </div>
+          </template>
+          <template v-else>
+            <div v-for="d in newsPastDays" :key="d.key" class="tp-day">
+              <button class="tp-day-head" type="button"
+                      :aria-expanded="isNewsDayOpen(d.key) ? 'true' : 'false'"
+                      @click="toggleNewsDay(d.key)">
+                <span class="tp-day-date">{{ d.label }}</span>
+                <span class="tp-day-count">{{ d.items.length }} 則</span>
+                <span class="tp-day-caret" :class="{ open: isNewsDayOpen(d.key) }">▾</span>
+              </button>
+              <ul v-if="isNewsDayOpen(d.key)" class="tp-news-list">
+                <li v-for="n in d.items" :key="n.id || n.heading"
+                    class="tp-news-item" :class="{ closed: n.closed }">
+                  <span class="tp-news-dot">{{ n.closed ? '○' : '●' }}</span>
+                  <div class="tp-news-main">
+                    <div class="tp-news-heading">{{ n.heading }}</div>
+                    <div v-if="n.location || n.direction || n.landmark" class="tp-news-meta">
+                      {{ [n.location, n.direction, n.landmark].filter(Boolean).join('　') }}
+                    </div>
+                    <div v-if="n.detail" class="tp-news-detail">{{ n.detail }}</div>
+                    <div v-if="n.whenText" class="tp-news-when">{{ newsWhen(n) }}</div>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </template>
         </div>
 
         <!-- 2. 交通快拍：地區分頁 + 可點擊的攝影機地圖（只桌機 inline 顯示；
@@ -3780,6 +3855,28 @@ createApp({
     }
     function isNewsDayOpen(k) { return !!openNewsDays.value[k]; }
 
+    /* --- 手機：把「過往兩天」的消息合成一塊 ---
+       新聞來源只保留 3 日（今日 + 前兩日），所以「非今日」＝過往兩天。
+       桌機沿用上面按日摺疊的卡片；手機把兩日合成一個標題（過往兩天交通消息），
+       點一下展開全部、再點收起（與現行消息一樣是 inline 清單，欄位一致）。 */
+    const newsPastAll = computed(() => {
+      const today = newsTodayKey.value;
+      return trafficNews.value.filter(n => newsDayKey(n) !== today);
+    });
+    const mobilePastOpen = ref(false);
+    function toggleMobilePast() { mobilePastOpen.value = !mobilePastOpen.value; }
+
+    /* --- 桌機：特別交通消息改成側欄底部的入口，預設收起。 ---
+       showNewsSection：手機永遠 inline 顯示；桌機只在展開時才在右欄交通面板
+       頂部顯示（交通快拍／行車時間仍在下方）。 */
+    const desktopNewsOpen = ref(false);
+    const showNewsSection = computed(() => isMobile.value || desktopNewsOpen.value);
+    function toggleDesktopNews() {
+      desktopNewsOpen.value = !desktopNewsOpen.value;
+      /* 展開後跑馬燈才第一次有闊度可量，所以要重新量一次。 */
+      if (desktopNewsOpen.value) nextTick(measureTicker);
+    }
+
     /* 每則消息的 ticker 文字：標題 + 位置 + 內容，最新在最前（parseTrafficNews 已排序）。
        只跑「今日」的消息 —— 舊日的已摺進卡片，不該在跑馬燈重複出現。 */
     const tickerItems = computed(() => newsToday.value.map(n => ({
@@ -5250,6 +5347,8 @@ createApp({
       regionCameras, regionJourneys, snapshotUrl, snapshotLoaded, snapshotFailed,
       snapshotUpdatedText, tickerLoop, tickerTrack, tickerDuration, tickerItems,
       newsToday, newsPastDays, openNewsDays, toggleNewsDay, isNewsDayOpen,
+      newsPastAll, mobilePastOpen, toggleMobilePast,
+      desktopNewsOpen, showNewsSection, toggleDesktopNews,
       camMapVisibleCount,
       trafficSheet, openTrafficSheet, closeTrafficSheet,
       trafficSheetTitle, newsWhen, isFutureNews,
