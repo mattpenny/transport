@@ -1044,6 +1044,17 @@
     .eta-box .rank { width: 68px; font-size: calc(18px * var(--font-scale)); }
     .eta-header h3 small { font-size: calc(11px * var(--font-scale)); }
 
+    /* 手機：街景按鈕的觸控目標。
+       .stop-link-btn 在桌機只有約 30px 高（padding 6px + 12px 字），
+       低於 iOS／Android 建議的 44px 最小觸控目標，手指按不準、容易點不中。
+       ETA 面板又是 position:sticky 釘在底部，點錯就會以為「沒有反應」。
+       這裡在手機版把按鈕撐到至少 44px 高。 */
+    .stop-link-btn {
+      min-height: 44px; padding: 0 14px;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .eta-actions { gap: 8px; }
+
     .fare-line { font-size: calc(18px * var(--font-scale)); }
     .fare-holiday-tag { font-size: calc(10px * var(--font-scale)); }
 
@@ -1818,9 +1829,6 @@
             <a class="stop-link-btn" v-if="streetViewUrl(selectedStop)"
                :href="streetViewUrl(selectedStop)"
                target="_blank" rel="noopener noreferrer" title="在 Google 街景查看這個站的實景">街景</a>
-            <a class="stop-link-btn" v-if="googleMapsUrl(selectedStop)"
-               :href="googleMapsUrl(selectedStop)"
-               target="_blank" rel="noopener noreferrer" title="在 OpenStreetMap 開啟這個站">地圖</a>
             <button class="refresh-btn"
                     :class="{ spinning: refreshing }"
                     :disabled="refreshing"
@@ -5368,23 +5376,18 @@ createApp({
       return "https://www.google.com/maps/@?api=1&map_action=pano&viewpoint="
         + c[0] + "," + c[1];
     }
-    /* Google Maps：開啟這個站的地圖頁。
-       ⚠️ Android 上要用「避開 Google 官網」，否則一定壞：
-       Chrome／多數 Android 瀏覽器見到 google.com/maps 的網址，會自動改寫成
-       intent://…;package=com.google.android.apps.maps;S.browser_fallback_url=…
-       打算用原生 Google 地圖 App 開啟。若機上沒有 Google 地圖 App、
-       或該瀏覽器不支援 intent://（很多國產 ROM 的內置瀏覽器），
-       就會直接跳 net::ERR_UNKNOWN_URL_SCHEME 死掉 —— 桌機沒有這套 App Link
-       機制，所以桌機正常、手機死，正是這個原因。
+    /* Google 地圖：開啟這個站的地圖頁（依站名搜尋，比淨座標更容易對到那個站）。
 
-       街景按鈕仍然用 Google（要看真正的實景相片就只此一家），但「地圖」改用
-       OpenStreetMap：純網頁、沒有 App 關聯，保證任何瀏覽器都開得到。 */
-    function googleMapsUrl(stop) {
-      const c = stopCoordPair(stop);
-      if (!c) return "";
-      return "https://www.openstreetmap.org/?mlat=" + c[0] + "&mlon=" + c[1]
-        + "#map=18/" + c[0] + "/" + c[1];
-    }
+       ⚠️ Android 上要留意：Chrome／多數 Android 瀏覽器見到 google.com/maps 的
+       網址，會自動改寫成 intent://…;package=com.google.android.apps.maps;…
+       打算用原生 Google 地圖 App 開啟。若機上沒有 Google 地圖 App，
+       或該瀏覽器不支援 intent://（部分國產 ROM 的內置瀏覽器），就會直接跳
+       net::ERR_UNKNOWN_URL_SCHEME 死掉。桌機沒有這套 App Link 機制，
+       所以桌機正常、手機死 —— 這是系統層的改寫，網頁本身無法避開
+       （output=embed 那套免 key 端點已失效，試過不能用）。
+
+       換言之：手機要用到這個按鈕，機上需要裝 Google 地圖 App（或用 Chrome
+       開啟，讓它可以走 S.browser_fallback_url）。 */
 
     async function applySelection(stop) {
       if (!stop || !isValidCoord(stop.lat, stop.lng)) return;
@@ -5750,7 +5753,7 @@ createApp({
       searchRowRef, onSearchRowFocus, onSearchRowBlur, onSearchRowPointerLeave,
       allRoutes, matchedRoutes, routeKey, stops, selectedStop, etas,
       dataAge, countdown, refreshing, clockText,
-      streetViewUrl, googleMapsUrl,
+      streetViewUrl,
       loadingStops, error, stopListRef, mapExpanded, mapRowText,
       pickingDirection, selectedDirectionLabel, isMobile,
       showCompanyPicker, mobileSearching, pickerCompanyIds,
