@@ -1793,98 +1793,81 @@
       <div v-if="isLanding" class="panel traffic-panel landing-wide">
 
         <!-- 1. 特別交通消息。
-                手機：inline 顯示（橫向 ticker + 「過往兩天交通消息」），點 ticker 開
-                      .tp-sheet 看完整清單。
-                桌機：預設收起，由側欄底部的入口（.sidebar-news-btn）開啟；展開後就在
-                      這個交通面板頂部，交通快拍／行車時間仍在下方。 -->
+                手機：inline 顯示今日的橫向 ticker；點 ticker 或下面的
+                      「過往兩天交通消息」都是開 .tp-sheet 全螢幕面板看全部
+                      （不在小卡內展開）。
+                桌機：由側欄底部的入口（.sidebar-news-btn）開啟；展開時右欄只放
+                      這一塊（交通快拍／行車時間收起），一次列出全部消息
+                      （今日 + 過往兩天）。 -->
         <div v-if="showNewsSection" class="tp-section">
           <div class="tp-head">
             <h3>特別交通消息</h3>
             <span v-if="trafficNews.length" class="tp-updated">{{ trafficNews.length }} 則</span>
           </div>
-          <!-- 跑馬燈只播「今日」的消息；較早的日子在下面的卡片，按一下展開。
-               今日一則都沒有時（例如全部都在前幾日）就完全唔顯示跑馬燈。 -->
-          <div v-if="newsToday.length" class="tp-ticker"
-               :class="{ 'tp-tap': isMobile }"
-               :role="isMobile ? 'button' : null"
-               :tabindex="isMobile ? 0 : null"
-               @click="isMobile && openTrafficSheet('news')"
-               @keydown.enter="isMobile && openTrafficSheet('news')"
-               :aria-label="isMobile ? '查看全部特別交通消息' : null">
-            <div v-if="tickerLoop.length" class="tp-ticker-track" ref="tickerTrack" :style="{ animationDuration: tickerDuration }">
-              <span v-for="(n, i) in tickerLoop" :key="i"
-                    class="tp-ticker-item"
-                    :class="{ 'tp-status-closed': n.closed }"
-                    :title="n.detail || n.heading">{{ n.text }}</span>
-            </div>
-            <!-- 只有一則時不跑馬燈（跑馬燈最少要兩則才成段），靜態顯示一次即可。 -->
-            <div v-else-if="tickerItems.length === 1" class="tp-ticker-single">
-              <span class="tp-ticker-item"
-                    :class="{ 'tp-status-closed': tickerItems[0].closed }"
-                    :title="tickerItems[0].detail || tickerItems[0].heading">{{ tickerItems[0].text }}</span>
-            </div>
-          </div>
-          <div v-if="isMobile && newsToday.length" class="tp-tap-hint">點擊查看全部 ›</div>
-          <div v-if="!trafficNews.length" class="tp-empty">{{ trafficNewsError || "暫無特別交通消息" }}</div>
 
-          <!-- 較早的日子（不含今日）：
-               手機——合成單一塊「過往兩天交通消息」，點標題展開全部、再點收起；
-               桌機——每個日期一張可摺疊卡（新聞在右欄面板頂部，桌面空間較大）。 -->
           <template v-if="isMobile">
+            <!-- 跑馬燈只播「今日」的消息；點一下開全螢幕面板看完整清單。 -->
+            <div v-if="newsToday.length" class="tp-ticker"
+                 :class="{ 'tp-tap': isMobile }"
+                 :role="isMobile ? 'button' : null"
+                 :tabindex="isMobile ? 0 : null"
+                 @click="isMobile && openTrafficSheet('news')"
+                 @keydown.enter="isMobile && openTrafficSheet('news')"
+                 :aria-label="isMobile ? '查看全部特別交通消息' : null">
+              <div v-if="tickerLoop.length" class="tp-ticker-track" ref="tickerTrack" :style="{ animationDuration: tickerDuration }">
+                <span v-for="(n, i) in tickerLoop" :key="i"
+                      class="tp-ticker-item"
+                      :class="{ 'tp-status-closed': n.closed }"
+                      :title="n.detail || n.heading">{{ n.text }}</span>
+              </div>
+              <!-- 只有一則時不跑馬燈（跑馬燈最少要兩則才成段），靜態顯示一次即可。 -->
+              <div v-else-if="tickerItems.length === 1" class="tp-ticker-single">
+                <span class="tp-ticker-item"
+                      :class="{ 'tp-status-closed': tickerItems[0].closed }"
+                      :title="tickerItems[0].detail || tickerItems[0].heading">{{ tickerItems[0].text }}</span>
+              </div>
+            </div>
+            <div v-if="newsToday.length" class="tp-tap-hint">點擊查看全部 ›</div>
+            <div v-if="!trafficNews.length" class="tp-empty">{{ trafficNewsError || "暫無特別交通消息" }}</div>
+
+            <!-- 過往兩天：與今日跑馬燈同一種行為 —— 點一下就開全螢幕面板看全部，
+                 不在這張小卡內展開。 -->
             <div v-if="newsPastAll.length" class="tp-day">
               <button class="tp-day-head" type="button"
-                      :aria-expanded="mobilePastOpen ? 'true' : 'false'"
-                      @click="toggleMobilePast">
+                      @click="openTrafficSheet('news')"
+                      aria-label="查看全部特別交通消息">
                 <span class="tp-day-date">過往兩天交通消息</span>
                 <span class="tp-day-count">{{ newsPastAll.length }} 則</span>
-                <span class="tp-day-caret" :class="{ open: mobilePastOpen }">▾</span>
+                <span class="tp-day-caret">›</span>
               </button>
-              <ul v-if="mobilePastOpen" class="tp-news-list">
-                <li v-for="n in newsPastAll" :key="n.id || n.heading"
-                    class="tp-news-item" :class="{ closed: n.closed }">
-                  <span class="tp-news-dot">{{ n.closed ? '○' : '●' }}</span>
-                  <div class="tp-news-main">
-                    <div class="tp-news-heading">{{ n.heading }}</div>
-                    <div v-if="n.location || n.direction || n.landmark" class="tp-news-meta">
-                      {{ [n.location, n.direction, n.landmark].filter(Boolean).join('　') }}
-                    </div>
-                    <div v-if="n.detail" class="tp-news-detail">{{ n.detail }}</div>
-                    <div v-if="n.whenText" class="tp-news-when">{{ newsWhen(n) }}</div>
-                  </div>
-                </li>
-              </ul>
             </div>
           </template>
+
+          <!-- 桌機：一次列出全部消息（今日 + 過往兩天），因為整個右欄就是這塊專區。 -->
           <template v-else>
-            <div v-for="d in newsPastDays" :key="d.key" class="tp-day">
-              <button class="tp-day-head" type="button"
-                      :aria-expanded="isNewsDayOpen(d.key) ? 'true' : 'false'"
-                      @click="toggleNewsDay(d.key)">
-                <span class="tp-day-date">{{ d.label }}</span>
-                <span class="tp-day-count">{{ d.items.length }} 則</span>
-                <span class="tp-day-caret" :class="{ open: isNewsDayOpen(d.key) }">▾</span>
-              </button>
-              <ul v-if="isNewsDayOpen(d.key)" class="tp-news-list">
-                <li v-for="n in d.items" :key="n.id || n.heading"
-                    class="tp-news-item" :class="{ closed: n.closed }">
-                  <span class="tp-news-dot">{{ n.closed ? '○' : '●' }}</span>
-                  <div class="tp-news-main">
-                    <div class="tp-news-heading">{{ n.heading }}</div>
-                    <div v-if="n.location || n.direction || n.landmark" class="tp-news-meta">
-                      {{ [n.location, n.direction, n.landmark].filter(Boolean).join('　') }}
-                    </div>
-                    <div v-if="n.detail" class="tp-news-detail">{{ n.detail }}</div>
-                    <div v-if="n.whenText" class="tp-news-when">{{ newsWhen(n) }}</div>
+            <ul v-if="trafficNews.length" class="tp-news-list">
+              <li v-for="n in trafficNews" :key="n.id || n.heading"
+                  class="tp-news-item" :class="{ closed: n.closed }">
+                <span class="tp-news-dot">{{ n.closed ? '○' : '●' }}</span>
+                <div class="tp-news-main">
+                  <div class="tp-news-heading">{{ n.heading }}</div>
+                  <div v-if="n.location || n.direction || n.landmark" class="tp-news-meta">
+                    {{ [n.location, n.direction, n.landmark].filter(Boolean).join('　') }}
                   </div>
-                </li>
-              </ul>
-            </div>
+                  <div v-if="n.detail" class="tp-news-detail">{{ n.detail }}</div>
+                  <div v-if="n.whenText" class="tp-news-when"
+                       :class="{ future: isFutureNews(n) }">{{ newsWhen(n) }}</div>
+                </div>
+              </li>
+            </ul>
+            <div v-else class="tp-empty">{{ trafficNewsError || "暫無特別交通消息" }}</div>
           </template>
         </div>
 
         <!-- 2. 交通快拍：地區分頁 + 可點擊的攝影機地圖（只桌機 inline 顯示；
-                手機版在 .tp-sheet 裡以同一個 #map-cameras 容器顯示） -->
-        <div v-if="!isMobile" class="tp-section tp-section-map">
+                手機版在 .tp-sheet 裡以同一個 #map-cameras 容器顯示）。
+                桌機展開特別交通消息時右欄只放新聞，所以這塊暫且收起。 -->
+        <div v-if="!isMobile && !desktopNewsOpen" class="tp-section tp-section-map">
           <div class="tp-head">
             <h3>交通快拍</h3>
             <span v-if="selectedCam" class="tp-updated">{{ snapshotUpdatedText }}</span>
@@ -1921,8 +1904,9 @@
           <div v-else class="tp-empty">{{ trafficCamError || "此地區暫無快拍攝影機" }}</div>
         </div>
 
-        <!-- 3. 行車時間顯示器（只顯示選取地區的隧道／道路；手機版在 .tp-sheet 裡） -->
-        <div v-if="!isMobile" class="tp-section">
+        <!-- 3. 行車時間顯示器（只顯示選取地區的隧道／道路；手機版在 .tp-sheet 裡）。
+             與交通快拍一樣，桌機展開新聞時一併收起。 -->
+        <div v-if="!isMobile && !desktopNewsOpen" class="tp-section">
           <div class="tp-head">
             <h3>行車時間</h3>
             <span class="tp-updated">{{ selectedRegion }}</span>
@@ -2680,18 +2664,12 @@ function mergeNewsStore(stored, fresh) {
   return out.sort((a, b) => (b.whenMs || 0) - (a.whenMs || 0));
 }
 
-/* --- 按日分組：今日留給跑馬燈，較早的日子摺成可展開的卡片 --- */
+/* --- 消息所屬日期（YYYY-MM-DD，本機時間）。手機用它把「今日」與「過往兩天」
+       分開；解析不到時間的歸入 unknown（會被當成「過往」）。 --- */
 function newsDayKey(n) {
   const d = n.whenMs ? new Date(n.whenMs) : null;
   if (!d || isNaN(d.getTime())) return "unknown";
   return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
-}
-function newsDayLabel(key) {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(key);
-  if (!m) return "日期不詳";
-  /* 今年的略去年份，跨年才顯示，好讓標題保持短。 */
-  const yr = +m[1];
-  return (yr === new Date().getFullYear() ? "" : yr + "年") + (+m[2]) + "月" + (+m[3]) + "日";
 }
 
 /* --- 2. 交通快拍攝影機 ---
@@ -3826,59 +3804,38 @@ createApp({
     const snapshotUpdatedText = computed(() =>
       trafficUpdated.value ? "更新於 " + formatClock(trafficUpdated.value).slice(0, 5) : "");
 
-    /* --- 按日分組：今日的留在跑馬燈，較早的日子摺成可展開的卡片 ---
-       trafficNews 已是新→舊排好（mergeNewsStore 排過），所以過濾出今日的
-       之後，剩下的日子自然由新至舊。展開狀態只記錄日期 key，所以刷新後
-       仍會保持展開。 */
     /* 「今日」是哪一天：每次交通資料刷新都重算（trafficUpdated 每分鐘更新），
-       這樣分頁整晚开着、跨過午夜之後，舊的消息仍會正確地變成「較早的日子」
-       收進卡片，而不是繼續當作今日顯示。 */
+       這樣分頁整晚開着、跨過午夜之後，舊的消息仍會正確地變成「過往」而不是
+       繼續當作今日顯示。 */
     const newsTodayKey = computed(() => newsDayKey({ whenMs: trafficUpdated.value || Date.now() }));
     const newsToday = computed(() => trafficNews.value.filter(n => newsDayKey(n) === newsTodayKey.value));
-    const newsPastDays = computed(() => {
-      const today = newsTodayKey.value;
-      const order = [];
-      const byDay = Object.create(null);
-      for (const n of trafficNews.value) {
-        const k = newsDayKey(n);
-        if (k === today) continue;
-        if (!byDay[k]) { byDay[k] = []; order.push(k); }
-        byDay[k].push(n);
-      }
-      return order.map(k => ({ key: k, label: newsDayLabel(k), items: byDay[k] }));
-    });
-    const openNewsDays = ref({});
-    function toggleNewsDay(k) {
-      const next = Object.assign({}, openNewsDays.value);
-      if (next[k]) delete next[k]; else next[k] = true;
-      openNewsDays.value = next;
-    }
-    function isNewsDayOpen(k) { return !!openNewsDays.value[k]; }
 
-    /* --- 手機：把「過往兩天」的消息合成一塊 ---
+    /* --- 手機：把「過往兩天」（今日以外的消息）合成一個入口 ---
        新聞來源只保留 3 日（今日 + 前兩日），所以「非今日」＝過往兩天。
-       桌機沿用上面按日摺疊的卡片；手機把兩日合成一個標題（過往兩天交通消息），
-       點一下展開全部、再點收起（與現行消息一樣是 inline 清單，欄位一致）。 */
+       這個入口與今日的跑馬燈行為一致：點一下開全螢幕面板（.tp-sheet）看全部，
+       不在小卡內展開。 */
     const newsPastAll = computed(() => {
       const today = newsTodayKey.value;
       return trafficNews.value.filter(n => newsDayKey(n) !== today);
     });
-    const mobilePastOpen = ref(false);
-    function toggleMobilePast() { mobilePastOpen.value = !mobilePastOpen.value; }
 
     /* --- 桌機：特別交通消息改成側欄底部的入口，預設收起。 ---
-       showNewsSection：手機永遠 inline 顯示；桌機只在展開時才在右欄交通面板
-       頂部顯示（交通快拍／行車時間仍在下方）。 */
+       showNewsSection：手機永遠 inline 顯示；桌機只在展開時才顯示。
+       展開時右欄只放新聞（交通快拍／行車時間收起，見模板的 v-if）。 */
     const desktopNewsOpen = ref(false);
     const showNewsSection = computed(() => isMobile.value || desktopNewsOpen.value);
-    function toggleDesktopNews() {
-      desktopNewsOpen.value = !desktopNewsOpen.value;
-      /* 展開後跑馬燈才第一次有闊度可量，所以要重新量一次。 */
-      if (desktopNewsOpen.value) nextTick(measureTicker);
-    }
+    function toggleDesktopNews() { desktopNewsOpen.value = !desktopNewsOpen.value; }
+    /* 桌機展開／收起新聞時，#map-cameras 這個 Leaflet 容器會被移除或重建，
+       所以兩邊都要掛載／銷毀實例（與 watch(regionCameras) 同一套做法）。 */
+    watch(desktopNewsOpen, () => {
+      nextTick(() => {
+        if (document.getElementById("map-cameras")) { mountCameraMap(); renderCameraMarkers(); }
+        else removeCameraMap();
+      });
+    });
 
     /* 每則消息的 ticker 文字：標題 + 位置 + 內容，最新在最前（parseTrafficNews 已排序）。
-       只跑「今日」的消息 —— 舊日的已摺進卡片，不該在跑馬燈重複出現。 */
+       只跑「今日」的消息 —— 過往兩天的收在下面的入口，不該在跑馬燈重複出現。 */
     const tickerItems = computed(() => newsToday.value.map(n => ({
       text: [n.heading, n.location, n.detail].filter(Boolean).join("｜"),
       detail: [n.detail, n.direction, n.landmark].filter(Boolean).join("　"),
@@ -5346,8 +5303,7 @@ createApp({
       journeyTimes, journeyError, selectedCamKey, selectedCam,
       regionCameras, regionJourneys, snapshotUrl, snapshotLoaded, snapshotFailed,
       snapshotUpdatedText, tickerLoop, tickerTrack, tickerDuration, tickerItems,
-      newsToday, newsPastDays, openNewsDays, toggleNewsDay, isNewsDayOpen,
-      newsPastAll, mobilePastOpen, toggleMobilePast,
+      newsToday, newsPastAll,
       desktopNewsOpen, showNewsSection, toggleDesktopNews,
       camMapVisibleCount,
       trafficSheet, openTrafficSheet, closeTrafficSheet,
