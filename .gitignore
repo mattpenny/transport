@@ -1,0 +1,15 @@
+# Android build output
+android/build/
+android/keystore.jks
+android/*.jks
+# v2 signature side-car produced next to the APK by apksigner
+*.apk.idsig
+
+# Signing material — NEVER commit these
+*.jks
+*.keystore
+
+# Assistant scratch / local notes
+.workbuddy-ai/
+.v12.dex
+__pycache__/

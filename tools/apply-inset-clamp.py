@@ -1,61 +1,97 @@
 #!/usr/bin/env python3
 """
-apply-inset-clamp.py — add the STATUS-INSET SAFETY CLAMP to the three pages,
-idempotently.
+apply-inset-clamp.py — install the --status-inset / --inset-top resolver into
+the three pages, idempotently.
 
-Background: the installed APK shell writes --status-inset straight onto <html>
-from Java on every onPageFinished, with no clamp. A shell build that passed
-physical px where CSS px was expected sent 132 and made the header 170px tall.
-The page must therefore be authoritative about that variable.
+Why this is needed (two independent bugs, both page-side):
 
-This script inserts the clamp IIFE immediately before the BOOT COORDINATION
-script. It is idempotent and safe to re-run: if the clamp is already present it
-does nothing. That matters because an external uploader periodically overwrites
-these files with an older snapshot.
+1. The installed APK shell writes --status-inset straight onto <html> from Java
+   on every onPageFinished, with no clamp. A shell build that passed physical px
+   where CSS px was expected sent 132 and made the header ~170px tall.
+
+2. `padding-top: max(8px, env(safe-area-inset-top), var(--status-inset))` takes
+   the LARGEST of the three, so capping the variable achieved nothing whenever
+   the WebView reported a large env(safe-area-inset-top) - the env value won and
+   the header stayed ~100 CSS px tall on a real device.
+
+Fix: resolve BOTH inputs in one place, cap each, and expose a single
+`--inset-top` that the header padding consumes. The CSS rules are rewritten from
+`max(..., env(...), var(--status-inset))` to `max(..., var(--inset-top))`, so a
+large env() can no longer out-vote the cap.
 
 Usage:  python tools/apply-inset-clamp.py index.html gmb.html rmb.html
-Exit 0 on success (added or already-present), 1 if the anchor was not found.
+Exit 0 on success (added or already-present), 1 if an anchor was not found.
 """
 
 import sys
+
+CLAMP_HEAD = "/* ==================== STATUS-INSET SAFETY CLAMP ===================="
 
 ANCHOR = """<script>
 /* ==================== BOOT COORDINATION ==================== */"""
 
 CLAMP = """<script>
-/* ==================== STATUS-INSET SAFETY CLAMP ====================
-   Defensive only - it does not replace the CSS var / env(safe-area-inset-*)
-   scheme, it just bounds it.
+/* ==================== STATUS-INSET RESOLVER ====================
+   Resolves --inset-top: the single value the header's top padding consumes.
 
-   Why it is needed: the installed APK shell writes --status-inset straight
-   onto <html> from Java (evaluateJavascript on every onPageFinished), with no
-   clamp of its own. A shell build that passed PHYSICAL px where CSS px was
-   expected sent 132, and the header became 170px tall on a real 1080x2400
-   phone. Nothing in the page could stop it, because the native write lands
-   after the page has settled.
+   Two failure modes this closes:
 
-   A real status bar is 24 CSS px on almost every device and never more than
-   ~40. So: cap the variable, and re-cap it whenever anything writes to it.
-   The page becomes authoritative, which means this fix protects
-   ALREADY-INSTALLED APKs - no reinstall required. */
+   1. The installed APK shell writes --status-inset straight onto <html> from
+      Java (evaluateJavascript on every onPageFinished), with no clamp of its
+      own. A shell build that passed PHYSICAL px where CSS px was expected sent
+      132, and the header became ~170px tall on a real 1080x2400 phone.
+
+   2. The header padding used to be
+          max(8px, env(safe-area-inset-top), var(--status-inset))
+      and max() takes the LARGEST. So clamping --status-inset did nothing when
+      the WebView reported a large env(safe-area-inset-top) - the env value
+      simply won and the header stayed ~100 CSS px tall.
+
+   Resolving both here means one capped number governs the padding, whatever the
+   shell sends and whatever env() reports. Because it is page-side, it repairs
+   ALREADY-INSTALLED APKs with no reinstall. */
 (function () {
   var MAX_STATUS = 28;   /* CSS px; 24 is the real value, 28 leaves headroom */
   var MAX_NAV = 72;
 
-  function cap(name, limit) {
-    var v = parseFloat(document.documentElement.style.getPropertyValue(name));
+  function readPx(prop, limit) {
+    var v = parseFloat(document.documentElement.style.getPropertyValue(prop));
     if (!isFinite(v) || v < 0) v = 0;
-    if (v > limit) {
-      document.documentElement.style.setProperty(name, limit + "px");
-      return true;
-    }
-    return false;
+    return Math.min(v, limit);
   }
-  function enforce() { cap("--status-inset", MAX_STATUS); cap("--nav-inset", MAX_NAV); }
 
-  /* Re-cap on every write. The observer callback fires async (microtask), so a
-     flag alone is not enough - the work is coalesced onto the next frame and
-     the live value is re-read rather than trusting a stale one. */
+  /* Measure env(safe-area-inset-top) as the browser resolves it, then cap it
+     too - a bad shell can inflate this just as easily as the variable. */
+  function envTop() {
+    var probe = document.createElement("div");
+    probe.style.cssText =
+      "position:absolute;top:0;left:0;width:0;height:env(safe-area-inset-top);" +
+      "visibility:hidden;pointer-events:none";
+    document.documentElement.appendChild(probe);
+    var h = probe.getBoundingClientRect().height || 0;
+    probe.parentNode.removeChild(probe);
+    return isFinite(h) && h > 0 ? Math.min(h, MAX_STATUS) : 0;
+  }
+
+  function cap(name, limit) {
+    var cur = parseFloat(document.documentElement.style.getPropertyValue(name));
+    if (isFinite(cur) && cur > limit) {
+      document.documentElement.style.setProperty(name, limit + "px");
+    }
+  }
+
+  function enforce() {
+    cap("--status-inset", MAX_STATUS);
+    cap("--nav-inset", MAX_NAV);
+    var top = Math.max(readPx("--status-inset", MAX_STATUS), envTop());
+    document.documentElement.style.setProperty("--inset-top", top + "px");
+    var nav = parseFloat(document.documentElement.style.getPropertyValue("--nav-inset"));
+    document.documentElement.style.setProperty(
+      "--inset-bottom", (isFinite(nav) && nav > 0 ? Math.min(nav, MAX_NAV) : 0) + "px");
+  }
+
+  /* Coalesce onto the next frame: a MutationObserver callback fires as a
+     microtask, so a synchronously set/cleared flag would not prevent re-entry. */
   var queued = false;
   function schedule() {
     if (queued) return;
@@ -68,8 +104,6 @@ CLAMP = """<script>
       attributeFilter: ["style"],
     });
   }
-  /* Catch writes that land before the observer attaches, and re-assert after
-     onPageFinished has had time to fire. */
   window.addEventListener("load", enforce);
   enforce();
   setTimeout(enforce, 1200);
@@ -79,18 +113,37 @@ CLAMP = """<script>
 
 """
 
+# CSS rewrites: stop letting a large env() out-vote the capped variable.
+CSS_REWRITES = [
+    ("padding-top: max(10px, env(safe-area-inset-top), var(--status-inset));",
+     "padding-top: max(10px, var(--inset-top));"),
+    ("padding-top: max(8px, env(safe-area-inset-top), var(--status-inset));",
+     "padding-top: max(8px, var(--inset-top));"),
+]
+
 
 def patch(path: str) -> bool:
     src = open(path, encoding="utf-8").read()
-    if "STATUS-INSET SAFETY CLAMP" in src:
-        print(f"{path}: already has clamp")
-        return True
-    if src.count(ANCHOR) != 1:
-        print(f"{path}: ERROR - anchor found {src.count(ANCHOR)} times, expected 1")
-        return False
-    src = src.replace(ANCHOR, CLAMP + ANCHOR, 1)
-    open(path, "w", encoding="utf-8").write(src)
-    print(f"{path}: clamp inserted")
+    changed = False
+
+    for old, new in CSS_REWRITES:
+        if old in src:
+            src = src.replace(old, new)
+            changed = True
+
+    if CLAMP_HEAD in src:
+        print(f"{path}: resolver already present")
+    else:
+        if src.count(ANCHOR) != 1:
+            print(f"{path}: ERROR - anchor found {src.count(ANCHOR)} times, expected 1")
+            return False
+        src = src.replace(ANCHOR, CLAMP + ANCHOR, 1)
+        changed = True
+        print(f"{path}: resolver inserted")
+
+    if changed:
+        open(path, "w", encoding="utf-8").write(src)
+        print(f"{path}: css rewritten")
     return True
 
 

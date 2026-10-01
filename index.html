@@ -15,6 +15,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="theme-color" content="#1a3d7c" />
+<!-- Status bar / task-switcher colour. Must stay in sync with the
+     header background and with the bar colours set in the APK shell,
+     or the top strip shows as a differently-coloured band. -->
 <meta name="format-detection" content="telephone=no" />
 <title>Ansum Bus</title>
 <link rel="icon" type="image/png" href="bus.png" />
@@ -25,7 +29,7 @@
      document loads. The library <script> tags live at the END of <body> on
      purpose: in <head> they block the parser and leave the screen blank until
      they finish downloading - that blank gap was the mode-switch flash. */
-  html { background: #f5f7fb; }
+  html { background: #1a3d7c; }
 </style>
 
 <style>
@@ -112,7 +116,7 @@
     flex-shrink: 0; display: flex; align-items: center;
     justify-content: space-between; gap: 12px;
     min-width: 0; min-height: 0;
-    padding-top: max(10px, env(safe-area-inset-top), var(--status-inset));
+    padding-top: max(10px, var(--inset-top));
   }
   header.app-header h1 {
     margin: 0; font-size: calc(17px * var(--font-scale)); white-space: nowrap;
@@ -152,7 +156,7 @@
   .font-btn:active { transform: scale(0.95); }
 
   @media (max-width: 600px) {
-    header.app-header { padding: 8px 12px; padding-top: max(8px, env(safe-area-inset-top), var(--status-inset)); }
+    header.app-header { padding: 8px 12px; padding-top: max(8px, var(--inset-top)); }
     header.app-header h1 { font-size: calc(15px * var(--font-scale)); }
     .header-logo-badge { width: 30px; height: 30px; }
     .header-logo { width: 21px; height: 21px; }
@@ -942,7 +946,7 @@
     .tp-sheet-head {
       flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between;
       gap: 10px; padding: 8px 12px;
-      padding-top: max(8px, env(safe-area-inset-top), var(--status-inset));
+      padding-top: max(8px, var(--inset-top));
       background: #1a3d7c; color: #fff;
     }
     .tp-sheet-title {
@@ -1558,40 +1562,72 @@
 </div>
 
 <script>
-/* ==================== STATUS-INSET SAFETY CLAMP ====================
-   Defensive only - it does not replace the CSS var / env(safe-area-inset-*)
-   scheme above, it just bounds it.
+/* ==================== STATUS-INSET RESOLVER ====================
+   Resolves --inset-top: the single value the header's top padding consumes.
 
-   Why it is needed: the installed APK shell writes --status-inset straight
-   onto <html> from Java (evaluateJavascript on every onPageFinished), with no
-   clamp of its own. A shell build that passed PHYSICAL px where CSS px was
-   expected sent 132, and the header became 170px tall on a real 1080x2400
-   phone. Nothing in the page could stop it, because the native write lands
-   after the page has settled.
+   Two failure modes this closes:
 
-   A real status bar is 24 CSS px on almost every device and never more than
-   ~40. So: cap the variable, and re-cap it whenever anything writes to it.
-   The page becomes authoritative, which means this fix protects
-   ALREADY-INSTALLED APKs - no reinstall required. */
+   1. The installed APK shell writes --status-inset straight onto <html> from
+      Java (evaluateJavascript on every onPageFinished), with no clamp of its
+      own. A shell build that passed PHYSICAL px where CSS px was expected sent
+      132, and the header became ~170px tall on a real 1080x2400 phone.
+
+   2. The header padding used to be
+          max(8px, env(safe-area-inset-top), var(--status-inset))
+      and max() takes the LARGEST. So clamping --status-inset did nothing when
+      the WebView reported a large env(safe-area-inset-top) - the env value
+      simply won and the header stayed ~100 CSS px tall.
+
+   Resolving both here means one capped number governs the padding, whatever the
+   shell sends and whatever env() reports. Because it is page-side, it repairs
+   ALREADY-INSTALLED APKs with no reinstall. */
 (function () {
   var MAX_STATUS = 28;   /* CSS px; 24 is the real value, 28 leaves headroom */
   var MAX_NAV = 72;
 
-  function cap(name, limit) {
-    var v = parseFloat(document.documentElement.style.getPropertyValue(name));
+  function readPx(prop, fallback) {
+    var v = parseFloat(document.documentElement.style.getPropertyValue(prop));
     if (!isFinite(v) || v < 0) v = 0;
-    if (v > limit) {
-      document.documentElement.style.setProperty(name, limit + "px");
-      return true;
-    }
-    return false;
+    return Math.min(v, fallback);
   }
-  function enforce() { cap("--status-inset", MAX_STATUS); cap("--nav-inset", MAX_NAV); }
 
-  /* Re-cap on every write. `applying` prevents our own setProperty from
-     re-triggering the observer into an infinite loop; the callback is
-     async (microtask) so a naive flag would not be enough - the guard below
-     re-reads the live value instead of trusting a stale one. */
+  /* Measure env(safe-area-inset-top) exactly as the browser resolves it, then
+     cap it too - a bad shell can inflate this the same way it inflates the
+     variable. */
+  function envTop() {
+    var probe = document.createElement("div");
+    probe.style.cssText =
+      "position:absolute;top:0;left:0;width:0;height:env(safe-area-inset-top);" +
+      "visibility:hidden;pointer-events:none";
+    document.documentElement.appendChild(probe);
+    var h = probe.getBoundingClientRect().height || 0;
+    probe.parentNode.removeChild(probe);
+    return isFinite(h) && h > 0 ? Math.min(h, MAX_STATUS) : 0;
+  }
+
+  function cap(name, limit) {
+    var cur = parseFloat(document.documentElement.style.getPropertyValue(name));
+    if (isFinite(cur) && cur > limit) {
+      document.documentElement.style.setProperty(name, limit + "px");
+    }
+  }
+
+  function enforce() {
+    cap("--status-inset", MAX_STATUS);
+    cap("--nav-inset", MAX_NAV);
+    /* Single source of truth for the header's top padding. Whichever of the
+       three inputs is biggest is still capped, so the header cannot exceed
+       MAX_STATUS + the content row. */
+    var top = Math.max(readPx("--status-inset", MAX_STATUS), envTop());
+    document.documentElement.style.setProperty("--inset-top", top + "px");
+    var nav = parseFloat(document.documentElement.style.getPropertyValue("--nav-inset"));
+    document.documentElement.style.setProperty(
+      "--inset-bottom", (isFinite(nav) && nav > 0 ? Math.min(nav, MAX_NAV) : 0) + "px");
+  }
+
+  /* Re-cap on every write. The observer callback fires async (microtask), so a
+     flag alone is not enough - the work is coalesced onto the next frame and
+     the live value is re-read rather than trusting a stale one. */
   var queued = false;
   function schedule() {
     if (queued) return;
