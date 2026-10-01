@@ -1812,23 +1812,12 @@
             <small v-if="selectedStop">— {{ selectedStop.name }}</small>
           </h3>
           <div class="eta-actions" v-if="selectedStop">
-            <!-- 街景：只在桌機顯示。
-                 Android 瀏覽器見到 www.google.com/maps 的網址會自動改寫成
-                 intent://…;package=com.google.android.apps.maps（想用原生
-                 Google 地圖 App 開啟）。若機上沒有 Google 地圖 App、或該
-                 瀏覽器不支援 intent://，就會直接 ERR_UNKNOWN_URL_SCHEME
-                 死掉（見 streetViewUrl 的註解）。手機上改為只提供
-                 Mapillary（見下面「附近相片」），它是純網頁、
-                 不會被任何 Android 瀏覽器改寫。 -->
+            <!-- 街景是免 API key 之下唯一真正看得到「這個站長怎樣」的途徑；
+                 Google 的站點相片需要 Places API 的 place id（付費 key）才取得到。
+                 v-if 確保座標不齊時不會留下會重新載入頁面的空連結。 -->
             <a class="stop-link-btn" v-if="streetViewUrl(selectedStop)"
                :href="streetViewUrl(selectedStop)"
-               target="_blank" rel="noopener noreferrer" title="在 Google 街景查看這個站的實景（桌機版）">街景</a>
-            <!-- 附近相片：Mapillary（社群街頭相片）。它不是「這個巴士站的相片」，
-                 而是「這個座標附近最近的街頭相片」—— 可能拍到隔壁的店舖或路口。
-                 按鈕名稱與提示都講清楚，免得使用者以為拍到巴士站本身。 -->
-            <a class="stop-link-btn" v-if="mapillaryUrl(selectedStop)"
-               :href="mapillaryUrl(selectedStop)"
-               target="_blank" rel="noopener noreferrer" title="在 Mapillary 查看此站附近的街頭相片（社群提供，不一定拍到巴士站本身）">附近相片</a>
+               target="_blank" rel="noopener noreferrer" title="在 Google 街景查看這個站的實景">街景</a>
             <a class="stop-link-btn" v-if="googleMapsUrl(selectedStop)"
                :href="googleMapsUrl(selectedStop)"
                target="_blank" rel="noopener noreferrer" title="在 OpenStreetMap 開啟這個站">地圖</a>
@@ -2522,7 +2511,8 @@ function minutesUntil(iso) {
   if (!d) return null;
   return Math.max(0, Math.round((d.getTime() - Date.now()) / 60000));
 }
-/* 靜態資料的版本號。改資料時把這個值 +1（或改成當日日期），   瀏覽器就會當作新檔案重抓，不必再清 localStorage。
+/* 靜態資料的版本號。改資料時把這個值 +1（或改成當日日期），
+   瀏覽器就會當作新檔案重抓，不必再清 localStorage。
    對應 tools/split-fare.py 產生的兩個檔案。 */
 const DATA_VERSION = "2026-09-28";
 
@@ -4059,18 +4049,8 @@ createApp({
     /* 手機全螢幕面板開 / 關：#map-cameras 隨之建立與移除，
        所以兩邊都要掛載 / 銷毀 Leaflet 實例。 */
     watch(trafficSheet, (v) => {
-      if (v === "cams") {
-        /* 這裡用 nextTick + requestAnimationFrame 兩層，確保 .tp-sheet
-           已經完成排版、容器有真實寬高之後才掛地圖。
-           只靠 nextTick 的話 #map-cameras 量到的 clientWidth 仍可能是 0，
-           mountCameraMap 會直接 return，之後再也不會掛上。 */
-        nextTick(() => {
-          requestAnimationFrame(() => {
-            mountCameraMap();
-            renderCameraMarkers();
-          });
-        });
-      } else removeCameraMap();
+      if (v === "cams") nextTick(() => { mountCameraMap(); renderCameraMarkers(); });
+      else removeCameraMap();
     });
     /* 轉向 / 拉闊窄到桌機時，手機面板要收起（兩個區塊已 inline 顯示）。 */
     watch(isMobile, (v) => { if (!v) trafficSheet.value = null; });
@@ -4584,10 +4564,6 @@ createApp({
       renderCameraMarkers();
       renderCamUserMarker();        /* 位置可能早於地圖掛載就拿到了 */
       updateCamSelDistance();
-      /* 面板剛打開時，容器可能仍在排版（尤其是手機的 .tp-sheet 動畫），
-         這裡再補一次對位。focusCamMapOnOpen 內部已用雙 rAF 處理主要情形，
-         這個 setTimeout 只是最後的保險。 */
-      setTimeout(() => { if (camMapIsUsable()) focusCamMapOnOpen(); }, 250);
     }
 
     /* 地圖「剛掛上」時的第一個視角。
@@ -4598,42 +4574,35 @@ createApp({
        使用者要再按一次 📍 才會看到自己所在。
 
        所以這裡補上：已經知道位置就對到位置，跟按 📍 的效果一致；
-       不知道位置才退回整個分區的範圍。
-
-       ⚠️ 用「雙 rAF」而不是 nextTick：
-       - 手機 .tp-sheet 剛掛上時，容器有 clientWidth 但 Leaflet 內部計算
-         仍在等瀏覽器完成 layout（尤其是有 CSS transition 的時候）。
-       - mountCameraMap 進入時會 invalidateSize()，它會在「下一個 frame」
-         schedule 一次 _resetView。若我們在 nextTick 就 setView，
-         Leaflet 的 _resetView 隨後執行，會把鏡頭拉回 HK_CENTER ——
-         結果就是「有藍點、但沒有對到我的位置」。
-       雙 rAF 保證我們的 setView 排在那次 _resetView 之後。 */
+       不知道位置才退回整個分區的範圍。 */
     function focusCamMapOnOpen() {
       const p = camUserPos.value;
       if (!p || !isValidCoord(p.lat, p.lng)) { fitCameraMapToRegion(true); return; }
-      const ll = safeLatLng(p.lat, p.lng);
-      if (!ll) { fitCameraMapToRegion(true); return; }
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          if (!camMapIsUsable()) return;
-          try {
-            /* ⚠️ 一定要先 stop()。Leaflet 的 _tryAnimatedZoom() 在
-               _animatingZoom 為 true 時會直接 return true（當作「已成功開始
-               平移」），但其實什麼都沒做 —— 也就是說 setView() 會安安靜靜地
-               不動。之前 fitBounds() 觸發的縮放動畫，其 transitionend 事件
-               一旦漏掉，_animatingZoom 就會永久卡在 true，之後所有 setView
-               都無效（實測約 4/5 機率）。stop() 會把這些動畫旗標清掉。 */
-            camMap.stop();
-            /* reset:true —— 這是重點。Map.setView() 預設會先試
-               _tryAnimatedZoom()，而它在 _animatingZoom 卡住時會直接 return
-               true（當作已成功），令 setView() 甚麼都不做就 return。
-               reset:true 會完全跳過那一段，直接 _resetView()，
-               保證第一個畫面一定落在使用者的位置。 */
-            camMapUserMoved = false;
-            camMap.setView(ll, Math.max(camMap.getZoom(), 14), { animate: false, reset: true });
-            renderCameraMarkers();
-          } catch (e) {}
-        });
+      /* 用 nextTick 等 Leaflet 自己收工：mountCameraMap 進入時會 invalidateSize()，
+         裡面會把一次 _resetView 延遲到下一個 frame 才執行。若果這個 setView
+         帶動畫，那次延遲的 reset 會動畫進行到一半把鏡頭拉回舊的視野，
+         結果就是「藍點有畫、但地圖沒有對到我的位置」。 */
+      nextTick(() => {
+        if (!camMapIsUsable()) return;
+        const ll = safeLatLng(p.lat, p.lng);
+        if (!ll) return;
+        try {
+          camMapUserMoved = false;
+          /* ⚠️ 一定要先 stop()。Leaflet 的 _tryAnimatedZoom() 在 _animatingZoom 為 true 時
+             會直接 return true（當作「已成功開始平移」），但其實什麼都沒做 ——
+             也就是說 setView() 會安安靜靜地不動。
+             之前 fitBounds() 觸發的縮放動畫，其 transitionend 事件一旦漏掉，
+             _animatingZoom 就會永久卡在 true，之後所有 setView 都無效
+             （實測約 4/5 機率，畫面停在舊的視野，看起來像「定位沒有反應」）。
+             stop() 會把這些動畫旗標清掉。 */
+          camMap.stop();
+          /* reset:true —— 這是重點。Map.setView() 預設會先試 _tryAnimatedZoom()，
+             而它在 _animatingZoom 卡住時會直接 return true（當作已成功），
+             令 setView() 甚麼都不做就 return。reset:true 會完全跳過那一段，
+             直接 _resetView()，保證第一個畫面一定落在使用者的位置。 */
+          camMap.setView(ll, Math.max(camMap.getZoom(), 14), { animate: false, reset: true });
+          renderCameraMarkers();
+        } catch (e) {}
       });
     }
 
@@ -5392,31 +5361,12 @@ createApp({
       if (la < 22.15 || la > 22.58 || ln < 113.83 || ln > 114.45) return null;   /* 香港 */
       return [la, ln];
     }
-    /* 街景：真正看得到這個站實景的免 key 連結。
-       ⚠️ 手機版直接回空字串 —— Android 瀏覽器見到 www.google.com/maps 的
-       網址（包括 /@?api=1&map_action=pano&viewpoint=…）會自動改寫成
-       intent://www.google.com/maps/…;package=com.google.android.apps.maps;…;
-       S.browser_fallback_url=…;end; 打算用原生 Google 地圖 App 開啟。
-       若機上沒有 Google 地圖 App、或該瀏覽器不支援 intent://（很多國產 ROM
-       的內置瀏覽器），就會直接跳 net::ERR_UNKNOWN_URL_SCHEME 死掉。
-       桌機沒有這套 App Link 機制，所以桌機正常、手機死。
-       與其在手機上留一個會死掉的按鈕，不如直接不顯示；手機改用 Mapillary
-       （見 mapillaryUrl），它是純網頁，不會被任何 Android 瀏覽器改寫。 */
+    /* 街景：真正看得到這個站實景的免 key 連結。 */
     function streetViewUrl(stop) {
-      if (isMobile.value) return "";
       const c = stopCoordPair(stop);
       if (!c) return "";
       return "https://www.google.com/maps/@?api=1&map_action=pano&viewpoint="
         + c[0] + "," + c[1];
-    }
-    /* Mapillary：社群街頭相片。它是「這個座標附近最近的街頭相片」，
-       不是「這個巴士站的官方相片」——可能拍到隔壁的店舖或路口。
-       純網頁、不會被 Android 改寫成 intent://，手機版仍然用得着。
-       （按鈕名稱在模板為「附近相片」，標題也已註明不一定拍到巴士站本身。） */
-    function mapillaryUrl(stop) {
-      const c = stopCoordPair(stop);
-      if (!c) return "";
-      return "https://www.mapillary.com/app/?lat=" + c[0] + "&lng=" + c[1] + "&z=18";
     }
     /* Google Maps：開啟這個站的地圖頁。
        ⚠️ Android 上要用「避開 Google 官網」，否則一定壞：
@@ -5800,7 +5750,7 @@ createApp({
       searchRowRef, onSearchRowFocus, onSearchRowBlur, onSearchRowPointerLeave,
       allRoutes, matchedRoutes, routeKey, stops, selectedStop, etas,
       dataAge, countdown, refreshing, clockText,
-      streetViewUrl, googleMapsUrl, mapillaryUrl,
+      streetViewUrl, googleMapsUrl,
       loadingStops, error, stopListRef, mapExpanded, mapRowText,
       pickingDirection, selectedDirectionLabel, isMobile,
       showCompanyPicker, mobileSearching, pickerCompanyIds,
