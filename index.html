@@ -2558,6 +2558,14 @@ const TD_NEWS_URL = "https://www.td.gov.hk/tc/special_news/trafficnews.xml";
 const TD_CAMERA_URL = "https://static.data.gov.hk/td/traffic-snapshot-images/code/Traffic_Camera_Locations_Tc.xml";
 const TD_JTIS_URL = "https://resource.data.one.gov.hk/td/jss/Journeytimev2.xml";
 
+/* 跨裝置「共用」的交通消息存檔。運輸署的 XML 只載目前生效的消息、沒有歷史，
+   所以「過往兩天」只能靠存檔補齊。之前每個瀏覽器只在自己的 localStorage 累積，
+   於是不會跨裝置同步（手機看到、電腦看不到）。
+   這個靜態檔由 tools/build-traffic-news.js（或 .github/workflows/update-traffic-news.yml
+   定時執行）產生，所有裝置一併下載、合併，便人人看到同一份記錄。
+   檔案不存在（例如未部署）時會靜默略過，一切照舊。 */
+const TD_NEWS_ARCHIVE_URL = "traffic-news-archive.json";
+
 /* 快拍圖片每 2 分鐘更新一次，所以 URL 帶一個「2 分鐘一格」的時間戳：
    同一格內用同一條 URL（可由快取供應），過了就換新 URL 強制重抓，
    毋須手動清快取，也不會每分鐘都重新下載圖片。 */
@@ -2838,6 +2846,22 @@ async function fetchTrafficNews() {
   const res = await fetch(TD_NEWS_URL, { cache: "no-store" });
   if (!res.ok) throw new Error("HTTP " + res.status);
   return parseTrafficNews(await res.text());
+}
+/* 讀「跨裝置共用」的交通消息存檔（traffic-news-archive.json）。
+   純 optional：檔案不存在或格式不合就回空陣列，不會影響其他資料源。
+   whenMs 一律用本頁的 parseDate 由 whenText 重算，確保與即時 XML 同一套時間基準。
+   接受兩種外形：直接是陣列，或 { generated, messages: [...] }。 */
+async function fetchSharedNewsArchive() {
+  const res = await fetch(TD_NEWS_ARCHIVE_URL, { cache: "no-store" });
+  if (!res.ok) return [];
+  const j = await res.json();
+  const arr = Array.isArray(j) ? j : (j && Array.isArray(j.messages) ? j.messages : []);
+  return arr
+    .filter(n => n && typeof n === "object" && (n.id || n.heading))
+    .map(n => {
+      const d = n.whenText ? parseDate(n.whenText) : null;
+      return d ? Object.assign({}, n, { whenMs: d.getTime() }) : n;
+    });
 }
 async function fetchTrafficCameras() {
   const res = await fetch(TD_CAMERA_URL, { cache: "default" });
@@ -4399,25 +4423,29 @@ createApp({
     /* 三個資料源各自獨立載入，任何一個失敗都不會令另外兩個空白。
        失敗原因寫進各自的 error ref，由模板顯示，不會靜靜吞掉。 */
     async function runTrafficLoad() {
+      /* 先取「跨裝置共用的存檔」（小檔、非必要）。新聞的合併需要它，所以先 await，
+         免得與下面的 jobs 競賽。抓不到就當空陣列，一切照舊。 */
+      let sharedNews = [];
+      try { sharedNews = await fetchSharedNewsArchive(); } catch (e) { sharedNews = []; }
+
       const jobs = [
         fetchTrafficNews()
           .then(list => {
-            /* 來源通常只有一則，合併本機已存的最近幾則，跑馬燈才有東西可跑。
+            /* 三個來源合併：即時 XML + 跨裝置共用存檔 + 本機存檔，以 id 去重。
                舊消息標成「已完結」的外觀，令使用者分得清哪些是當前生效的。 */
-            const stored = loadNewsStore();
-            const merged = mergeNewsStore(stored, list);
+            const merged = mergeNewsStore(mergeNewsStore(loadNewsStore(), list), sharedNews);
             saveNewsStore(merged);
             const live = new Set(list.map(n => String(n.id || n.heading || "")));
             trafficNews.value = merged.map(n =>
               live.has(String(n.id || n.heading || "")) ? n : Object.assign({}, n, { closed: true }));
             trafficNewsError.value = "";
           })
-          /* 抓不到時不要清空：顯示本機存的（可能過期但仍有參考價值），
+          /* 抓不到時不要清空：顯示共用／本機存的（可能過期但仍有參考價值），
              只有連存的都沒有才顯示錯誤。 */
           .catch(() => {
-            const stored = loadNewsStore();
-            if (stored.length) {
-              trafficNews.value = stored.map(n => Object.assign({}, n, { closed: true }));
+            const merged = mergeNewsStore(loadNewsStore(), sharedNews);
+            if (merged.length) {
+              trafficNews.value = merged.map(n => Object.assign({}, n, { closed: true }));
               trafficNewsError.value = "";
             } else {
               trafficNewsError.value = "交通消息載入失敗";
