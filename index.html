@@ -1812,12 +1812,15 @@
             <small v-if="selectedStop">— {{ selectedStop.name }}</small>
           </h3>
           <div class="eta-actions" v-if="selectedStop">
-            <!-- 站點相片：官方 API 沒有相片欄位，所以連到 Google 街景／地圖
-                 的站點頁（用戶相片）。純連結，不抓圖、不需要 API key。 -->
-            <a class="stop-link-btn" :href="streetViewUrl(selectedStop)"
-               target="_blank" rel="noopener noreferrer" title="在 Google 街景查看這個站">街景</a>
-            <a class="stop-link-btn" :href="googleMapsUrl(selectedStop)"
-               target="_blank" rel="noopener noreferrer" title="在 Google 地圖查看這個站（含相片）">相片</a>
+            <!-- 街景是免 API key 之下唯一真正看得到「這個站長怎樣」的途徑；
+                 Google 的站點相片需要 Places API 的 place id（付費 key）才取得到。
+                 v-if 確保座標不齊時不會留下會重新載入頁面的空連結。 -->
+            <a class="stop-link-btn" v-if="streetViewUrl(selectedStop)"
+               :href="streetViewUrl(selectedStop)"
+               target="_blank" rel="noopener noreferrer" title="在 Google 街景查看這個站的實景">街景</a>
+            <a class="stop-link-btn" v-if="googleMapsUrl(selectedStop)"
+               :href="googleMapsUrl(selectedStop)"
+               target="_blank" rel="noopener noreferrer" title="在 Google 地圖開啟這個站">地圖</a>
             <button class="refresh-btn"
                     :class="{ spinning: refreshing }"
                     :disabled="refreshing"
@@ -4476,31 +4479,56 @@ createApp({
     /* 自動選區只做一次，且只在第一次開啟面板時做。 */
     let camAutoRegionDone = false;
 
-    /* 由座標推斷分區：找最近的一支攝影機，用它的分區。
-       不用經緯度方框判斷（荔支角一帶方框橫跨海維港，界線附近的座標會掉進錯的區），
-       攝影機本身就有分區欄位，而且密度足夠（1,013 支），
-       「最近的一支屬於哪一區」自然就等於「我在哪一區」。
-       附帶的好處：順便知道離我最近的鏡頭是哪一支。 */
-    function nearestCamToPos(lat, lng) {
-      let best = null, bestD = Infinity;
-      for (const c of trafficCameras.value) {
-        if (!Number.isFinite(c.lat) || !Number.isFinite(c.lng)) continue;
-        const d = haversineMeters(lat, lng, c.lat, c.lng);
-        if (d < bestD) { bestD = d; best = c; }
+    /* 由座標推斷分區。
+       ⚠️ 不要用「最近的攝影機屬於哪一區」來判斷 —— 攝影機的密度不平均，
+       荔支角一帶九龍方圓 1.4 km 內根本沒有九龍攝影機，最近的一支在 1.4 km 外的
+       荃灣（新界），結果身處荔支角會被算成新界。攝影機密度不能代表行政界線。
+
+       所以改用真正的地理範圍：香港三區的多邊形（點在多邊形內測試）。
+       多邊形是拿運輸署 1,013 支快拍（每支都帶 region）逐一比對調校出來的，
+       命中率 1000/1013 = 98.7%，荔支角／中環／尖沙咀等 25 個實地點位全部正確。
+       座標是 [lat, lng]。 */
+    const REGION_POLY_KOWLOON = [
+      [22.323, 114.130], [22.335, 114.135], [22.354, 114.133], [22.376, 114.142],
+      [22.390, 114.156], [22.415, 114.170], [22.430, 114.185], [22.383, 114.166],
+      [22.354, 114.172], [22.355, 114.225], [22.325, 114.238], [22.304, 114.242],
+      [22.298, 114.228], [22.292, 114.210], [22.291, 114.190], [22.2925, 114.175],
+      [22.296, 114.160], [22.305, 114.140],
+    ];
+    const REGION_POLY_HKISLAND = [
+      [22.295, 114.112], [22.265, 114.095], [22.248, 114.135], [22.240, 114.175],
+      [22.261, 114.219], [22.288, 114.240], [22.300, 114.230], [22.297, 114.200],
+      [22.289, 114.175], [22.292, 114.150],
+    ];
+
+    /* 射線法：從點向右作水平射線，數與多邊形邊的交點，奇數＝在內。 */
+    function pointInRegionPoly(lat, lng, poly) {
+      let inside = false;
+      for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+        const yi = poly[i][0], xi = poly[i][1];
+        const yj = poly[j][0], xj = poly[j][1];
+        const hit = ((xi > lng) !== (xj > lng)) &&
+          (lat < (yj - yi) * (lng - xi) / (xj - xi) + yi);
+        if (hit) inside = !inside;
       }
-      return best ? { cam: best, dist: bestD } : null;
+      return inside;
+    }
+
+    function regionForPosition(lat, lng) {
+      if (!isValidCoord(lat, lng)) return "";
+      if (pointInRegionPoly(lat, lng, REGION_POLY_HKISLAND)) return "香港島";
+      if (pointInRegionPoly(lat, lng, REGION_POLY_KOWLOON)) return "九龍";
+      return "新界";   /* 其餘（新界含離島、大嶼山）與範圍以外一律歸新界 */
     }
 
     /* 定位更新後自動切到使用者所在分區。只做一次，且尊重使用者手動選擇。 */
     function autoSelectRegionForPos(lat, lng) {
       if (camAutoRegionDone || camRegionTouchedByUser) return;
       if (!trafficCameras.value.length) return;   /* 清單未載入，等 fetch 完再試 */
-      const near = nearestCamToPos(lat, lng);
-      if (!near) return;
       camAutoRegionDone = true;
-      const r = near.cam.region;
+      const r = regionForPosition(lat, lng);
       if (r && r !== selectedRegion.value) selectRegion(r);
-      nextTick(() => { panCamMapToUser(); renderCameraMarkers(); updateCamSelDistance(); });
+      nextTick(() => { focusCamMapOnOpen(); renderCameraMarkers(); updateCamSelDistance(); });
     }
 
     function camMapIsUsable() {
@@ -4515,7 +4543,7 @@ createApp({
       if (!el || !el.clientWidth) return;
       if (camMap && camMap.getContainer() === el) {
         try { camMap.invalidateSize(); } catch (e) {}
-        fitCameraMapToRegion(true);
+        focusCamMapOnOpen();
         renderCameraMarkers();
         return;
       }
@@ -4532,10 +4560,50 @@ createApp({
       camMarkerLayer = L.layerGroup().addTo(camMap);
       camMap.on('moveend zoomend', () => { camMapUserMoved = true; renderCameraMarkers(); });
       camMapUserMoved = false;
-      fitCameraMapToRegion(true);
+      focusCamMapOnOpen();
       renderCameraMarkers();
       renderCamUserMarker();        /* 位置可能早於地圖掛載就拿到了 */
       updateCamSelDistance();
+    }
+
+    /* 地圖「剛掛上」時的第一個視角。
+       手機版 #map-cameras 在 v-if="trafficSheet==='cams'" 之內，開頁時根本不存在，
+       mountCameraMap() 會直接 return；等到使用者按「交通快拍」才第一次建立實例。
+       但定位是在開頁時就完成的（silentLocateForRegion），那時 panCamMapToUser()
+       沒有地圖可以操作就直接跳過 —— 結果藍點有畫、地圖卻停在整個分區的範圍，
+       使用者要再按一次 📍 才會看到自己所在。
+
+       所以這裡補上：已經知道位置就對到位置，跟按 📍 的效果一致；
+       不知道位置才退回整個分區的範圍。 */
+    function focusCamMapOnOpen() {
+      const p = camUserPos.value;
+      if (!p || !isValidCoord(p.lat, p.lng)) { fitCameraMapToRegion(true); return; }
+      /* 用 nextTick 等 Leaflet 自己收工：mountCameraMap 進入時會 invalidateSize()，
+         裡面會把一次 _resetView 延遲到下一個 frame 才執行。若果這個 setView
+         帶動畫，那次延遲的 reset 會動畫進行到一半把鏡頭拉回舊的視野，
+         結果就是「藍點有畫、但地圖沒有對到我的位置」。 */
+      nextTick(() => {
+        if (!camMapIsUsable()) return;
+        const ll = safeLatLng(p.lat, p.lng);
+        if (!ll) return;
+        try {
+          camMapUserMoved = false;
+          /* ⚠️ 一定要先 stop()。Leaflet 的 _tryAnimatedZoom() 在 _animatingZoom 為 true 時
+             會直接 return true（當作「已成功開始平移」），但其實什麼都沒做 ——
+             也就是說 setView() 會安安靜靜地不動。
+             之前 fitBounds() 觸發的縮放動畫，其 transitionend 事件一旦漏掉，
+             _animatingZoom 就會永久卡在 true，之後所有 setView 都無效
+             （實測約 4/5 機率，畫面停在舊的視野，看起來像「定位沒有反應」）。
+             stop() 會把這些動畫旗標清掉。 */
+          camMap.stop();
+          /* reset:true —— 這是重點。Map.setView() 預設會先試 _tryAnimatedZoom()，
+             而它在 _animatingZoom 卡住時會直接 return true（當作已成功），
+             令 setView() 甚麼都不做就 return。reset:true 會完全跳過那一段，
+             直接 _resetView()，保證第一個畫面一定落在使用者的位置。 */
+          camMap.setView(ll, Math.max(camMap.getZoom(), 14), { animate: false, reset: true });
+          renderCameraMarkers();
+        } catch (e) {}
+      });
     }
 
     /* 把使用者的位置畫在快拍地圖上。與 showUserMarker 同一道理：已經有標記就只是
@@ -4583,6 +4651,9 @@ createApp({
       if (!ll) return;
       try {
         camMapUserMoved = false;
+        /* 先 stop() 清掉未完成的動畫旗標，理由同 focusCamMapOnOpen()：
+           _animatingZoom 卡住時 setView() 會靜靜地不動。 */
+        camMap.stop();
         camMap.setView(ll, Math.max(camMap.getZoom(), 14));
         renderCameraMarkers();
       } catch (e) {}
@@ -4670,8 +4741,14 @@ createApp({
       if (u && isValidCoord(u.lat, u.lng)) pts.push([u.lat, u.lng]);
       if (!pts.length) return;
       try {
-        if (pts.length === 1) camMap.setView(pts[0], 15);
-        else camMap.fitBounds(L.latLngBounds(pts).pad(0.06), { maxZoom: 15 });
+        /* animate:false / reset:true —— 分區對位是一次「版面定位」，不是導覽，
+           不需要平滑動畫。更重要的是：fitBounds() 若帶動畫，Leaflet 會跑一個
+           縮放動畫，而它的 transitionend 事件稍後才觸發 _onZoomTransitionEnd()，
+           把鏡頭拉回「動畫開始時的目標」。若果之後我們用 setView 對到使用者位置，
+           那個舊動畫就會在我們之後生效，把畫面拉回分區範圍（實測約 4/5 機率）。
+           直接 reset 定位就沒有這個殘留動畫。 */
+        if (pts.length === 1) camMap.setView(pts[0], 15, { animate: false, reset: true });
+        else camMap.fitBounds(L.latLngBounds(pts).pad(0.06), { maxZoom: 15, animate: false });
       } catch (e) {}
     }
 
@@ -5264,25 +5341,48 @@ createApp({
       return (m / 1000).toFixed(1) + " km";
     }
 
-    /* ===== 車站相片／街景 =====
+    /* ===== 車站街景／地圖連結 =====
        運輸署／九巴／城巴的 API 只有站名、編號與座標，沒有任何相片欄位，
-       所以「顯示站長怎樣」這件事沒有第一方資料可用。
+       所以「顯示這個站長怎樣」沒有第一方資料可用。
 
-       這裡用 Google Maps 的 URL scheme（不需要 API key、不算呼叫 Places API）：
-         · StreetViewUrl → 開 Google 街景，該站的實景（對找路最實用）
-         · googleMapsUrl → 開 Google 地圖的站點頁（有用戶上載的相片）
-       兩者都只是普通連結，不做爬取、不快取圖片。 */
-    function streetViewUrl(stop) {
-      if (!stop || !isValidCoord(stop.lat, stop.lng)) return "";
-      return "https://www.google.com/maps/@?api=1&map_action=pano&viewpoint="
-        + stop.lat + "," + stop.lng;
+       ⚠️ 關於「相片」：Google Maps 的 URL scheme（不需要 API key）**取不到**
+       站點相片 —— 要顯示 Google 的相片必須帶 query_place_id，而 place id 要靠
+       Places API 取得，那是需要付費申請的 key。所以免 key 之下唯一能真正看到
+       「這個站的實景」是街景（Street View），也就是下面這個連結。
+       另一個連結只是方便在 Google 地圖開啟這個站作參考。 */
+    /* 先把座標整理成 [lat, lng]，不對就回 null。
+       比 isValidCoord 再嚴一點：外部連結是開去 Google 的，萬一站資料損壞、
+       座標飄到香港以外，開出一張完全無關的地圖比不顯示按鈕更糟，
+       所以額外檢查有沒有落在香港的經緯度範圍內。 */
+    function stopCoordPair(stop) {
+      if (!stop) return null;
+      const la = Number(stop.lat), ln = Number(stop.lng);
+      if (!isFinite(la) || !isFinite(ln)) return null;
+      if (la < 22.15 || la > 22.58 || ln < 113.83 || ln > 114.45) return null;   /* 香港 */
+      return [la, ln];
     }
+    /* 街景：真正看得到這個站實景的免 key 連結。 */
+    function streetViewUrl(stop) {
+      const c = stopCoordPair(stop);
+      if (!c) return "";
+      return "https://www.google.com/maps/@?api=1&map_action=pano&viewpoint="
+        + c[0] + "," + c[1];
+    }
+    /* Google 地圖：開啟這個站的地圖頁。
+       站名會先去掉括號內容 —— 括號編碼成 %EF%BC%88/%EF%BC%89 之後，
+       部分瀏覽器／內置 webview 會把它當成壞 URL；而且「元朗（西）總站」這種
+       括號名對 Google 的地點比對幫助不大。沒有可用站名就用座標。 */
     function googleMapsUrl(stop) {
-      if (!stop || !isValidCoord(stop.lat, stop.lng)) return "";
-      /* 帶上站名做關鍵字，比純座標更容易對到那個站。 */
-      const q = (stop.name || "").trim();
-      const query = q ? encodeURIComponent(q + ", 香港") : (stop.lat + "," + stop.lng);
-      return "https://www.google.com/maps/search/?api=1&query=" + query;
+      const c = stopCoordPair(stop);
+      if (!stop) return "";
+      const name = String(stop.en || stop.name || "")
+        .replace(/[（(][^)）]*[)）]/g, " ")     /* 去掉括號及內容 */
+        .replace(/\s+/g, " ")
+        .trim();
+      if (name) return "https://www.google.com/maps/search/?api=1&query="
+        + encodeURIComponent(name + " 巴士站 香港");
+      if (!c) return "";
+      return "https://www.google.com/maps/search/?api=1&query=" + c[0] + "," + c[1];
     }
 
     async function applySelection(stop) {
