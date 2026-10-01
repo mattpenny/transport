@@ -15,6 +15,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<!-- Status bar / task switcher colour. Must stay in sync with the
+     header background below (#1a3d7c) and with HEADER_COLOR in the
+     boot script - all three places, or the top strip will be visible
+     as a differently-coloured band. -->
+<meta name="theme-color" content="#1a3d7c" />
+<meta name="color-scheme" content="light" />
 <meta name="format-detection" content="telephone=no" />
 <title>Ansum Bus</title>
 <link rel="icon" type="image/png" href="bus.png" />
@@ -24,8 +30,14 @@
   /* Painted on the very first frame so the viewport is never white while the
      document loads. The library <script> tags live at the END of <body> on
      purpose: in <head> they block the parser and leave the screen blank until
-     they finish downloading - that blank gap was the mode-switch flash. */
-  html { background: #f5f7fb; }
+     they finish downloading - that blank gap was the mode-switch flash.
+
+     TOP EDGE: in the APK the WebView draws edge-to-edge behind the system
+     status bar, so this background is what shows through *above* the header
+     for the first few frames. It must be the header colour, not the page
+     colour, or the status bar strip reads as a white/pale band on top of
+     the blue header. #app paints its own background below. */
+  html { background: #1a3d7c; }
 </style>
 
 <style>
@@ -61,7 +73,12 @@
   }
   /* The shell paints on the first frame (the library scripts are at the end of
      <body>, so parsing is never blocked). If the app is ready before the first
-     paint, __revealApp() removes the shell first and it is never seen. */
+     paint, __revealApp() removes the shell first and it is never seen.
+
+     NOTE: the light .boot-content must NOT reach the top edge - in the APK the
+     header colour is painted up to y=0, so a light strip above the header is
+     exactly the reported gap. The header carries the colour and its own
+     --status-inset padding; .boot-content is pushed below it. */
   #boot-screen .boot-content { flex: 1 1 auto; min-height: 0; background: #f5f7fb; }
   #boot-screen .back-btn,
   #boot-screen .header-meta { pointer-events: none; }
@@ -81,7 +98,10 @@
   :root {
     --font-scale: 1; --modal-font-scale: 1;
     /* APK 全螢幕時由 Java 注入（見 android/）：狀態列與導航列高度，
-       瀏覽器則維持 0px，改由 env(safe-area-inset-*) 負責。 */
+       瀏覽器則維持 0px，改由 env(safe-area-inset-*) 負責。
+       __applyStatusInsets() 亦會由 window.ANSUM_INSETS 或
+       ?status-inset=／#status-inset= 讀取同一個值，令外殼載入完成前
+       就已知道狀態列高度（見下方 BOOT COORDINATION）。 */
     --status-inset: 0px;
     --nav-inset: 0px;
   }
@@ -95,8 +115,7 @@
   body {
     background: #f5f7fb; color: #222;
     font-family: -apple-system, BlinkMacSystemFont, "PingFang HK", "Microsoft JhengHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  }
-  @supports (-webkit-touch-callout: none) { html, body { height: -webkit-fill-available; } }
+  }  @supports (-webkit-touch-callout: none) { html, body { height: -webkit-fill-available; } }
   #app {
     display: flex; flex-direction: column;
     height: 100vh; height: 100dvh;
@@ -1562,12 +1581,51 @@
 (function () {
   var revealed = false;
 
+  /* ---- status/nav inset resolution (runs before first paint) ----
+     Three sources, cheapest first. All of them describe the SAME number that
+     the APK injects into :root --status-inset; reading it here just means the
+     very first frame already has the right geometry instead of waiting for
+     onPageFinished to report it (which would leave one load-long pale strip
+     at the top).
+
+       1. window.ANSUM_INSETS  - injected by addJavascriptInterface in the APK
+       2. ?status-inset=24&nav-inset=48  - query string, for debugging/WebView
+       3. #status-inset=24&nav-inset=48  - hash, same
+     Browser always resolves to 0 and falls back to env(safe-area-inset-*). */
+  function readInsets() {
+    var out = { status: 0, nav: 0 };
+    var src = window.ANSUM_INSETS;
+    if (src && typeof src.getStatusInset === "function") {
+      out.status = Number(src.getStatusInset()) || 0;
+      out.nav = Number(src.getNavInset()) || 0;
+      return out;
+    }
+    var raw = location.search + "&" + location.hash;
+    var m = /[?&#]status-inset=([0-9.]+)/.exec(raw);
+    if (m) out.status = parseFloat(m[1]) || 0;
+    m = /[?&#]nav-inset=([0-9.]+)/.exec(raw);
+    if (m) out.nav = parseFloat(m[1]) || 0;
+    return out;
+  }
+
+  window.__applyStatusInsets = function () {
+    var ins = readInsets();
+    var root = document.documentElement;
+    /* Only ever raise the value: the APK may inject the real measurement
+       later, but nothing should ever pull it back to 0 while running. */
+    root.style.setProperty("--status-inset", ins.status + "px");
+    root.style.setProperty("--nav-inset", ins.nav + "px");
+    return ins;
+  };
+  window.__applyStatusInsets();
+
   /* ATOMIC REVEAL: dropping data-booting and removing the shell happen in the
      same task, so the browser paints exactly once. There is never a frame
      where the shell is gone but #app has not been laid out yet. */
   window.__revealApp = function () {
     if (revealed) return;
     revealed = true;
+    window.__applyStatusInsets();
     var app  = document.getElementById("app");
     var boot = document.getElementById("boot-screen");
     if (app) app.removeAttribute("data-booting");
