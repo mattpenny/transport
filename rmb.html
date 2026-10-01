@@ -32,12 +32,6 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<!-- Status bar / task switcher colour. Must stay in sync with the
-     header background below (--rmb-red, #c8102e) and with the boot
-     shell's own background - all places, or the top strip will be
-     visible as a differently-coloured band. -->
-<meta name="theme-color" content="#c8102e" />
-<meta name="color-scheme" content="light" />
 <meta name="format-detection" content="telephone=no" />
 <title>Ansum 紅巴</title>
 <link rel="icon" type="image/png" href="rmb.png" />
@@ -46,14 +40,8 @@
   /* Painted on the very first frame so the viewport is never white while the
      document loads. The library <script> tags live at the END of <body> on
      purpose: in <head> they block the parser and leave the screen blank until
-     they finish downloading - that blank gap was the mode-switch flash.
-
-     TOP EDGE: in the APK the WebView draws edge-to-edge behind the system
-     status bar, so this background is what shows through *above* the header
-     for the first few frames. It must be the header colour, not the page
-     colour, or the status bar strip reads as a white/pale band on top of
-     the header. #app paints its own background below. */
-  html { background: #c8102e; }
+     they finish downloading - that blank gap was the mode-switch flash. */
+  html { background: #f5f7fb; }
 </style>
 
 <style>
@@ -658,65 +646,12 @@
 (function () {
   var revealed = false;
 
-  /* ---- status/nav inset resolution (runs before first paint) ----
-     Three sources, cheapest first. All of them describe the SAME number that
-     the APK injects into :root --status-inset; reading it here just means the
-     very first frame already has the right geometry instead of waiting for
-     onPageFinished to report it (which would leave one load-long pale strip
-     at the top).
-
-       1. window.ANSUM_INSETS  - injected by addJavascriptInterface in the APK
-       2. ?status-inset=24&nav-inset=48  - query string, for debugging/WebView
-       3. #status-inset=24&nav-inset=48  - hash, same
-     Browser always resolves to 0 and falls back to env(safe-area-inset-*). */
-  function readInsets() {
-    var out = { status: 0, nav: 0 };
-    var src = window.ANSUM_INSETS;
-    if (src && typeof src.getStatusInset === "function") {
-      out.status = Number(src.getStatusInset()) || 0;
-      out.nav = Number(src.getNavInset()) || 0;
-      return out;
-    }
-    var raw = location.search + "&" + location.hash;
-    var m = /[?&#]status-inset=([0-9.]+)/.exec(raw);
-    if (m) out.status = parseFloat(m[1]) || 0;
-    m = /[?&#]nav-inset=([0-9.]+)/.exec(raw);
-    if (m) out.nav = parseFloat(m[1]) || 0;
-    return out;
-  }
-
-  /* Hard ceiling on the injected inset, in CSS px.
-     The status bar is at most ~40 CSS px tall on any phone in portrait (24-40
-     covers everything from a 3-button to a notched flagship). A value beyond
-     this is a unit bug in the native shell, not a real measurement - shipping
-     one inflated the header to ~170px on a real 1080x2400 device.
-     Clamping here means a bad APK cannot ruin the layout, and the page does
-     not need a rebuild to be protected. */
-  var MAX_STATUS_INSET = 44;
-  var MAX_NAV_INSET = 72;
-
-  window.__applyStatusInsets = function () {
-    var ins = readInsets();
-    var root = document.documentElement;
-    /* Writes the resolved value. Safe to call repeatedly: all three sources
-       describe the same real measurement, so re-applying is idempotent.
-       In the browser the resolved value is 0, which is correct -
-       env(safe-area-inset-*) takes over there. */
-    var st = Math.min(Math.max(ins.status, 0), MAX_STATUS_INSET);
-    var nv = Math.min(Math.max(ins.nav, 0), MAX_NAV_INSET);
-    root.style.setProperty("--status-inset", st + "px");
-    root.style.setProperty("--nav-inset", nv + "px");
-    return { status: st, nav: nv };
-  };
-  window.__applyStatusInsets();
-
   /* ATOMIC REVEAL: dropping data-booting and removing the shell happen in the
      same task, so the browser paints exactly once. There is never a frame
      where the shell is gone but #app has not been laid out yet. */
   window.__revealApp = function () {
     if (revealed) return;
     revealed = true;
-    window.__applyStatusInsets();
     var app  = document.getElementById("app");
     var boot = document.getElementById("boot-screen");
     if (app) app.removeAttribute("data-booting");
