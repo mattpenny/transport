@@ -1,0 +1,44 @@
+name: Update traffic-news archive
+
+# 定時抓取運輸署「特別交通消息」並更新 traffic-news-archive.json，
+# 令所有裝置（電腦／手機）都下載到同一份「過往兩天」記錄。
+# 只有內容有變才會 commit（不會無故產生 commit）。
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: traffic-news-archive
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Rebuild archive
+        run: node tools/build-traffic-news.js
+
+      - name: Commit if changed
+        run: |
+          git add traffic-news-archive.json
+          if git diff --cached --quiet -- traffic-news-archive.json; then
+            echo "No change to traffic-news-archive.json"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # 刻意不加 [skip ci]：這個 commit 需要觸發 GitHub Pages 重新部署，
+          # 新增的記錄才會到用戶手上。內容沒變時上面已經提早結束，不會無謂部署。
+          git commit -m "chore: update traffic-news archive"
+          git push
