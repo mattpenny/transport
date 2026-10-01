@@ -738,6 +738,25 @@
       border-radius: 0;
     }
   }
+
+  /* 桌機：快拍地圖與即時影像排成同一行。
+     原本地圖反向出血獨佔整個面板寬度（約 900px）太寬，現在右邊讓一格給影像，
+     地圖縮成剩下的彈性欄位。攝影機名稱／說明仍在下方整寬顯示（與手機一致）。 */
+  @media (min-width: 901px) {
+    .tp-section-map .tp-cam-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 420px);
+      gap: 14px; align-items: start;
+    }
+    /* 同一行內就不需要（也不能）反向出血，否則地圖會溢出格線。
+       選擇器多加一層 .tp-cam-row，確保蓋過上面的出血規則。 */
+    .tp-section-map .tp-cam-row .tp-cam-map {
+      margin: 0; height: 330px;
+      border-left: 1px solid #d8e0ec; border-right: 1px solid #d8e0ec;
+      border-radius: 8px;
+    }
+    .tp-section-map .tp-cam-row .tp-snapshot { max-width: none; max-height: none; }
+  }
   .tp-cam-map .leaflet-container { background: #eaf1ff; font-family: inherit; }
   .tp-cam-map .leaflet-tooltip.tp-cam-tip {
     background: rgba(26,61,124,0.92); border: none; color: #fff;
@@ -1888,10 +1907,22 @@
                     @click="selectRegion(r.key)">{{ r.label }}</button>
           </div>
           <template v-if="regionCameras.length">
-            <!-- 攝影機地圖。刻意不用 v-if：面板本身受 v-if="isLanding" 控制，
+            <!-- 攝影機地圖 + 即時影像排成同一行（.tp-cam-row），地圖不再獨佔整個
+                 面板寬度。攝影機地圖刻意不用 v-if：面板本身受 v-if="isLanding" 控制，
                  面板出現／消失時用 mountCameraMap()／removeCameraMap() 掛載，
                  絕對不讓 Leaflet 綁在已被移除的容器上。 -->
-            <div id="map-cameras" class="tp-cam-map"></div>
+            <div class="tp-cam-row">
+              <div id="map-cameras" class="tp-cam-map"></div>
+              <div class="tp-snapshot">
+                <img v-if="snapshotUrl && !snapshotFailed"
+                     :src="snapshotUrl"
+                     :alt="selectedCam.description"
+                     @load="snapshotLoaded = true; snapshotFailed = false"
+                     @error="snapshotFailed = true" />
+                <div v-if="snapshotFailed" class="tp-snapshot-msg">暫時未能提供快拍圖片</div>
+                <div v-else-if="!snapshotLoaded" class="tp-snapshot-msg">載入中…</div>
+              </div>
+            </div>
             <div class="tp-cam-caption">
               <span class="name">{{ selectedCam ? selectedCam.description : "請點地圖上的攝影機" }}</span>
               <span v-if="selectedCam && selectedCam.district" class="dist">{{ selectedCam.district }}</span>
@@ -1900,15 +1931,6 @@
               共 {{ regionCameras.length }} 支快拍，點地圖上的點即可查看即時影像
               （目前畫面內 {{ camMapVisibleCount }} 支）
             </p>
-            <div class="tp-snapshot">
-              <img v-if="snapshotUrl && !snapshotFailed"
-                   :src="snapshotUrl"
-                   :alt="selectedCam.description"
-                   @load="snapshotLoaded = true; snapshotFailed = false"
-                   @error="snapshotFailed = true" />
-              <div v-if="snapshotFailed" class="tp-snapshot-msg">暫時未能提供快拍圖片</div>
-              <div v-else-if="!snapshotLoaded" class="tp-snapshot-msg">載入中…</div>
-            </div>
           </template>
           <div v-else class="tp-empty">{{ trafficCamError || "此地區暫無快拍攝影機" }}</div>
         </div>
