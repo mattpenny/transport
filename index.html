@@ -819,6 +819,11 @@
   @media (min-width: 901px) {
     .traffic-panel { overflow-y: auto; }
     .traffic-panel.landing-wide { max-height: none; }
+    /* landing 時 .main-area 只剩交通面板一個子項（主地圖 display:none、ETA v-if=false），
+       但 grid-template-rows 仍是「1fr + auto」兩列：空的第二列加上 row-gap 12px
+       會把面板的高度削掉 12px，令右欄比側欄矮一截。landing 時改成單一列並取消
+       row-gap，左右兩欄高度就完全一致。 */
+    .main-area.landing-only { grid-template-rows: minmax(0, 1fr); row-gap: 0; }
     /* 桌機：三個分區（特別交通消息／交通快拍／行車時間）都跟主地圖同寬，
        所以不設文字欄上限——容器本身就是面板的內容寬度，必定一致。 */
   }
@@ -1714,7 +1719,7 @@
       </div>
     </aside>
 
-    <main class="main-area" :class="{ 'showing-place': placeResults && placeStops.length }">
+    <main class="main-area" :class="{ 'showing-place': placeResults && placeStops.length, 'landing-only': isLanding }">
       <!-- 目的地結果（桌機）：佔用右欄，和「路線詳細資料」同一位置。
            手機版由 .gps-panel{display:none} 隱藏，改用全螢幕 .gps-overlay。 -->
       <div v-if="placeResults && placeStops.length" class="panel gps-panel place-panel">
