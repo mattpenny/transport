@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-01T12:03:31.101Z",
+  "generated": "2026-10-01T18:29:45.114Z",
   "retainDays": 3,
-  "count": 3,
+  "count": 4,
   "messages": [
+    {
+      "id": "147170",
+      "heading": "道路事故",
+      "detail": "較早前因交通意外而封閉的域多利道(來回方向)近域多利道168號的全線現已解封。",
+      "location": "域多利道",
+      "direction": "",
+      "landmark": "域多利道168號",
+      "status": "完結",
+      "closed": true,
+      "whenText": "2026-10-01T23:29:00",
+      "whenMs": 1790868540000,
+      "storedAt": 1790879384169
+    },
     {
       "id": "147159",
       "heading": "渡輪事故",
