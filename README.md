@@ -6,7 +6,7 @@
 
 - **巴士**：<https://mattpenny.github.io/transport/>
 - **專線小巴**：<https://mattpenny.github.io/transport/gmb.html>
-- **紅色小巴**：`https://mattpenny.github.io/transport/rmb.html`（**目前 404，尚未上傳**）
+- **紅色小巴**：<https://mattpenny.github.io/transport/rmb.html>
 
 ---
 
@@ -14,31 +14,26 @@
 
 **不要用雙擊方式直接開啟 `index.html` / `gmb.html` / `rmb.html`。**
 
-直接用雙擊開啟時，網址是 `file://...`，瀏覽器基於安全理由會**封鎖本機 JSON／CSV 檔案的讀取（CORS）**，  
+直接用雙擊開啟時，網址是 `file://...`，瀏覽器基於安全理由會**封鎖本機 JSON／CSV 檔案的讀取（CORS）**，
+  
 結果就是：頁面只顯示未渲染的 `{{ ... }}` 模板文字，或票價／路線／站點全部空白。
 
-### 正確做法（Windows 最簡單）
+### 正確做法
 
-雙擊資料夾內的 **`start-local.bat`**，它會自動：
-
-1. 啟動本機網頁伺服器（優先使用 Python，找不到時自動改用 Node.js）
-2. 開啟瀏覽器到 `http://localhost:8000/index.html`
-
-### 或手動啟動
-
-任選一種：
+在**專案根目錄**啟動一個本機網頁伺服器：
 
 ```bash
-# Python（版本 3）
+# Python 3
 python -m http.server 8000
-
-# Node.js（無需安裝任何套件）
-node tools/serve.js 8000
 ```
 
 然後瀏覽器前往 `http://localhost:8000/index.html`。
 
-> 若透過 `file://` 開啟，頁面會自動顯示一個紅色警告框提醒你改用本機伺服器，>   
+> 一定要在專案根目錄執行 —— 頁面用**相對路徑**抓 `routeFareList.min.json`、
+> `gmb-detail.json`、`rmb-routes.json` 等檔案，換了目錄就會全部 404。
+
+> 若透過 `file://` 開啟，頁面會自動顯示一個紅色警告框提醒你改用本機伺服器，
+>   
 > 不會再只顯示一堆看不懂的模板文字。
 
 ---
@@ -53,7 +48,7 @@ node tools/serve.js 8000
 6. [紅色小巴頁面架構](#紅色小巴-rmbhtml-頁面架構)
 7. [路線詳細資料彈窗](#路線詳細資料彈窗詳請)
 8. [目的地搜尋](#目的地搜尋indexhtml-與-gmbhtml-的查詢)
-9. [模板綁定靜態檢查](#模板綁定靜態檢查toolscheck-bindingspy)
+9. [模板綁定靜態檢查](#模板綁定靜態檢查toolscheck-bindingspy)（腳本目前不在 repo 內）
 10. [關鍵實作細節](#關鍵實作細節)
 11. [除錯與測試](#除錯與測試)
 12. [常見問題](#常見問題)
@@ -79,8 +74,10 @@ node tools/serve.js 8000
 | 字型大小調整              |         ✅         |          ✅         |          ✅          |         🚧        |
 | API 節流保護            |         —         |      ✅（防 429）      |     —（純靜態 JSON）     |         —         |
 
-> **紅巴為何沒有 ETA／地圖？** 紅色小巴沒有政府實時到站 API，亦無官方站點座標，>   
-> 資料來源是 16seats.net 的路線目錄（`rmb-routes.json`），因此頁面改為>   
+> **紅巴為何沒有 ETA／地圖？** 紅色小巴沒有政府實時到站 API，亦無官方站點座標，
+>   
+> 資料來源是 16seats.net 的路線目錄（`rmb-routes.json`），因此頁面改為
+>   
 > 「地區 → 路線 → 詳細資料（收費表、時間表、行車路線）」的純目錄式瀏覽。
 
 ---
@@ -97,24 +94,38 @@ node tools/serve.js 8000
 ├── bus.png                     ← 巴士應用圖示
 ├── gmb.png                     ← 專線小巴圖示
 ├── rmb.png                     ← 紅色小巴圖示
+├── spinner.png                 ← 載入動畫小車（三頁共用）
 ├── gmb-stops-coords.csv        ← 全港 GMB 站點座標（政府靜態資料）
 ├── gmb-detail.json             ← GMB 收費／站點／營運資料（運輸署開放數據）
 ├── rmb-routes.json             ← 紅色小巴路線目錄（16seats.net）
 ├── routeFareList.min.json      ← 票價資料（從 hkbus.app 手動下載）
-├── bus-detail.json             ← 巴士班次（服務日 → 時段 → 班距），由下方工具產生
-├── start-local.bat             ← 本機啟動器（Windows，雙擊即可）
+├── stops-index.min.json        ← 站點索引（搜尋用）
+├── bus-detail.json             ← 巴士班次（服務日 → 時段 → 班距）
+├── traffic-news-archive.json   ← 特別交通消息存檔（Action 每 30 分鐘更新）
+├── Ansum-Transport-v1.3-fixed.apk ← 最新 APK（唯一保留的版本）
+├── ansum-release.jks           ← 簽章金鑰（**git-ignored，絕不可上傳**）
+├── .github/workflows/
+│   └── update-traffic-news.yml ← 定時更新交通消息存檔的 Action
+├── android/                    ← APK 外殼原始碼（不含任何網頁程式碼）
+│   ├── AndroidManifest.xml
+│   ├── build.bat               ← 建置腳本（見下方「建置 APK」）
+│   ├── merge.py                ← 把 classes.dex 併入 APK
+│   ├── res/                    ← 圖示與字串
+│   └── src/com/ansum/bus/MainActivity.java
 ├── tools/
-│   ├── fetch-td-gmb.py         ← 由運輸署開放數據產生 gmb-detail.json
-│   ├── fetch-16seats.ps1       ← 抓取 16seats.net 資料（紅色小巴目錄）
-│   ├── build-bus-detail.py     ← 由 routeFareList.min.json 產生 bus-detail.json
-│   ├── check-bindings.py       ← 靜態檢查：模板綁定 vs setup() 匯出（見下節）
-│   └── serve.js                ← 極簡本機靜態伺服器（Node.js 備援）
+│   ├── build-traffic-news.js   ← 產生 traffic-news-archive.json（Action 呼叫）
+│   ├── apply-brand-chrome.py   ← 冪等：還原 theme-color 與各頁底色
+│   ├── apply-inset-clamp.py    ← 冪等：重新插入狀態列 resolver
+│   ├── check-inset-clamp.js    ← 迴歸測試：狀態列 inset 契約
+│   ├── repro-flash.js          ← 迴歸測試：標題列「閃跳」
+│   ├── check-news-grouping.js  ← 迴歸測試：今日／過往兩天分組
+│   └── diagnose-news-sources.js ← 診斷：為何兩台裝置的消息數量不同
 └── README.md                   ← 本文件
 ```
 
-> **三個交通模式都必須上傳**（`index.html`、`gmb.html`、`rmb.html`）以及對應的>   
-> `bus.png`、`gmb.png`、`rmb.png`。缺任何一個都會令首頁連結或圖示變成 404 —>   
-> 目前線上版本正缺少 `rmb.html`、`gmb.png`、`rmb.png`（見「部署狀態提醒」）。
+> **三個交通模式都必須上傳**（`index.html`、`gmb.html`、`rmb.html`）以及對應的
+> `bus.png`、`gmb.png`、`rmb.png`、`spinner.png`。缺任何一個都會令首頁連結、
+> 圖示或載入動畫變成 404。
 
 ### 各檔案用途
 
@@ -270,7 +281,10 @@ const GMB_MIN_INTERVAL_MS = 800;  // 兩次請求間最少間隔
 
 ## GMB 詳細資料：如何從運輸署開放數據重建
 
-`gmb-detail.json` 由 **`tools/fetch-td-gmb.py`** 從運輸署開放數據產生。
+`gmb-detail.json` 由運輸署開放數據產生。
+
+> ⚠️ **產生它的腳本 `tools/fetch-td-gmb.py` 目前不在 repo 內。** 下面保留原本用法，
+> 方便日後補回時直接可用（資料檔本身已在 repo，日常不需要重跑）。
 
 ```bash
 # 需要 access-parser
@@ -288,8 +302,10 @@ python tools/fetch-td-gmb.py --keep-mdb
 
 ### ⚠️ 重要陷阱：CSV 是「差異檔」，不是資料
 
-data.gov.hk 上該資料集同時提供 CSV 與 MDB。**CSV 只是變更記錄**  
-（欄位僅 `ROUTE_ID,CHANGE`，值為 `ADD`/`UPDATE`），**真正的資料在 `.mdb`（Access）檔案內**。  
+data.gov.hk 上該資料集同時提供 CSV 與 MDB。**CSV 只是變更記錄**
+  
+（欄位僅 `ROUTE_ID,CHANGE`，值為 `ADD`/`UPDATE`），**真正的資料在 `.mdb`（Access）檔案內**。
+  
 網頁上要先在格式篩選器選「MDB」才會看到。
 
 | 檔案                 | 內容                                         |
@@ -302,33 +318,42 @@ data.gov.hk 上該資料集同時提供 CSV 與 MDB。**CSV 只是變更記錄**
 
 ### 兩個實作要點
 
-1. **金額格式**：`PRICE` / `FULL_FARE` 是 **1/10000 港元**的整數。     
+1. **金額格式**：`PRICE` / `FULL_FARE` 是 **1/10000 港元**的整數。
+     
    `145000` → `$14.50`。
-2. **`ON_SEQ` 是上車站、`OFF_SEQ` 是下車站**（不是反過來）。     
+2. **`ON_SEQ` 是上車站、`OFF_SEQ` 是下車站**（不是反過來）。
+     
    若標籤寫成「由 OFF 往 ON」就會出現「往起點」的錯誤方向。
 
 ### 已知限制
 
-- **班次時間表不在開放數據內**：該資料集沒有頻率／班次表。    
-  路線頁連結（`ROUTE.HYPERLINK_C`）會指向運輸署「香港出行易」官方頁，    
+- **班次時間表不在開放數據內**：該資料集沒有頻率／班次表。
+    
+  路線頁連結（`ROUTE.HYPERLINK_C`）會指向運輸署「香港出行易」官方頁，
+    
   該頁才有時間表。前端在沒有時間表資料時會自動隱藏該卡片。
-- **個別營辦商名稱不在開放數據內**：只有通用的 `GMB`（專線小巴）代號，    
+- **個別營辦商名稱不在開放數據內**：只有通用的 `GMB`（專線小巴）代號，
+    
   沒有逐線營辦商名稱。
 
 ### 授權（可公開發布）
 
-DATA.GOV.HK 使用條款 v1.2 允許**商業及非商業**用途、免費使用，條件是  
-註明資料來源並確認政府知識產權。`gmb-detail.json` 內的  
+DATA.GOV.HK 使用條款 v1.2 允許**商業及非商業**用途、免費使用，條件是
+  
+註明資料來源並確認政府知識產權。`gmb-detail.json` 內的
+  
 `source` / `sourceName` / `copyright` / `licence` 欄位已寫入相關聲明。
 
-> 舊版資料來自 16seats.net，其版權為「僅供個人非商業參考」，不可公開發布。>   
-> 已備份為 `gmb-detail.16seats.backup.json`。
+> 舊版資料來自 16seats.net，其版權為「僅供個人非商業參考」，不可公開發布。
+>   
+> （原本另有一份 `gmb-detail.16seats.backup.json`，已移除；需要舊版請從 git 歷史取回。）
 
 ---
 
 ## 紅色小巴 (`rmb.html`) 頁面架構
 
-紅巴沒有 API，所以這一頁是本專案**唯一純靜態**的模式：只讀一個 `rmb-routes.json`，  
+紅巴沒有 API，所以這一頁是本專案**唯一純靜態**的模式：只讀一個 `rmb-routes.json`，
+  
 不做任何 ETA 請求。整體佈局刻意與 `gmb.html` 對齊，讓三個模式的操作習慣一致。
 
 ### 操作流程
@@ -365,10 +390,12 @@ DATA.GOV.HK 使用條款 v1.2 允許**商業及非商業**用途、免費使用�
 }
 ```
 
-`display: contents` 讓 `.detail-sheet` 這一層在桌面「消失」（子元素直接成為 flex 子項），  
+`display: contents` 讓 `.detail-sheet` 這一層在桌面「消失」（子元素直接成為 flex 子項），
+  
 在手機才變成真正的面板盒。**好處：不必維護兩份幾乎相同的 ~90 行詳細卡片 markup。**
 
-手機彈出面板的高度用 `--modal-max-h`，由 JS 依 `window.visualViewport.height` 計算，  
+手機彈出面板的高度用 `--modal-max-h`，由 JS 依 `window.visualViewport.height` 計算，
+  
 避開 iOS Safari 網址欄造成的 `100vh` 偏差：
 
 ```javascript
@@ -867,6 +894,12 @@ localStorage 上限，反而令新鍵寫不進去）：
 
 ## 模板綁定靜態檢查（`tools/check-bindings.py`）
 
+> ⚠️ **這個腳本目前不在 repo 內。** 以下說明保留，是為了記錄「為什麼需要它」——
+> prod 建置的靜默綁定失敗是真實踩過的坑。目前的行為驗證改由 runtime 探針負責
+> （`tools/check-news-grouping.js`、`tools/check-inset-clamp.js`、`tools/repro-flash.js`）：
+> 它們斷言**實際渲染出來的值**，識別字若沒匯出、區塊走錯分支，斷言就會失敗。
+> 日後要補回靜態檢查，把腳本放回 `tools/` 即可。
+
 **這是本專案最重要的回歸防護。** 原因：本專案用 Vue 3 的 **prod（生產）建置**，
 而 prod 建置對「模板用到、但 `setup()` 沒有匯出」的識別字有致命行為：
 
@@ -880,6 +913,7 @@ localStorage 上限，反而令新鍵寫不進去）：
 ### 用法
 
 ```bash
+# ⚠️ 腳本目前不在 repo 內；補回後即可這樣跑：
 python tools/check-bindings.py index.html gmb.html rmb.html
 ```
 
@@ -1119,10 +1153,12 @@ console.log("fareDisplay:", fareDisplay);         // 巴士
 })();
 ```
 
-**檢查紅巴的模板綁定有沒有漏匯出**（在專案根目錄，不是瀏覽器）：
+**檢查模板綁定有沒有漏匯出**（在專案根目錄，不是瀏覽器）——
+靜態檢查腳本目前不在 repo 內，改用 runtime 探針：
 
 ```bash
-python tools/check-bindings.py index.html gmb.html rmb.html
+node tools/check-news-grouping.js
+node tools/check-inset-clamp.js
 ```
 
 ### 常見錯誤
@@ -1134,7 +1170,7 @@ python tools/check-bindings.py index.html gmb.html rmb.html
 | `HTTP 404` | URL 錯誤或檔案未上傳 | 檢查檔名大小寫，確認檔案在 repo 根目錄 |
 | 票價顯示 $0.0 或空白 | 資料未載入或索引失敗 | 執行上述 Console 指令檢查 |
 | 地圖不顯示 | 座標轉換失敗或快取舊資料 | 清除 localStorage，重新整理 |
-| **`v-if` 走了錯的分支，但 Console 完全沒報錯** | **模板用了某個識別字，但 `setup()` 的 `return {}` 忘了匯出** | **跑 `python tools/check-bindings.py`；prod 建置不會有任何提示** |
+| **`v-if` 走了錯的分支，但 Console 完全沒報錯** | **模板用了某個識別字，但 `setup()` 的 `return {}` 忘了匯出** | **跑 runtime 探針（`check-news-grouping.js` 等）。靜態檢查腳本目前不在 repo 內** |
 | **回程票價與去程一模一樣** | **`lookupFareEntry()` 沒比對行車方向** | **已修（見「路線詳細資料彈窗」）；確認 `loadFare()` 有傳 `r.direction`** |
 | 「詳請」彈窗的班次顯示「暫無班次資料」 | `bus-detail.json` 未上傳或未產生 | 跑 `python tools/build-bus-detail.py`，並確認檔案在 repo 根目錄 |
 
@@ -1190,13 +1226,14 @@ python tools/check-bindings.py index.html gmb.html rmb.html
 模板用到但 `setup()` 未匯出的識別字會被靜默當成 `undefined`，
 `v-if` 於是走錯分支（整個區塊消失或錯誤顯示），而 Console **不會有任何訊息**。
 
-請執行：
+請執行（靜態檢查腳本目前不在 repo 內，可用 runtime 探針代替）：
 
 ```bash
-python tools/check-bindings.py index.html gmb.html rmb.html
+node tools/check-news-grouping.js
+node tools/check-inset-clamp.js
 ```
 
-這次修正紅巴搜尋失效（空狀態蓋住 33 條結果）就是靠這個工具抓出來的。
+這次修正紅巴搜尋失效（空狀態蓋住 33 條結果）就是靠這類檢查抓出來的。
 
 ### Q9: 我可以用在 iOS / Android 嗎？
 
@@ -1244,9 +1281,19 @@ APK 是一個**超薄 WebView 外殼**，本身不含任何網頁程式碼，只
 https://mattpenny.github.io/transport/
 ```
 
-已完成的 APK 位於 **`apk/Ansum-Transport-v1.0.apk`**（約 17 KB，已簽署），
+已完成的 APK 位於 repo 根目錄 **`Ansum-Transport-v1.3-fixed.apk`**（約 54 KB，已簽署），
 完整原始碼與建置腳本在 **`android/`**：
 `AndroidManifest.xml`、`src/com/ansum/bus/MainActivity.java`、`res/`、`build.bat`、`merge.py`。
+
+### 版本與簽章
+
+| APK | versionCode / versionName | 憑證 SHA-256 | 升級方式 |
+|---|---|---|---|
+| `Ansum-Transport-v1.3-fixed.apk` | 3 / 1.3 | `4a116c8d…e35225` | **就地升級** |
+
+- keystore：repo 根目錄的 **`ansum-release.jks`**（alias `ansumbus`）。
+  已列入 `.gitignore`，**絕不可上傳** —— 持有它就能偽造更新檔。
+- package `com.ansum.bus`，minSdk 26 / targetSdk 34。
 
 ### 關鍵特性：使用者永不需重新安裝
 
@@ -1260,70 +1307,78 @@ https://mattpenny.github.io/transport/
 技術上是用 `WebSettings.LOAD_NO_CACHE` 配合 `webView.clearCache(true)`，
 強制每次都向伺服器重新載入，絕不透過 APK 內的舊快取。
 
-### 全螢幕（Edge-to-edge）標題列
+### ⚠️ 這個 App **不是** edge-to-edge（重要）
 
-App 啟動時把系統狀態列／導覽列設為透明，並讓 WebView 繪製到螢幕最頂端
-（`FLAG_LAYOUT_FULLSCREEN` + `LAYOUT_HIDE_NAVIGATION`）。網頁每次載入完成
-（`onPageFinished`）後，由 Java 把實際的狀態列／導覽列高度以 CSS 變數
-`--status-inset` / `--nav-inset` 注入 `<html>`，因此標題列底色可以一路延伸到
-螢幕頂端，而內文仍自動避開系統 UI（這也是三個網頁 `:root` 裡
-`--status-inset` / `--nav-inset` 的由來）。
+theme 是 `Theme.Material.Light.NoActionBar`，且**刻意不設**
+`FLAG_LAYOUT_NO_LIMITS` / `FLAG_LAYOUT_FULLSCREEN`。因此 Android 會把 WebView
+排在狀態列**下面**，狀態列佔網頁 **0 像素**，`env(safe-area-inset-top)` 是 `0`
+——**標題列不該為狀態列留任何 padding**。
 
-### 操作方式（v1.0）
+早期版本把量到的狀態列高度推給網頁（`--status-inset`），造成**重複計算**：
+標題列會先出現在正確位置、然後**往下跳**。現在 Java **不再送 status inset**，
+網頁只用 `env()` 決定（見網頁的 `STATUS-INSET RESOLVER` 註解與
+`tools/repro-flash.js`）。若日後改成真 edge-to-edge，`env()` 會自動回報真值，
+網頁端不需要改。
+
+### 每個模式各自的狀態列顏色
+
+狀態列／導覽列顏色依**檔名**解析（`headerColorFor(url)`），同時重漆四層
+（狀態列、導覽列、root view、WebView 底色），並在 `onPageStarted`（先漆，
+避免閃色）與 `onPageFinished`（後漆，防 WebView 重置）各套用一次：
+
+| 頁面 | 顏色 |
+|---|---|
+| `index.html` 巴士 | `#1a3d7c` |
+| `gmb.html` 專線小巴 | `#0d5e3a` |
+| `rmb.html` 紅色小巴 | `#c8102e` |
+
+### 建置方式（無 Gradle）
+
+> ⚠️ `android/build.bat` 目前**不能直接跑**，已知三個問題：
+> 1. `javac --release 11` 不能與 `-bootclasspath` 併用（JDK 25 直接報錯）→ 改用 `-cp`
+> 2. 只有 `d8.bat`（無 `.exe`），要改成
+>    `java -cp <build-tools>/lib/d8.jar com.android.tools.r8.D8`
+> 3. keystore 名稱與密碼是舊的，且**找不到時會自己生一把新金鑰** ——
+>    那會產生**簽章不同**的 APK，使用者無法就地升級。務必確認用的是
+>    `../ansum-release.jks` / alias `ansumbus`。
+
+可用的手動流程（7 步，`d8` 要**逐個 `.class`**，不能傳目錄）：
+
+```
+aapt2 compile --dir res -o build/res-c.zip
+aapt2 link -o build/app-unsigned.apk -I <android.jar> --manifest AndroidManifest.xml \
+  --java build/gen --min-sdk-version 26 --target-sdk-version 34 -R build/res-c.zip --auto-add-overlay
+javac --release 11 -encoding UTF-8 -cp <android.jar> -d build/classes @sources.txt
+java -cp <d8.jar> com.android.tools.r8.D8 --min-api 26 --lib <android.jar> --output build/dex <classes...>
+cp build/app-unsigned.apk build/merge-target.apk && python merge.py build/merge-target.apk build/dex/classes.dex
+zipalign -f -p 4 build/merge-target.apk build/app-aligned.apk
+apksigner sign --ks ../ansum-release.jks --ks-key-alias ansumbus \
+  --ks-pass pass:<密碼> --key-pass pass:<密碼> --out ../Ansum-Transport-v1.3-fixed.apk build/app-aligned.apk
+```
+
+### ⚠️ APK 打包鐵律：三個 entry 必須 STORED
+
+`classes.dex`、`AndroidManifest.xml`、`resources.arsc` **必須是未壓縮（Stored）**。
+Android 的 PackageParser **直接 mmap、不先解壓**，壓縮了就會
+`INSTALL_FAILED_INVALID_APK`（部分 OEM 顯示為安裝錯誤 **-124**）。
+`merge.py` 已強制 STORED 並附硬檢查。
+
+建置後驗收（缺一不可）：
+
+```bash
+apksigner verify --print-certs <apk>   # 憑證 SHA-256 要對
+zipalign -c -p 4 <apk>                 # 對齊
+unzip -v <apk>                         # 三個關鍵 entry 必須是 Stored
+aapt2 dump badging <apk>               # 要能解析
+```
+
+### 操作方式
 
 - **返回鍵**：在 WebView 歷史中往回；已在第一頁則退出 App
 - **重新整理**：關閉並重開 App 即會重新拉取線上最新版（因 `LOAD_NO_CACHE`）
 - 地圖拖曳、捲動、點按等單指操作完全不攔截，全部交由網頁處理
 
 > ⚠️ 多指手勢（兩指滑動、三指／四指輕觸）**尚未實作**，將於後續版本加入。
-
-### 建置方式（無 Gradle）
-
-需先設定 `ANDROID_HOME`（含 build-tools 34.0.0 與 36.0.0、platforms/android-34），
-並確保 Python 3 在 PATH：
-
-```
-cd android
-build.bat
-```
-
-手動流程：`aapt2` 編譯＋連結資源 → `javac`(`--release 11`)＋`d8` 轉 dex →
-`merge.py` 把 `classes.dex` 併入 APK → `zipalign` → `apksigner` 簽署
-（alias `ansumbus`；keystore 為 git-ignored 的 `android/keystore.jks`，請自行
-妥善保管，**千萬不要推送上 GitHub**，否則他人可用同一把金鑰偽造更新）。
-
-### ⚠️ 部署狀態提醒（2026-09-24 實測）
-
-APK 載入的是**線上**版本，但 GitHub Pages 上的內容**落後於本機**。
-以下為逐一探測 `https://mattpenny.github.io/transport/` 每個資產的實際結果：
-
-| 路徑 | 線上狀態 |
-|---|---|
-| `/` | ✅ `200` |
-| `/index.html` | ✅ `200` |
-| `/gmb.html` | ✅ `200` |
-| **`/rmb.html`** | ❌ **`404`** |
-| `/bus.png` | ✅ `200` |
-| **`/gmb.png`** | ❌ **`404`** |
-| **`/rmb.png`** | ❌ **`404`** |
-
-| 項目 | 線上 `transport/` | 本機 |
-|---|---|---|
-| `rmb.html`（紅色小巴整個模式） | **404 不存在** | 存在（49 KB） |
-| `gmb.png`、`rmb.png`（圖示） | **404 不存在** | 存在 |
-| 「可選擇其他交通工具」樣式 | 舊版（14px 灰色） | 新版（22px 品牌色） |
-| 首頁連結 | `ferry.html`（不存在）、`gmb.html` | `gmb.html`、`rmb.html` |
-
-**在把本機內容推上 GitHub 之前，APK 會載入到一個含有壞連結的舊版本，
-而且點「紅色小巴」會直接 404。**
-
-請先 push `index.html`、`gmb.html`、`rmb.html`，以及 `bus.png`、`gmb.png`、`rmb.png`
-和相關 `.json` 資料檔。
-
-> **注意：本機 `transport-main/` 資料夾目前不是 git repo**（沒有 `.git`，
-> `git rev-parse` 回報 `not a git repository`），環境內亦未安裝 `gh` CLI。
-> 因此**無法由工具直接 push**，需先在該資料夾 `git init` 並設定 remote，
-> 或改用 GitHub 網頁介面上傳。
 
 ---
 
