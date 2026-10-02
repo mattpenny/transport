@@ -7,13 +7,14 @@
 - **巴士**：<https://mattpenny.github.io/transport/>
 - **專線小巴**：<https://mattpenny.github.io/transport/gmb.html>
 - **紅色小巴**：<https://mattpenny.github.io/transport/rmb.html>
-- **港鐵巴士**：<https://mattpenny.github.io/transport/mtr.html>
+> 港鐵巴士（K巴）不是獨立頁面 —— 它是 `index.html` 裡的**一間公司**，
+> 與九巴／城巴並列，直接用同一個路線輸入框查。
 
 ---
 
 ## ⚠️ 在本機測試時請注意（重要）
 
-**不要用雙擊方式直接開啟 `index.html` / `gmb.html` / `rmb.html` / `mtr.html`。**
+**不要用雙擊方式直接開啟 `index.html` / `gmb.html` / `rmb.html`。**
 
 直接用雙擊開啟時，網址是 `file://...`，瀏覽器基於安全理由會**封鎖本機 JSON／CSV 檔案的讀取（CORS）**，
   
@@ -58,20 +59,20 @@ python -m http.server 8000
 
 ## 功能總覽
 
-| 功能                  | 巴士 (`index.html`) |  專線小巴 (`gmb.html`) |  紅色小巴 (`rmb.html`)  | 港鐵巴士 (`mtr.html`) |
+| 功能                  | 巴士 (`index.html`) |  專線小巴 (`gmb.html`) |  紅色小巴 (`rmb.html`)  | 港鐵巴士（`index.html` 內） |
 | ------------------- | :---------------: | :----------------: | :-----------------: | :---------------: |
 | 路線搜尋                |         ✅         | ✅（自動判定地區；號碼重複才彈窗問） |      ✅（按地區＋關鍵字）     |   ✅（按地區＋號碼搜尋）    |
 | 目的地搜尋（附近 5 個可到達的車站） |   ✅ 需定位（含小巴，不可點）  |     ✅ 需定位（只列小巴）    |          ❌          |         ❌         |
 | 方向選擇                |         ✅         |          ✅         |       ✅（行車方向）       |   ✅（由首末站自動命名）    |
 | 站點列表                |         ✅         |          ✅         | ⚠️ 只列行車路線（`via` 文字） |         ✅         |
 | 實時到站 (ETA)          |      ✅ 最近 3 班     |      ✅ 最近 3 班      |     ❌ 紅巴無官方 ETA     |      ✅ 最近 3 班     |
-| 全程票價                |         ✅         |          ✅         |        ✅（收費表）       |   ❌ API 不提供票價    |
+| 全程票價                |         ✅         |          ✅         |        ✅（收費表）       | ✅（票價檔已有，非 API）   |
 | 分段收費                |         ✅         |          ❌         |          ❌          |         ❌         |
-| 路線詳細資料（「詳請」彈窗）      |         ✅         |          ✅         |       ✅（右欄內嵌）       |         ❌         |
-| 地圖顯示                |         ✅         |          ✅         |          ❌          |         ❌         |
-| GPS 自動定位最近站         |    ✅（見「目的地搜尋」）    |     ✅（見「目的地搜尋」）    |          ❌          |         ❌         |
-| 我的最愛                |       ✅ 6 個       |        ✅ 6 個       |        ✅ 6 個        |         ❌         |
-| 字型大小調整              |         ✅         |          ✅         |          ✅          |         ❌         |
+| 路線詳細資料（「詳請」彈窗）      |         ✅         |          ✅         |       ✅（右欄內嵌）       |         ✅         |
+| 地圖顯示                |         ✅         |          ✅         |          ❌          |         ✅         |
+| GPS 自動定位最近站         |    ✅（見「目的地搜尋」）    |     ✅（見「目的地搜尋」）    |          ❌          |         ✅         |
+| 我的最愛                |       ✅ 6 個       |        ✅ 6 個       |        ✅ 6 個        |       ✅ 共用       |
+| 字型大小調整              |         ✅         |          ✅         |          ✅          |         ✅         |
 | API 節流保護            |         —         |      ✅（防 429）      |     —（純靜態 JSON）     | ✅（依 API 指示 60 秒）  |
 
 > **紅巴為何沒有 ETA／地圖？** 紅色小巴沒有政府實時到站 API，亦無官方站點座標，
@@ -89,18 +90,18 @@ python -m http.server 8000
 ├── index.html                  ← 巴士模式主頁
 ├── gmb.html                    ← 專線小巴模式
 ├── rmb.html                    ← 紅色小巴模式
-├── mtr.html                    ← 港鐵巴士（K巴）模式
 ├── bus.png                     ← 巴士應用圖示
 ├── gmb.png                     ← 專線小巴圖示
 ├── rmb.png                     ← 紅色小巴圖示
-├── mtr.png                     ← 港鐵巴士圖示
+├── mtr.png                     ← 港鐵巴士圖示（巴士公司按鈕用）
 ├── spinner.png                 ← 載入動畫小車（三頁共用）
 ├── gmb-stops-coords.csv        ← 全港 GMB 站點座標（政府靜態資料）
 ├── gmb-detail.json             ← GMB 收費／站點／營運資料（運輸署開放數據）
 ├── rmb-routes.json             ← 紅色小巴路線目錄（16seats.net）
 ├── routeFareList.min.json      ← 票價資料（從 hkbus.app 手動下載）
 ├── stops-index.min.json        ← 站點索引（搜尋用，全港 15,267 站，3.4 MB）
-├── mtr-stops.min.json          ← 港鐵巴士 676 個站（由上面抽出來，70 KB）
+├── mtr-stops.min.json          ← 港鐵巴士 676 個站名與座標（由上面抽出，85 KB）
+├── mtr-routes.min.json         ← 港鐵巴士路線／方向表（由票價檔抽出，7 KB）
 ├── bus-detail.json             ← 巴士班次（服務日 → 時段 → 班距）
 ├── traffic-news-archive.json   ← 特別交通消息存檔（Action 每 30 分鐘更新）
 ├── ansum-release.jks           ← 簽章金鑰（**git-ignored，絕不可上傳**）
@@ -119,13 +120,20 @@ python -m http.server 8000
 │   ├── check-inset-clamp.js    ← 迴歸測試：狀態列 inset 契約
 │   ├── repro-flash.js          ← 迴歸測試：標題列「閃跳」
 │   ├── check-news-grouping.js  ← 迴歸測試：今日／過往兩天分組
-│   └── diagnose-news-sources.js ← 診斷：為何兩台裝置的消息數量不同
+│   ├── diagnose-news-sources.js ← 診斷：為何兩台裝置的消息數量不同
+│   ├── build-mtr-stops.js      ← 抽出港鐵巴士站名／座標
+│   ├── build-mtr-routes.js     ← 抽出港鐵巴士路線／方向表
+│   ├── build-mtr-freq.js       ← 把港鐵巴士班距併進 bus-detail.json
+│   ├── probe-mtr-bus.js        ← 只驗港鐵巴士 API + join
+│   ├── check-mtr-company.js    ← 開 index.html 驗港鐵巴士公司流程
+│   └── make-mtr-icon.py        ← 畫 mtr.png
 └── README.md                   ← 本文件
 ```
 
-> **四個交通模式都必須上傳**（`index.html`、`gmb.html`、`rmb.html`、`mtr.html`）以及對應的
-> `bus.png`、`gmb.png`、`rmb.png`、`mtr.png`、`spinner.png`，還有 `mtr-stops.min.json`。
-> 缺任何一個都會令首頁連結、圖示或載入動畫變成 404。
+> **三個交通模式都必須上傳**（`index.html`、`gmb.html`、`rmb.html`）以及對應的
+> `bus.png`、`gmb.png`、`rmb.png`、`mtr.png`、`spinner.png`，還有一併給港鐵巴士用的
+> `mtr-stops.min.json`、`mtr-routes.min.json`。缺任何一個都會令首頁連結、
+> 圖示或載入動畫變成 404。
 
 > **APK 不進版控。** 建置產物 `Ansum-Transport-v1.3-fixed.apk` 會產生在 repo 根目錄，
 > 但 `.gitignore` 已排除 `*.apk`。二進位檔進 repo 只會令每次 clone 變重，而且每次
@@ -139,8 +147,8 @@ python -m http.server 8000
 | `index.html`                      | 巴士介面（單一檔案，含 HTML + CSS + JS）   | 只在改功能時                          |
 | `gmb.html`                        | 專線小巴介面（單一檔案）                   | 只在改功能時                          |
 | `rmb.html`                        | 紅色小巴介面（單一檔案）                   | 只在改功能時                          |
-| `mtr.html`                        | 港鐵巴士（K巴）介面（單一檔案）              | 只在改功能時                          |
 | `mtr-stops.min.json`              | 港鐵巴士站名與座標（由 `stops-index.min.json` 抽出） | 官方新增路線／站時                        |
+| `mtr-routes.min.json`             | 港鐵巴士路線／方向表（由 `routeFareList.min.json` 抽出） | 官方新增路線時                          |
 | `bus.png` / `gmb.png` / `rmb.png` | 各模式應用圖示（favicon 與 header logo） | 極少                              |
 | `gmb-detail.json`                 | GMB 收費／站點／營運資料（**運輸署開放數據**）    | 每 2 週（官方更新頻率）                   |
 | `rmb-routes.json`                 | 紅色小巴路線目錄（16seats.net）          | 不定期                             |
@@ -173,9 +181,9 @@ python -m http.server 8000
 
 - `index.html`
 - `gmb.html`
-- `rmb.html`、`mtr.html`
+- `rmb.html`
 - `bus.png`、`gmb.png`、`rmb.png`、`mtr.png`
-- `mtr-stops.min.json`
+- `mtr-stops.min.json`、`mtr-routes.min.json`
 - `gmb-detail.json`
 - `gmb-stops-coords.csv`
 - `rmb-routes.json`
@@ -189,15 +197,14 @@ python -m http.server 8000
 https://<你的帳號>.github.io/<repo>/
 ```
 
-應看到巴士介面。點「專線小巴」應跳到 `gmb.html`，點「紅色小巴」應跳到 `rmb.html`，
-點「港鐵巴士」應跳到 `mtr.html`。
+應看到巴士介面。點「專線小巴」應跳到 `gmb.html`，點「紅色小巴」應跳到 `rmb.html`。
 
 逐個資產快速檢查（把 `<網址>` 換成你的 Pages 根網址）：
 
 ```bash
-for p in / /index.html /gmb.html /rmb.html /mtr.html \
+for p in / /index.html /gmb.html /rmb.html \
          /bus.png /gmb.png /rmb.png /mtr.png /spinner.png \
-         /mtr-stops.min.json; do
+         /mtr-stops.min.json /mtr-routes.min.json; do
   printf "%s  %s\n" "$(curl -s -o /dev/null -w '%{http_code}' "<網址>$p")" "$p"
 done
 ```
@@ -1181,7 +1188,7 @@ node tools/check-inset-clamp.js
 | `HTTP 404` | URL 錯誤或檔案未上傳 | 檢查檔名大小寫，確認檔案在 repo 根目錄 |
 | 票價顯示 $0.0 或空白 | 資料未載入或索引失敗 | 執行上述 Console 指令檢查 |
 | 地圖不顯示 | 座標轉換失敗或快取舊資料 | 清除 localStorage，重新整理 |
-| **`v-if` 走了錯的分支，但 Console 完全沒報錯** | **模板用了某個識別字，但 `setup()` 的 `return {}` 忘了匯出** | **跑 runtime 探針（`check-news-grouping.js` 等）。靜態檢查腳本目前不在 repo 內** |
+| **`v-if` 走了錯的分支，但 Console 完全沒報錯** | **模板用了某個識別字，但 `setup()` 的 `return {}` 忘了匯出** | **跑 runtime 探針（`tools/check-news-grouping.js` 等）。靜態檢查腳本目前不在 repo 內** |
 | **回程票價與去程一模一樣** | **`lookupFareEntry()` 沒比對行車方向** | **已修（見「路線詳細資料彈窗」）；確認 `loadFare()` 有傳 `r.direction`** |
 | 「詳請」彈窗的班次顯示「暫無班次資料」 | `bus-detail.json` 未上傳或未產生 | 跑 `python tools/build-bus-detail.py`，並確認檔案在 repo 根目錄 |
 
@@ -1284,9 +1291,16 @@ https://rt.data.gov.hk/v1/transport/mtr/getSchedule.php?line=<線路代碼>&sta=
 
 ---
 
-## 港鐵巴士（`mtr.html`）
+## 港鐵巴士（K巴）
 
-港鐵巴士（K巴）沒有現成的靜態路線檔，資料全部來自港鐵的官方實時 API：
+港鐵巴士**不是獨立頁面**：它是 `index.html`「巴士公司」那一排裡的
+第四間公司（九巴／城巴／新大嶼山巴士／港鐵巴士）。在路線輸入框打 `K12` 就查得到，
+顯示格式與九巴、城巴完全一致 —— 路線 → 方向 → 站點 → 實時到站 →「詳請」。
+路線號一律以 K 開頭（另有 506），本身就很好認，所以瀏覽方式跟其他公司一樣即可。
+
+資料來自兩個地方：
+
+**1. 實時到站** —— 港鐵官方 API：
 
 ```
 POST https://rt.data.gov.hk/v1/transport/mtr/bus/getSchedule
@@ -1301,6 +1315,20 @@ POST https://rt.data.gov.hk/v1/transport/mtr/bus/getSchedule
   ⚠️ 但**錯誤**回應（400／404）的 CORS 只給 `data.gov.hk`，
   因此錯誤處理只看 HTTP status，不要去讀 response body。
 - API 自報 `appRefreshTimeInSecond: 60`，頁面照它每 60 秒更新一次。
+
+**2. 路線、票價、班距** —— `routeFareList.min.json`。
+港鐵巴士其實**已經在票價檔裡**，公司代號是 **`lrtfeeder`**（輕鐵接駁巴士就是港鐵巴士），
+26 條路線、60 筆路線方向，附票價、班距與站序。所以票價與「詳請」不必另外接 API，
+沿用其他公司同一套機制即可。
+
+⚠️ 代號不同是最大的坑：頁面上是 `MTR`，票價檔裡是 `lrtfeeder`。
+凡是拿公司代號去查票價檔的地方都要先對應（`fareCompanyKey()`），否則
+`entryBoundFor` 找不到方向 → 依設計「不排除」→ 兩個方向都留下 → 沒有精確比對 →
+取 `candidates[0]` → **有機會靜默拿到相反方向的票價與站序**。
+
+另外票價檔的方向是 **O／I**，而 API 的站分組是 **D／U**，兩套字彙不同。
+這裡不硬寫對應表（任一邊改名就失效），而是**用車站編號比對**：拿票價檔那份站序
+去比 API 的兩組站，取重疊最多的那組。
 
 ### ⚠️ API 只給站 id，站名要靠 join
 
@@ -1326,10 +1354,20 @@ node tools/build-mtr-stops.js
 站名查不到時（官方新增而資料檔尚未更新）會顯示「（未命名站）」，
 並把站 id 放在副標，而不是直接印出 `K51-D055` 那種像壞掉的畫面。
 
+### 資料檔維護
+
+官方新增路線或站之後，重新產生（都是冪等的）：
+
+```bash
+node tools/build-mtr-stops.js    # mtr-stops.min.json   ← stops-index.min.json
+node tools/build-mtr-routes.js   # mtr-routes.min.json  ← routeFareList.min.json
+node tools/build-mtr-freq.js     # 把港鐵巴士班距併進 bus-detail.json
+```
+
 ### 驗證
 
 ```bash
-node tools/check-mtr-page.js              # 真的開頁面、真的打 API
+node tools/check-mtr-company.js           # 真的開 index.html、選公司、查 K 路線
 node tools/probe-mtr-bus.js --route K51   # 只驗 API + join
 ```
 
@@ -1394,7 +1432,7 @@ theme 是 `Theme.Material.Light.NoActionBar`，且**刻意不設**
 | `index.html` 巴士 | `#1a3d7c` |
 | `gmb.html` 專線小巴 | `#0d5e3a` |
 | `rmb.html` 紅色小巴 | `#c8102e` |
-| `mtr.html` 港鐵巴士 | `#8c1d40` |
+| 港鐵巴士 | `#1a3d7c`（它是 `index.html` 裡的一間公司，跟隨巴士色） |
 
 ### 建置方式（無 Gradle）
 

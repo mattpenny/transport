@@ -1801,14 +1801,6 @@
     </span>
     <span class="mode-arrow">→</span>
   </a>
-  <a href="mtr.html" class="mode-link" @click="clearPlace">
-    <img class="mode-icon-img" src="mtr.png" alt="港鐵巴士" />
-    <span class="mode-text">
-      <span class="mode-title">港鐵巴士</span>
-      <span class="mode-desc">K巴 · 屯門 / 元朗 / 大埔</span>
-    </span>
-    <span class="mode-arrow">→</span>
-  </a>
 </div>
 
       <div v-if="!selectedDirectionLabel || pickingDirection">
@@ -2791,6 +2783,170 @@ async function fetchNlbEta(routeId, stopId) {
   return { items, ageSeconds };
 }
 
+/* ========== 港鐵巴士（K巴）==========
+   官方 API：
+     POST https://rt.data.gov.hk/v1/transport/mtr/bus/getSchedule
+     body {"language":"zh","routeName":"K51"}    ← 兩個參數都必填
+     （缺 language → 400；用 GET → 404）
+   成功回應的 CORS 是 `Access-Control-Allow-Origin: *`，preflight 亦允許 POST，
+   所以純靜態頁面可以直接呼叫，不需要 proxy。
+   ⚠️ 但**錯誤**回應（400／404）的 CORS 只給 data.gov.hk，
+   因此錯誤處理只看 HTTP status，不要讀 response body。
+
+   與其他公司最大的分別：**一個 request 就回傳整條路線所有站**（含 D 去程與
+   U 回程兩組），所以「取站序」與「取到站時間」是同一次呼叫。這裡用一個
+   per-route 快取把它接起來，讓上層可以沿用其他公司那套「逐站查 ETA」的介面，
+   不必為港鐵巴士另寫一套 UI。
+
+   ⚠️ 回應只有 busStopId（例如 K51-D010），**沒有站名、沒有座標**；
+   站名與座標來自 mtr-stops.min.json（由 tools/build-mtr-stops.js 從
+   stops-index.min.json 抽出港鐵巴士那 676 站）。
+   ⚠️ 站 id 大小寫不統一：`K51-D010` 但 `K52-nD010`（小寫 n）。
+   用 [A-Z] 比對會把整條 K52（60 站）漏掉。
+   ⚠️ `arrivalTimeInSecond: 108000`（= 30 小時）是 sentinel，代表該站沒有到站
+   預測（通常是總站，只有開出時間）。當成數字處理會顯示「1800 分鐘」。 */
+const MTR_API = "https://rt.data.gov.hk/v1/transport/mtr/bus/getSchedule";
+const MTR_ROUTES_URL = "mtr-routes.min.json";
+const MTR_STOPS_URL = "mtr-stops.min.json";
+const MTR_NO_ARRIVAL = 108000;
+const MTR_STOP_ID = /^(.+?)-([A-Za-z]{0,2})([DU])(\d+)$/;
+/* API 自報 appRefreshTimeInSecond: 60，留一點餘裕。 */
+const MTR_CACHE_MS = 55000;
+
+let mtrRoutesCache = null, mtrRoutesPromise = null;
+let mtrStopsCache = null, mtrStopsPromise = null;
+const mtrScheduleCache = Object.create(null);   // route -> { at, data }
+
+function loadMtrRoutes() {
+  if (mtrRoutesCache) return Promise.resolve(mtrRoutesCache);
+  if (!mtrRoutesPromise) {
+    mtrRoutesPromise = getJSON(MTR_ROUTES_URL)
+      .then(j => { mtrRoutesCache = j.routes || []; return mtrRoutesCache; })
+      .catch(e => { mtrRoutesPromise = null; throw e; });
+  }
+  return mtrRoutesPromise;
+}
+
+function loadMtrStops() {
+  if (mtrStopsCache) return Promise.resolve(mtrStopsCache);
+  if (!mtrStopsPromise) {
+    mtrStopsPromise = getJSON(MTR_STOPS_URL)
+      .then(j => { mtrStopsCache = j.stops || {}; return mtrStopsCache; })
+      .catch(e => { mtrStopsPromise = null; throw e; });
+  }
+  return mtrStopsPromise;
+}
+
+async function fetchMtrSchedule(route, force) {
+  const hit = mtrScheduleCache[route];
+  if (!force && hit && Date.now() - hit.at < MTR_CACHE_MS) return hit.data;
+  const res = await fetch(MTR_API, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ language: "zh", routeName: route }),
+  });
+  /* 429 = 太頻繁。錯誤回應的 CORS 不開放，所以只看 status，不要讀 body。 */
+  if (!res.ok) throw new Error(res.status === 429 ? "查詢太頻繁，請稍後再試" : "HTTP " + res.status);
+  const data = await res.json();
+  mtrScheduleCache[route] = { at: Date.now(), data };
+  return data;
+}
+
+/* 把回應的站分成 D（去程）／U（回程）兩組，保留 API 的順序。 */
+function mtrGroupByDirection(data) {
+  const groups = Object.create(null);
+  for (const s of (data && data.busStop) || []) {
+    const m = MTR_STOP_ID.exec(s.busStopId || "");
+    const d = m ? m[3] : "D";
+    (groups[d] = groups[d] || []).push(s);
+  }
+  return groups;
+}
+
+async function fetchMtrRoutes() {
+  const list = await loadMtrRoutes();
+  return list.map(r => ({
+    route: r.route, orig_tc: r.orig_tc, dest_tc: r.dest_tc,
+    /* direction 是票價檔的 O／I（不是 API 的 D／U），這樣 lookupFareEntry
+       與 詳請 的 stopsMap 才對得上。轉換在 fetchMtrRouteStops 內以站號比對。 */
+    direction: r.direction, serviceType: r.serviceType || "1",
+    isLwb: false, isMtr: true,
+  }));
+}
+
+/* 票價檔用 O／I，API 用 D／U —— 兩套字彙不同。這裡**不硬寫對應表**
+   （任一邊改名就會靜默失效），而是用**車站編號比對**：拿票價檔那份站序
+   去比 API 的兩組站，取重疊最多的那組。只要站序還是對的，方向就是對的。 */
+function pickMtrGroup(groups, want) {
+  const keys = Object.keys(groups);
+  if (!keys.length) return [];
+  if (keys.length === 1 || !want.length) return groups[keys[0]];
+  const wantSet = new Set(want.map(String));
+  let best = null, bestScore = -Infinity;
+  for (const k of keys) {
+    const ids = groups[k].map(s => String(s.busStopId));
+    let score = 0;
+    for (const id of ids) if (wantSet.has(id)) score++;
+    /* 首站相同再加權：兩組站重疊很多時，起訖站是最能分辨的訊號。 */
+    if (ids.length && ids[0] === String(want[0])) score += 100;
+    if (score > bestScore) { bestScore = score; best = groups[k]; }
+  }
+  return best || [];
+}
+
+/* 站序用當下的 API 回應，所以官方新增站會自動出現，不必等資料檔更新。 */
+async function fetchMtrRouteStops(routeEntry) {
+  const route = routeEntry.route;
+  const data = await fetchMtrSchedule(route);
+  const stopsDb = await loadMtrStops();
+  const fareEntry = lookupFareEntry(route, "MTR", routeEntry.serviceType || "1", routeEntry.direction);
+  const want = (fareEntry && fareEntry.stopsMap && fareEntry.stopsMap.lrtfeeder) || [];
+  const list = pickMtrGroup(mtrGroupByDirection(data), want);
+  return list.map((s, i) => {
+    const id = s.busStopId;
+    const rec = stopsDb[id];
+    /* mtr-stops.min.json mirrors stops-index.min.json's shape:
+       { name: { zh, en }, location: { lat, lng } }. */
+    return {
+      id, seq: i + 1,
+      name: rec ? cleanStopName(rec.name.zh) : id,
+      nameFull: rec ? rec.name.zh : id,
+      lat: rec ? rec.location.lat : NaN,
+      lng: rec ? rec.location.lng : NaN,
+    };
+  });
+}
+
+/* 到站時間：從同一份快取回應取出，所以不會多打一次 API。
+   ⚠️ API 給的是「還有幾秒」，不是時間戳；這裡換算成 ISO 時間戳，
+   好讓上層沿用與其他公司相同的 { eta, minutes, exactTime, remark } 形狀。 */
+async function fetchMtrEta(stopId, route) {
+  const data = await fetchMtrSchedule(route);
+  const now = Date.now();
+  const stop = ((data && data.busStop) || []).find(s => s.busStopId === stopId);
+  const items = [];
+  for (const b of (stop && stop.bus) || []) {
+    const arrSecs = parseInt(b.arrivalTimeInSecond, 10);
+    const hasArrival = isFinite(arrSecs) && arrSecs < MTR_NO_ARRIVAL;
+    const text = hasArrival ? (b.arrivalTimeText || "") : (b.departureTimeText || "");
+    if (!text) continue;
+    const secs = hasArrival ? arrSecs : parseInt(b.departureTimeInSecond, 10);
+    if (!isFinite(secs) || secs < 0) continue;
+    const eta = new Date(now + secs * 1000).toISOString();
+    items.push({
+      eta, minutes: Math.max(0, Math.round(secs / 60)),
+      exactTime: formatExactTime(eta),
+      remark: /離開|Depart/.test(text) ? "即將到站／已離開" : "",
+      dataTimestamp: null,
+    });
+    if (items.length >= 3) break;
+  }
+  /* 官方沒有提供資料時間戳，用 routeStatusTime（如 "2026/10/02 11:19"）代替。 */
+  const ageSeconds = data && data.routeStatusTime
+    ? Math.max(0, Math.round((now - parseDate(data.routeStatusTime).getTime()) / 1000)) : null;
+  return { items, ageSeconds: isFinite(ageSeconds) ? ageSeconds : null };
+}
+
 /* ========== 交通情報（運輸署開放數據）==========
  * 三個獨立的運輸署（TD）資料源，只供 landing page 的「交通情報面板」使用：
  *   1. 特別交通消息（第二代）  XML，實時       —— 約 1.4 KB
@@ -3167,12 +3323,25 @@ function entryBoundFor(entry, co) {
   const b = String((entry && entry.bound) || "");
   if (!b) return "";
   if (b.indexOf(":") < 0) return b.toUpperCase();
-  const want = String(co || "").toLowerCase();
+  const want = fareCompanyKey(co);
   for (const part of b.split("|")) {
     const i = part.indexOf(":");
     if (i > 0 && part.slice(0, i).toLowerCase() === want) return part.slice(i + 1).toUpperCase();
   }
   return "";
+}
+
+/* 港鐵巴士（K巴）在 routeFareList.min.json 裡的代號是 **lrtfeeder**
+   （輕鐵接駁巴士就是港鐵巴士），但在這一頁它是 MTR 這間公司。
+   票價、方向（bound）與站序全都掛在 lrtfeeder 底下，所以凡是要拿公司代號
+   去查票價檔的地方，都必須先經過這層對應。不對應的話：
+     - entryBoundFor 回空字串 → 依設計「不排除」→ 兩個方向都留在候選裡
+     - companyList 不含 "mtr" → 精確比對失敗 → 最後取 candidates[0]
+   → 結果是隨機拿到**相反方向**的票價與站序，而且畫面看起來完全正常。 */
+const FARE_CO_ALIAS = { mtr: "lrtfeeder" };
+function fareCompanyKey(companyId) {
+  const k = String(companyId || "").toLowerCase();
+  return FARE_CO_ALIAS[k] || k;
 }
 
 function buildFareIndex(raw) {
@@ -3700,7 +3869,8 @@ function isTodayHoliday() {
 function lookupFareEntry(routeNum, companyId, serviceType, direction) {
   if (!fareDb) return null;
   const num = String(routeNum || "").toUpperCase();
-  const co = String(companyId || "").toLowerCase();
+  /* 港鐵巴士要對應成 lrtfeeder 才查得到（見 fareCompanyKey 的說明）。 */
+  const co = fareCompanyKey(companyId);
   const st = String(serviceType || "1");
   const dir = String(direction || "").toUpperCase();
   let candidates = [];
@@ -3962,6 +4132,11 @@ createApp({
       { id: "KMB", name: "九巴", logo: "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60"><rect width="100" height="60" fill="#fff"/><text x="50" y="42" font-family="Arial Black,sans-serif" font-size="34" font-weight="900" fill="#e30613" text-anchor="middle">KMB</text></svg>`) },
       { id: "CTB", name: "城巴", logo: "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60"><rect width="100" height="60" fill="#ffd400"/><circle cx="50" cy="24" r="16" fill="#e30613"/><polygon points="58,10 26,24 58,38 46,24" fill="#ffd400"/><text x="50" y="52" font-family="Arial,sans-serif" font-size="10" font-weight="700" fill="#1565c0" text-anchor="middle">城巴Citybus</text></svg>`) },
       { id: "NLB", name: "新大嶼山巴士", logo: NLB_LOGO },
+      /* 港鐵巴士（K巴）。路線號一律以 K 開頭（另有 506），很好認，
+         所以圖示沿用 mtr.png 即可，不需要為它另做一套識別。
+         資料來源與其他三間不同：官方 API 一次回傳整條路線所有站，
+         見上方「港鐵巴士（K巴）」那一段。 */
+      { id: "MTR", name: "港鐵巴士", logo: "mtr.png" },
     ];
 
     const company = ref("KMB");
@@ -4263,6 +4438,7 @@ createApp({
       if (companyId === "KMB") p = fetchKmbRoutes();
       else if (companyId === "CTB") p = fetchCitybusRoutes();
       else if (companyId === "NLB") p = fetchNlbRoutes();
+      else if (companyId === "MTR") p = fetchMtrRoutes();
       else return [];
       routeListPromises[companyId] = p;
       try { const list = await p; routeListsCache[companyId] = list; return list; }
@@ -4270,7 +4446,7 @@ createApp({
     }
 
     function prefetchOthers(cur) {
-      for (const c of ["KMB", "CTB", "NLB"]) { if (c === cur) continue; loadRouteListFor(c).catch(() => {}); }
+      for (const c of ["KMB", "CTB", "NLB", "MTR"]) { if (c === cur) continue; loadRouteListFor(c).catch(() => {}); }
     }
 
     let loadToken = 0;
@@ -4339,11 +4515,13 @@ createApp({
       if (!isMobile.value) { searchRoute(code); return; }
       mobileSearching.value = true; error.value = "";
       try {
-        const [kmb, ctb, nlb] = await Promise.all([
-          loadRouteListFor("KMB"), loadRouteListFor("CTB"), loadRouteListFor("NLB"),
+        const [kmb, ctb, nlb, mtr] = await Promise.all([
+          loadRouteListFor("KMB"), loadRouteListFor("CTB"),
+          loadRouteListFor("NLB"), loadRouteListFor("MTR"),
         ]);
         const matches = [
-          { id: "KMB", list: kmb }, { id: "CTB", list: ctb }, { id: "NLB", list: nlb },
+          { id: "KMB", list: kmb }, { id: "CTB", list: ctb },
+          { id: "NLB", list: nlb }, { id: "MTR", list: mtr },
         ].filter(c => c.list.some(r => normalizeRouteNo(r.route) === code)).map(c => c.id);
         if (matches.length === 0) {
           searched.value = true; lastSearched.value = code;
@@ -4410,6 +4588,10 @@ createApp({
        目的地結果必須清楚標示 GMB，否則使用者會以為那是可以在此頁開啟的巴士線。 */
     const COMPANY_LABELS = {
       kmb: "九巴", lwb: "龍運", ctb: "城巴", nlb: "新大嶼山巴士", gmb: "專線小巴",
+      mtr: "港鐵巴士",
+      /* 票價檔裡的代號。alias 之後正常不會用到，但留著可避免任何漏網的
+         標籤變成 "LRTFEEDER"。 */
+      lrtfeeder: "港鐵巴士",
     };
     function companyLabelFor(co) {
       const key = String(co || "").toLowerCase();
@@ -5070,6 +5252,16 @@ createApp({
         let detailed = [];
         if (company.value === "NLB") {
           detailed = await fetchNlbRouteStops(r.routeId);
+        } else if (company.value === "MTR") {
+          /* 港鐵巴士的 API 一次就回傳含站名與座標的完整站序，
+             所以不像 KMB／CTB 需要再逐站查一次。傳整個 route entry
+             是因為要用 direction／serviceType 去票價檔對出正確方向。
+             ⚠️ 必須先等票價檔：方向是用票價檔的站序比對出來的，而原本的
+             `await farePromise` 在整個 try 之後才發生 —— 對 KMB／CTB 沒差，
+             但港鐵巴士會在票價檔還沒好時 fallback 成「第一組」，
+             也就是有機會靜默地選到相反方向。 */
+          await farePromise;
+          detailed = await fetchMtrRouteStops(r);
         } else if (company.value === "KMB") {
           const seq = await fetchKmbRouteStops(r.route, r.direction, r.serviceType || "1");
           const results = await Promise.all(seq.map(async s => {
@@ -5583,6 +5775,7 @@ createApp({
       try {
         let result;
         if (company.value === "NLB") result = await fetchNlbEta(r.routeId, stop.id);
+        else if (company.value === "MTR") result = await fetchMtrEta(stop.id, r.route);
         else if (company.value === "KMB") result = await fetchKmbEta(stop.id, r.route, r.serviceType || "1");
         else result = await fetchCitybusEta(stop.id, r.route);
         etas.value = result.items;

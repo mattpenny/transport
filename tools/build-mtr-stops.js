@@ -38,11 +38,14 @@ function main() {
     if (!m) continue;
     const v = stopList[id];
     if (!v || !v.location || !v.name) continue;
+    /* Mirror stops-index.min.json's shape exactly ({name:{zh,en},
+       location:{lat,lng}}) rather than flattening it. The extract is meant to
+       be a drop-in subset of the source, so code written against one works
+       against the other — a flattened copy invites a silent `undefined` read
+       the first time someone copies a lookup from elsewhere. */
     stops[id] = {
-      zh: v.name.zh,
-      en: v.name.en,
-      lat: v.location.lat,
-      lng: v.location.lng,
+      name: { zh: v.name.zh, en: v.name.en },
+      location: { lat: v.location.lat, lng: v.location.lng },
     };
   }
 
