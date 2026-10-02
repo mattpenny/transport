@@ -4806,7 +4806,21 @@ createApp({
       placeOpen.value = false; placeResults.value = null; placeQuery.value = ""; placeError.value = "";
     }
 
+    /* 使用者按下「方向」膠囊 → 清掉目前方向，回到可選方向的狀態。
+       ⚠️ 只有一個方向時不能真的清空：方向清單（.direction-picker）是
+       `v-if="matchedRoutes.length > 1"`，只有一個方向時它**不會渲染** ——
+       若這裡把 selectedDirectionLabel 清掉、又設 pickingDirection = true，
+       畫面上的方向區塊就會是空的：沒有方向可點、站牌清單也被清空，
+       使用者永遠停在「請先選擇巴士站」。而且沒有任何錯誤訊息。
+       所以：只有一個方向時，直接把它選回來（本來也沒得選）。
+       這與 searchRoute 的 count === 1 自動選方向是同一個道理。 */
     function clearDirection() {
+      if (matchedRoutes.value.length <= 1) {
+        const only = matchedRoutes.value[0];
+        if (only) { selectDirection(only); return; }
+        /* 連一個方向都沒有（理論上不會發生）→ 保持原狀，至少不會清成空白 */
+        return;
+      }
       routeKey.value = ""; selectedDirectionLabel.value = "";
       pickingDirection.value = true;
       stops.value = []; selectedStop.value = null; etas.value = [];
@@ -5704,27 +5718,46 @@ createApp({
       return favourites.value.some(f => f && f.company === realCo && f.directionKey === routeKey.value);
     });
 
+    /* 取得「現在」的位置。
+       ⚠️ 一定要自己加 timeout，不能只靠 options.timeout。
+       為什麼？因為 Chromium 對同一個 origin **同一時間只服務一個定位請求**：
+       只要已經有一個 watchPosition 在跑，之後的 getCurrentPosition 就**永遠
+       不回呼**（成功、失敗都不回）。而且這時候 options.timeout 也不會觸發
+       —— 那個 timeout 是「開始定位後多久算逾時」的提示，不是「保證在 N 毫秒內
+       一定回呼」的契約。
+       實際後果：autoLocateNearestStop() 會停在 `await getUserPosition()`
+       上一動也不動，await 之後的 showUserMarker／applyDistancesFor 全部不執行
+       → 側欄沒有任何「幾多米」、也沒有自動選站，而 Console 一片乾淨。
+       這正是「桌機拿不到最近車站」的根因。
+       所以這裡用 Promise.race 自己兜一個 deadline：時間到就 reject，
+       讓呼叫端一定拿得到結果（失敗也是結果），不會無限等待。 */
     function getUserPosition() {
-      return new Promise((resolve, reject) => {
+      const geoPromise = new Promise((resolve, reject) => {
         if (!("geolocation" in navigator)) { reject(new Error("此瀏覽器不支援定位功能")); return; }
+        let settled = false;
+        const done = (fn, arg) => { if (!settled) { settled = true; fn(arg); } };
         navigator.geolocation.getCurrentPosition(
           (pos) => {
             const lat = Number(pos.coords.latitude), lng = Number(pos.coords.longitude);
-            if (!isValidCoord(lat, lng)) { reject(new Error("無法取得位置資訊")); return; }
-            resolve({ lat, lng });
+            if (!isValidCoord(lat, lng)) { done(reject, new Error("無法取得位置資訊")); return; }
+            done(resolve, { lat, lng });
           },
           (err) => {
             let msg = "定位失敗";
             if (err.code === 1) msg = "未授權定位";
             else if (err.code === 2) msg = "無法取得位置資訊";
             else if (err.code === 3) msg = "定位超時";
-            reject(new Error(msg));
+            done(reject, new Error(msg));
           },
           /* maximumAge: 0 —— 一定要「現在」的位置。舊版是 300000（5 分鐘），
              走動時會一直沿用五分鐘前的座標，「最近的車站」自然不會跟著走。 */
           { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
         );
       });
+      /* 自己的保險絲：比 options.timeout 稍長一點，正常情況輪不到它出場。 */
+      const deadline = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("定位超時")), 17000));
+      return Promise.race([geoPromise, deadline]);
     }
 
     let lastUserPos = null;
@@ -5758,6 +5791,23 @@ createApp({
       geoWatchId = null;
     }
 
+    /* 取一次「現在」的位置，而且**不會被既有的 watch 餓死**。
+       為什麼需要它：Chromium 對同一個 origin 同時間只服務一個定位請求。
+       開頁時 silentLocateForRegion() 可能已經在跑 watchPosition，
+       這時候直接呼叫 getUserPosition() 會永遠不回呼（成功失敗都不回），
+       於是 autoLocateNearestStop() 就卡死在那個 await 上。
+       做法：先暫時 clearWatch 讓出定位通道 → 取一次 → 再把 watch 接回去。
+       接回去很重要，否則「走到車站畫面自己更新」的功能會悄悄消失。 */
+    async function locateOnceYieldingWatch() {
+      const hadWatch = geoWatchId !== null;
+      if (hadWatch) stopGeoWatch();
+      try {
+        return await getUserPosition();
+      } finally {
+        if (hadWatch) startGeoWatch();
+      }
+    }
+
     /* 每次位置更新：移動定位點 → 重算所有車站距離 →（必要時）改選最近的一站。
        距離與藍點每次都更新，所以畫面上的「幾多米」是連續跟著走的；
        只有「改選車站」要節制 —— 它會捲動清單、移動地圖並重新抓 ETA。 */
@@ -5788,19 +5838,33 @@ createApp({
       return nearestId ? updated.find(s => s.id === nearestId) : null;
     }
 
+    /* 新路線載入後：算出每一站的距離，並自動選最近的站。
+       ⚠️ 兩個坑都在這裡，改動時不要改回去：
+       1. 不能用普通的 getUserPosition()。開頁時 silentLocateForRegion() 可能
+          已經在跑 watchPosition，而 Chromium 同時間只服務一個定位請求 ——
+          既有 watch 會讓新的 getCurrentPosition **永遠不回呼**，這個 await
+          就此卡死，後面的距離與自動選站全部不執行（Console 還是一片乾淨）。
+          所以用 locateOnceYieldingWatch()：暫時讓出通道再取。
+       2. startGeoWatch() 不能放在 getCurrentPosition 之前，理由同上。
+          先取位置、算好距離，最後才交給 watch 持續更新。 */
     async function autoLocateNearestStop() {
       if (!stops.value.length) return;
       autoFollowStop = true;                        /* 新路線：重新交給 GPS 帶路 */
+      /* 已經有位置（例如開頁時 silentLocateForRegion 已經定位過）就先立即上色，
+         這樣即使等一下的單次定位要等，畫面也不是空的。 */
       if (lastUserPos && isValidCoord(lastUserPos.lat, lastUserPos.lng)) {
         applyDistancesFor(lastUserPos.lat, lastUserPos.lng);
       }
-      startGeoWatch();                              /* 之後每一次移動都會自動更新 */
       try {
-        const me = await getUserPosition();
+        const me = await locateOnceYieldingWatch();
         showUserMarker(me.lat, me.lng);
         const nearest = applyDistancesFor(me.lat, me.lng);
         if (nearest) await applySelection(nearest);
-      } catch (e) {}
+      } catch (e) {
+        /* 拿不到「現在」的位置也無所謂：上面已經用 lastUserPos 上過色了。
+           真的完全沒有位置時，清單就只顯示站名（distance 為 null）。 */
+      }
+      startGeoWatch();                              /* 沒有 watch 時才真的會開 */
     }
 
     function formatDistance(m) {

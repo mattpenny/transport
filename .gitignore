@@ -19,3 +19,9 @@ android/*.jks
 .workbuddy-ai/
 .v12.dex
 __pycache__/
+
+# `--teeth` fixture: a copy of the PRE-FIX page used to prove a probe can fail.
+# Created on demand (git show HEAD:index.html > __prefix.html) and served by
+# tools/check-single-direction.js --teeth. Never commit it — it is by
+# definition an outdated copy of index.html and would confuse the repo.
+__prefix.html
