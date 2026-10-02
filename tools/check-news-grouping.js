@@ -107,7 +107,15 @@ function tdXml(todayMsgs, pastMsgs) {
     return { heads, ticker, dayLabel, dayCount, hasSection: !!sec };
   });
 
+  /* Optional screenshots: a UI bug deserves a look, not only an assertion set.
+     `--shot <dir>` writes landing.png (the card) and sheet.png (the panel). */
+  const shotIdx = process.argv.indexOf('--shot');
+  const shotDir = shotIdx !== -1 ? process.argv[shotIdx + 1] : null;
+  const fs = require('fs');
+  if (shotDir && !fs.existsSync(shotDir)) fs.mkdirSync(shotDir, { recursive: true });
+
   /* --- open the sheet (tap the 過往兩天 card, which is always present here) --- */
+  if (shotDir) await p.screenshot({ path: `${shotDir}/landing.png` });
   await p.evaluate(() => {
     const btn = document.querySelector('.tp-day-head');
     if (btn) btn.click();
@@ -155,6 +163,12 @@ function tdXml(todayMsgs, pastMsgs) {
   const tickerOk = landing.ticker.every((t) => todayNames.some((n) => t.includes(n)))
     && landing.ticker.some((t) => todayNames.some((n) => t.includes(n)));
   const dayCardOk = landing.dayCount === `${pastNames.length} 則`;
+
+  /* Optional screenshots: a UI bug deserves a look, not only an assertion set. */
+  if (shotDir) {
+    await p.screenshot({ path: `${shotDir}/sheet.png` });
+    console.log(`shots written to ${shotDir}`);
+  }
 
   const sheetOpen = sheet.open === true;
   const sheetGrouped = sheetOpen && sheet.groups.length === 2;
