@@ -3,7 +3,7 @@
  *
  * 用途：index.html 的「特別交通消息」面板除了即時 XML 與瀏覽器本機存檔之外，
  *       還會下載這個靜態檔並合併。因為它是放在網站上的同一個檔案，所有裝置
- *       （電腦、手機）都會看到同一份「過往兩天」記錄，解決各瀏覽器 localStorage
+ *       （電腦、手機）都會看到同一份記錄，解決各瀏覽器 localStorage
  *       不會同步的問題。
  *
  * 用法：
@@ -13,8 +13,10 @@
  *       檔案有變時自動 commit）。
  *
  * 設計：每次執行都會把「即時 XML 抓到的」與「檔案內原有的」合併、以 id 去重，
- *       只保留 retainDays 日內（storedAt 為準）的消息 —— 所以第一次執行只會有
- *       目前的 1～2 則，之後隨時間自然累積成「過往兩天」。
+ *       排序後只保留最新 MAX_ITEMS 則 —— 即固定的滾動窗口，最舊的會被擠出。
+ *       ⚠️ 上限已由「保留 3 日」（RETAIN_DAYS）改為「固定 15 則」，與
+ *       index.html 的 NEWS_MAX_ITEMS 一致。改回按日數會令共用檔重新塞進
+ *       大量舊消息，前端那份 15 則的上限就形同被上游繞過。
  *       whenText 原樣保存；whenMs 只是排序用的近似值，前端會用自己的 parseDate
  *       以 whenText 重算，確保時間基準一致。
  */
@@ -23,8 +25,7 @@ const path = require("path");
 
 const NEWS_URL = "https://www.td.gov.hk/tc/special_news/trafficnews.xml";
 const OUT = path.join(__dirname, "..", "traffic-news-archive.json");
-const RETAIN_DAYS = 3;      /* 與 index.html 的 NEWS_ARCHIVE_TTL_DAYS 一致 */
-const MAX = 80;             /* 與 index.html 的 NEWS_ARCHIVE_MAX 一致 */
+const MAX_ITEMS = 15;       /* 與 index.html 的 NEWS_MAX_ITEMS 一致 */
 
 function decodeXml(s) {
   return String(s)
@@ -106,17 +107,18 @@ async function main() {
     merged.push(Object.assign({}, n, { whenMs: n.whenMs || 0, storedAt: n.storedAt || now }));
   }
 
+  /* ⚠️ 先排序、後裁切。若在合併迴圈裡就用長度 break，砍掉的是「還沒排序」
+     的那批，等於隨機丟資料 —— 與前端 mergeNewsStore 的原則一致。 */
   const kept = merged
-    .filter(n => now - (n.storedAt || 0) < RETAIN_DAYS * 864e5)
     .sort((a, b) => (b.whenMs || 0) - (a.whenMs || 0))
-    .slice(0, MAX);
+    .slice(0, MAX_ITEMS);
 
   const doc = {
     source: NEWS_URL,
     sourceName: "特別交通消息（運輸署開放數據）",
     note: "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
     generated: new Date().toISOString(),
-    retainDays: RETAIN_DAYS,
+    maxItems: MAX_ITEMS,
     count: kept.length,
     messages: kept,
   };

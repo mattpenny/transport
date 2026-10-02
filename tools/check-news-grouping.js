@@ -6,14 +6,18 @@
  *   1. The 特別交通消息 heading count counts TODAY's messages only. It used to
  *      count every message the page held (live + archive + localStorage), so it
  *      read as "there is news today" when there was none.
- *   2. The full-screen sheet is GROUPED into 今日 / 過往兩天交通消息. It used to
+ *   2. The full-screen sheet is GROUPED into 今日 / 過往消息. It used to
  *      render one flat list of everything.
- *   3. The 過往兩天交通消息 card on the landing is GONE in the normal case. The
+ *   3. The 過往消息 card on the landing is GONE in the normal case. The
  *      ticker and that card both opened the same sheet, so it was a duplicate
  *      entry point.
  *   4. ...but an entry must still exist when the ticker is absent, or past news
  *      becomes unreachable on mobile. With no today messages the ticker and its
  *      "點擊查看全部" hint do not render, so a fallback entry must appear.
+ *   5. The panel holds at most 15 messages in total (NEWS_MAX_ITEMS), evicting
+ *      the oldest. The cap is asserted with a 20-message fixture: if the count
+ *      stays at 20, the cap silently stopped working — the panel would just
+ *      grow without bound as news accumulates.
  *
  * We control the data by intercepting the two file sources, then clear
  * localStorage and reload — the page merges its own persisted cache with the
@@ -73,7 +77,7 @@ async function runScenario(browser, { label, msgs, expect }) {
   });
   await ctx.route('**/traffic-news-archive.json*', (r) =>
     r.fulfill({ status: 200, contentType: 'application/json',
-                body: JSON.stringify({ generated: '', retainDays: 3, count: 0, messages: [] }) }));
+                body: JSON.stringify({ generated: '', maxItems: 15, count: 0, messages: [] }) }));
   await ctx.route('**/trafficnews.xml*', (r) =>
     r.fulfill({ status: 200, contentType: 'application/xml', body: tdXml(msgs) }));
 
@@ -116,21 +120,42 @@ async function runScenario(browser, { label, msgs, expect }) {
   await p.waitForTimeout(500);
 
   if (TEETH) {
-    /* Reproduce the REPORTED bug, not merely hide a label: the old markup was
-       one flat <ul> with no group blocks. Collapse the groups back to that. */
-    await p.evaluate(() => {
-      const body = document.querySelector('.tp-sheet-body');
-      if (!body) return;
-      const blocks = [...body.querySelectorAll('.tp-news-group-block')];
-      if (!blocks.length) return;
-      const items = [...body.querySelectorAll('.tp-news-item')];
-      const ul = document.createElement('ul');
-      ul.className = 'tp-news-list';
-      items.forEach((li) => ul.appendChild(li));
-      blocks[0].parentNode.insertBefore(ul, blocks[0]);
-      blocks.forEach((b) => b.remove());
-    });
-    await p.waitForTimeout(200);
+    /* Teeth must target the thing THIS scenario asserts, or the probe could
+       stay green on a scenario it never actually falsified. Group scenarios get
+       the grouping sabotage; the cap scenario gets the cap sabotage. */
+    if (expect.capAt !== undefined) {
+      /* Reproduce an uncapped panel: the pre-fix page kept up to 80 rows. Clone
+         the existing rows until we exceed the cap, which is what a missing
+         NEWS_MAX_ITEMS would have produced (20 incoming, 20 rendered). */
+      await p.evaluate(() => {
+        const body = document.querySelector('.tp-sheet-body');
+        const list = body && body.querySelector('.tp-news-list, .tp-news-group-block');
+        if (!list) return;
+        const container = body.querySelector('.tp-news-list') || list;
+        const first = container.querySelector('.tp-news-item');
+        if (!first) return;
+        for (let i = 0; i < 5; i++) {
+          container.appendChild(first.cloneNode(true));
+        }
+      });
+      await p.waitForTimeout(200);
+    } else {
+      /* Reproduce the REPORTED bug, not merely hide a label: the old markup was
+         one flat <ul> with no group blocks. Collapse the groups back to that. */
+      await p.evaluate(() => {
+        const body = document.querySelector('.tp-sheet-body');
+        if (!body) return;
+        const blocks = [...body.querySelectorAll('.tp-news-group-block')];
+        if (!blocks.length) return;
+        const items = [...body.querySelectorAll('.tp-news-item')];
+        const ul = document.createElement('ul');
+        ul.className = 'tp-news-list';
+        items.forEach((li) => ul.appendChild(li));
+        blocks[0].parentNode.insertBefore(ul, blocks[0]);
+        blocks.forEach((b) => b.remove());
+      });
+      await p.waitForTimeout(200);
+    }
   }
 
   const sheet = await p.evaluate(() => {
@@ -148,6 +173,12 @@ async function runScenario(browser, { label, msgs, expect }) {
         items: [...g.querySelectorAll('.tp-news-heading')].map((x) => x.textContent.trim()),
       })),
       flat: [...body.querySelectorAll('.tp-news-heading')].map((x) => x.textContent.trim()),
+      /* The sheet's own heading carries the TOTAL (the landing heading counts
+         today only). Needed for the cap assertion. */
+      headingCount: (() => {
+        const h = body.querySelector('.tp-head .tp-updated');
+        return h ? h.textContent.trim() : null;
+      })(),
     };
   });
 
@@ -156,6 +187,11 @@ async function runScenario(browser, { label, msgs, expect }) {
 
   const todayNames = expect.todayNames;
   const pastNames = expect.pastNames;
+  /* With a cap, only the newest `capAt` of the past names can be present, so the
+     "expected" past set is that prefix — not the full fixture. */
+  const expectedPast = expect.capAt !== undefined
+    ? pastNames.slice(0, expect.capAt - todayNames.length)
+    : pastNames;
 
   const mainHead = landing.heads.find((h) => h.title === '特別交通消息');
   const c = {
@@ -178,12 +214,12 @@ async function runScenario(browser, { label, msgs, expect }) {
       sheet.groups.length === (todayNames.length ? 1 : 0) + (pastNames.length ? 1 : 0),
   };
   const todayGroup = sheet.open ? (sheet.groups.find((g) => g.label === '今日')?.items || []) : [];
-  const pastGroup = sheet.open ? (sheet.groups.find((g) => g.label === '過往兩天交通消息')?.items || []) : [];
+  const pastGroup = sheet.open ? (sheet.groups.find((g) => g.label === '過往消息')?.items || []) : [];
   c.partitionOk =
     todayGroup.length === todayNames.length &&
-    pastGroup.length === pastNames.length &&
+    pastGroup.length === expectedPast.length &&
     todayGroup.every((h) => todayNames.includes(h)) &&
-    pastGroup.every((h) => pastNames.includes(h));
+    pastGroup.every((h) => expectedPast.includes(h));
   c.tickerOk = !expect.tickerPresent ||
     (landing.ticker.every((t) => todayNames.some((n) => t.includes(n))) &&
      landing.ticker.some((t) => todayNames.some((n) => t.includes(n))));
@@ -192,6 +228,21 @@ async function runScenario(browser, { label, msgs, expect }) {
      count. A group with no count span at all must fail, not silently pass. */
   c.groupCountsOk = sheet.open === true && sheet.groups.length > 0 &&
     sheet.groups.every((g) => g.count === `${g.items.length} 則`);
+  /* 5. The 15-item cap (NEWS_MAX_ITEMS). The fixture for this scenario holds 20
+        messages, so a working cap yields exactly 15 rows; a broken one yields
+        20. We count rendered rows (sheet.flat), not the heading text, because
+        the heading could agree with a wrong list — the rows are the truth. */
+  if (expect.capAt !== undefined) {
+    c.capOk = sheet.open === true && sheet.flat.length === expect.capAt;
+    /* The oldest must be the ones evicted: every message older than the newest
+       `capAt` must be absent. Sorting is by whenMs desc, so the kept set is the
+       first capAt of expect.allNames (already ordered newest-first). */
+    const keptNames = expect.allNames.slice(0, expect.capAt);
+    const droppedNames = expect.allNames.slice(expect.capAt);
+    c.capKeptNewest =
+      keptNames.every((h) => sheet.flat.includes(h)) &&
+      droppedNames.every((h) => !sheet.flat.includes(h));
+  }
   c.noErrors = errs.length === 0;
 
   return { label, landing, sheet, checks: c, errs };
@@ -207,6 +258,17 @@ async function runScenario(browser, { label, msgs, expect }) {
     { id: 'PAST-A', ms: now - 26 * 3600e3, heading: '昨日消息甲', detail: '昨日內容甲', location: '沙田' },
     { id: 'PAST-B', ms: now - 30 * 3600e3, heading: '昨日消息乙', detail: '昨日內容乙', location: '荃灣' },
   ];
+
+  /* Cap fixture: 20 messages, newest first, all "past" (so they cannot be
+     hidden behind the today-only ticker). Names carry their rank so we can
+     assert not just the COUNT but WHICH ones survived. */
+  const capMsgs = Array.from({ length: 20 }, (_, i) => ({
+    id: `CAP-${String(i).padStart(2, '0')}`,
+    ms: now - (i + 30) * 3600e3,
+    heading: `上限消息${String(i).padStart(2, '0')}`,
+    detail: `上限內容${String(i).padStart(2, '0')}`,
+    location: '測試',
+  }));
 
   if (shotDir && !fs.existsSync(shotDir)) fs.mkdirSync(shotDir, { recursive: true });
 
@@ -237,18 +299,39 @@ async function runScenario(browser, { label, msgs, expect }) {
         tickerPresent: false,
       },
     }),
+    /* Cap: 20 messages in, 15 must render, and the 5 dropped must be the
+       OLDEST. A probe that only checked the count would pass even if the page
+       kept the 15 oldest and threw away the newest — the exact inversion of
+       what the user asked for. */
+    await runScenario(browser, {
+      label: 'cap-15',
+      msgs: capMsgs,
+      expect: {
+        todayNames: [],
+        pastNames: capMsgs.map((m) => m.heading),
+        pastCardRemoved: false,
+        tickerPresent: false,
+        capAt: 15,
+        allNames: capMsgs.map((m) => m.heading),   // already newest-first
+      },
+    }),
   ];
 
   await browser.close();
 
   const KEYS = ['headCountToday', 'pastCardRemoved', 'hasEntry', 'sheetOpen',
-                'sheetGrouped', 'partitionOk', 'tickerOk', 'groupCountsOk', 'noErrors'];
+                'sheetGrouped', 'partitionOk', 'tickerOk', 'groupCountsOk',
+                'capOk', 'capKeptNewest', 'noErrors'];
   let failed = false;
   let blind = false;
 
   for (const s of scenarios) {
     const c = s.checks;
-    const pass = KEYS.every((k) => c[k] === true) && !!c.openedVia;
+    /* Only assert the keys this scenario actually defines. capOk/capKeptNewest
+       exist only in the cap scenario; requiring them everywhere would fail the
+       other scenarios for the wrong reason. */
+    const keys = KEYS.filter((k) => c[k] !== undefined);
+    const pass = keys.every((k) => c[k] === true) && !!c.openedVia;
     /* In teeth mode a PASS is the wrong outcome: the sabotage had no effect,
        so the probe is not testing what it claims. */
     if (TEETH ? pass : !pass) failed = true;
@@ -257,7 +340,7 @@ async function runScenario(browser, { label, msgs, expect }) {
     console.log(`\n### ${s.label}  (opened via: ${c.openedVia})`);
     console.log(`  landing: ${JSON.stringify(s.landing)}`);
     console.log(`  sheet  : ${JSON.stringify(s.sheet)}`);
-    console.log(`  ${KEYS.map((k) => `${k}=${c[k]}`).join(' ')}`);
+    console.log(`  ${keys.map((k) => `${k}=${c[k]}`).join(' ')}`);
     if (s.errs.length) console.log('  errors:', s.errs.join(' | '));
     console.log(`  => ${pass ? 'PASS' : 'FAIL'}${TEETH ? (pass ? ' (WRONG: stayed green = blind)' : ' (correct: went red)') : ''}`);
   }

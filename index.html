@@ -738,7 +738,7 @@
   .tp-news-detail { color: #2b3a55; font-size: calc(14px * var(--font-scale)); line-height: 1.5; margin-top: 3px; }
   .tp-news-when { color: #98a2b3; font-size: calc(12px * var(--font-scale)); margin-top: 3px; }
   .tp-news-when.future { color: #c8102e; }
-  /* 桌機分組標題（「今日」／「過往兩天交通消息」），與手機的叫法一致。 */
+  /* 桌機分組標題（「今日」／「過往消息」），與手機的叫法一致。 */
   .tp-news-group { margin: 12px 0 4px; color: #1a3d7c; font-weight: 700; font-size: calc(14px * var(--font-scale)); }
   /* 每組自己的數量。標題旁的總數（例如「4 則」）說不出來源，而手機 landing
      的卡片只數今日（「2 則」）—— 點進來卻看到「4 則」，讀起來像前後矛盾。
@@ -2031,11 +2031,11 @@
 
         <!-- 1. 特別交通消息。
                 手機：inline 顯示今日的橫向 ticker；點 ticker 或下面的
-                      「過往兩天交通消息」都是開 .tp-sheet 全螢幕面板看全部
+                      「過往消息」都是開 .tp-sheet 全螢幕面板看全部
                       （不在小卡內展開）。
                 桌機：由側欄底部的入口（.sidebar-news-btn）開啟；展開時右欄只放
                       這一塊（交通快拍／行車時間收起），一次列出全部消息
-                      （今日 + 過往兩天）。 -->
+                      （今日 + 過往消息）。 -->
         <div v-if="showNewsSection" class="tp-section">
           <div class="tp-head">
             <h3>特別交通消息</h3>
@@ -2048,8 +2048,8 @@
 
           <template v-if="isMobile">
             <!-- 跑馬燈只播「今日」的消息；點一下開全螢幕面板看完整清單。
-                 面板內已分「今日」與「過往兩天交通消息」兩組，所以 landing
-                 不再另設「過往兩天」卡片 —— 它與跑馬燈指向的是同一個面板，
+                 面板內已分「今日」與「過往消息」兩組，所以 landing
+                 不再另設「過往消息」卡片 —— 它與跑馬燈指向的是同一個面板，
                  兩張卡會變成重複的入口（已回報）。 -->
             <div v-if="newsToday.length" class="tp-ticker"
                  :class="{ 'tp-tap': isMobile }"
@@ -2075,13 +2075,15 @@
 
             <!-- 例外情況：今日完全沒有消息時，跑馬燈與「點擊查看全部」都不會
                  出現，就沒有入口可以開面板。此時若仍有過往消息，補一個入口，
-                 否則過去兩天的消息在手機上會完全看不到。
-                 正常有今日消息時這塊不存在 —— 所以不會與跑馬燈重複。 -->
+                 否則那些消息在手機上會完全看不到。
+                 正常有今日消息時這塊不存在 —— 所以不會與跑馬燈重複。
+                 ⚠️ 標題不再寫「兩天」：上限已改成 15 則（見 NEWS_MAX_ITEMS），
+                 「過往」涵蓋多久由新聞量決定，硬寫天數會與實際內容不符。 -->
             <div v-if="!newsToday.length && newsPastAll.length" class="tp-day">
               <button class="tp-day-head" type="button"
                       @click="openTrafficSheet('news')"
                       aria-label="查看全部特別交通消息">
-                <span class="tp-day-date">過往兩天交通消息</span>
+                <span class="tp-day-date">過往消息</span>
                 <span class="tp-day-count">{{ newsPastAll.length }} 則</span>
                 <span class="tp-day-caret">›</span>
               </button>
@@ -2090,7 +2092,7 @@
             <div v-if="!trafficNews.length" class="tp-empty">{{ trafficNewsError || "暫無特別交通消息" }}</div>
           </template>
 
-          <!-- 桌機：與手機一樣分「今日」／「過往兩天交通消息」兩組，一次列全部，
+          <!-- 桌機：與手機一樣分「今日」／「過往消息」兩組，一次列全部，
                因為整個右欄就是這塊專區。 -->
           <template v-else>
             <div v-if="!trafficNews.length" class="tp-empty">{{ trafficNewsError || "暫無特別交通消息" }}</div>
@@ -2224,9 +2226,9 @@
         </div>
         <div class="tp-sheet-body">
 
-          <!-- 特別交通消息：與桌機面板同一套分組（今日／過往兩天交通消息）。
-               這裡必須分組 —— 之前直接 v-for trafficNews，結果今日與過往兩天
-               的消息混成一份清單，而「跑馬燈」與「過往兩天」兩個入口又都開
+          <!-- 特別交通消息：與桌機面板同一套分組（今日／過往消息）。
+               這裡必須分組 —— 之前直接 v-for trafficNews，結果今日與過往的
+               消息混成一份清單，而「跑馬燈」與「過往消息」兩個入口又都開
                這個面板，所以兩邊點進去看到的都是同一份「全部消息」。
                桌機的欄位與叫法已在上面，這裡保持一致。 -->
           <div v-if="trafficSheet === 'news'" class="tp-section">
@@ -3041,10 +3043,12 @@ const TD_CAMERA_URL = "https://static.data.gov.hk/td/traffic-snapshot-images/cod
 const TD_JTIS_URL = "https://resource.data.one.gov.hk/td/jss/Journeytimev2.xml";
 
 /* 跨裝置「共用」的交通消息存檔。運輸署的 XML 只載目前生效的消息、沒有歷史，
-   所以「過往兩天」只能靠存檔補齊。之前每個瀏覽器只在自己的 localStorage 累積，
+   所以「今日以前」的消息只能靠存檔補齊。之前每個瀏覽器只在自己的 localStorage 累積，
    於是不會跨裝置同步（手機看到、電腦看不到）。
    這個靜態檔由 tools/build-traffic-news.js（或 .github/workflows/update-traffic-news.yml
    定時執行）產生，所有裝置一併下載、合併，便人人看到同一份記錄。
+   ⚠️ 它只是「收斂」不是「同步」：共用檔最多 30 分鐘才更新一次（且內容沒變就不重
+   commit），所以裝置間仍可能有小幅差異。合併時的硬上限是 15 則（NEWS_MAX_ITEMS）。
    檔案不存在（例如未部署）時會靜默略過，一切照舊。 */
 const TD_NEWS_ARCHIVE_URL = "traffic-news-archive.json";
 
@@ -3118,37 +3122,43 @@ function parseTrafficNews(text) {
        面板的完整清單。若日後要顯示更多歷史，把上面的 lookback 調長即可。 */
 }
 
-/* --- 特別交通消息：保留最近 3 則 ---
+/* --- 特別交通消息：最多保留 15 則（天花板，與日數無關） ---
    運輸署的 XML 只載「仍然生效」的消息，完結的隨即從來源消失，所以它
    經常只有一則，跑馬燈也就無從顯示多則。這裡把每次抓到的消息合併存到
-   localStorage：新的加在前面、相同的以 id 去重更新，保留 3 日內所有消息
-   （NEWS_ARCHIVE_MAX 只是防止 localStorage 被灌爆的保險上限）。
-   這樣來源當下只有一則時，使用者仍看得到過去幾日的消息。
-   只存在瀏覽器本機、不會上傳；每則加 storedAt，逾 3 日（NEWS_ARCHIVE_TTL_DAYS）
-   就丟棄，免得舊消息一直霸佔著位置。今日的留在跑馬燈，較早的按日摺成卡片。 */
+   localStorage：新的加在前面、相同的以 id 去重更新。
+
+   ⚠️ 為什麼上限是「則數」而不是「日數」（2026-10-02 改）：
+   本來用「保留 3 日」（NEWS_ARCHIVE_TTL_DAYS），但 TD 的流量沒有上限 ——
+   某一日多事故（颱風、連環意外）可以一次湧入十幾則，於是各裝置的總數
+   會膨脹得很快，也更難預期。改成**固定上限 15 則**之後：
+     - 總數永遠 ≤ 15，畫面高度與閱讀負擔都可預期
+     - 新消息進來就把最舊的擠出去（滾動窗口，與一般新聞的做法一致）
+     - 不再有「幾日」的概念 —— 15 則涵蓋多久由新聞量自然決定
+   ⚠️ 上限是在**排序之後**才套用的（見 mergeNewsStore 末端），
+   不能在去重迴圈裡就 break —— 那樣會先砍掉還沒排序的舊資料，
+   可能把剛好排在後面的**最新**消息丟掉。 */
 const NEWS_STORE_KEY = "hk-bus-traffic-news";
-/* 三日內的消息全部保留（每日數則，3 日總量遠少於此）。這個上限只用來防止
-   localStorage 被灌爆 —— 來源若日後改為歷史資料集，數量可能大增。 */
-const NEWS_ARCHIVE_MAX = 80;
-const NEWS_ARCHIVE_TTL_DAYS = 3;
+/* 顯示與保留的硬上限：整個面板最多 15 則，最舊的會被新消息擠出。 */
+const NEWS_MAX_ITEMS = 15;
 
 function loadNewsStore() {
   try {
     const arr = JSON.parse(localStorage.getItem(NEWS_STORE_KEY));
     if (!Array.isArray(arr)) return [];
-    const now = Date.now();
-    return arr
-      .filter(n => n && typeof n === "object" && (n.id || n.heading))
-      .filter(n => !n.storedAt || now - n.storedAt < NEWS_ARCHIVE_TTL_DAYS * 864e5)
-      .slice(0, NEWS_ARCHIVE_MAX);
+    /* 不再按日數過濾（storedAt 只用來判斷是否為同一批）。
+       上限改由 mergeNewsStore 在排序後統一裁切。 */
+    return arr.filter(n => n && typeof n === "object" && (n.id || n.heading));
   } catch (e) { return []; }
 }
 function saveNewsStore(list) {
-  try { localStorage.setItem(NEWS_STORE_KEY, JSON.stringify(list.slice(0, NEWS_ARCHIVE_MAX))); }
+  try { localStorage.setItem(NEWS_STORE_KEY, JSON.stringify(list.slice(0, NEWS_MAX_ITEMS))); }
   catch (e) { /* localStorage 滿／被封（私隱模式）→ 略過，功能照常，只是沒有跨次保留 */ }
 }
 /* 把新抓到的消息與已存的合併：新的在前、舊的補在後，以 id 去重。
-   依日期新→舊排（沒有日期的 whenMs 當 0，排在最後）。 */
+   依日期新→舊排（沒有日期的 whenMs 當 0，排在最後）。
+   ⚠️ 兩個步驟的次序很重要：**先去重、排序，最後才裁到 15 則**。
+   若在去重迴圈裡提早 break，被砍掉的會是「還没排序」的那批，
+   等於隨機丟資料；先排序再 slice 才能保證砍掉的永遠是最舊的。 */
 function mergeNewsStore(stored, fresh) {
   const now = Date.now();
   const out = [];
@@ -3158,12 +3168,13 @@ function mergeNewsStore(stored, fresh) {
     if (!key || seen[key]) continue;
     seen[key] = true;
     out.push(Object.assign({}, n, { storedAt: n.storedAt || now }));
-    if (out.length >= NEWS_ARCHIVE_MAX) break;
   }
-  return out.sort((a, b) => (b.whenMs || 0) - (a.whenMs || 0));
+  return out
+    .sort((a, b) => (b.whenMs || 0) - (a.whenMs || 0))
+    .slice(0, NEWS_MAX_ITEMS);
 }
 
-/* --- 消息所屬日期（YYYY-MM-DD，本機時間）。手機用它把「今日」與「過往兩天」
+/* --- 消息所屬日期（YYYY-MM-DD，本機時間）。手機用它把「今日」與「過往」
        分開；解析不到時間的歸入 unknown（會被當成「過往」）。 --- */
 function newsDayKey(n) {
   const d = n.whenMs ? new Date(n.whenMs) : null;
@@ -4368,8 +4379,10 @@ createApp({
     const newsTodayKey = computed(() => newsDayKey({ whenMs: trafficUpdated.value || Date.now() }));
     const newsToday = computed(() => trafficNews.value.filter(n => newsDayKey(n) === newsTodayKey.value));
 
-    /* --- 手機：把「過往兩天」（今日以外的消息）合成一個入口 ---
-       新聞來源只保留 3 日（今日 + 前兩日），所以「非今日」＝過往兩天。
+    /* --- 手機：把「今日以外的消息」合成一個入口 ---
+       ⚠️ 裁切基準已由「日數」改為「則數」（最多 15 則，見 NEWS_MAX_ITEMS），
+       所以「非今日」現在可能是**幾小時前**，也可能橫跨幾日 —— 取決於
+       最近的新聞量。因此標籤不能再寫死「兩天」，改用中性的「過往消息」。
        這個入口與今日的跑馬燈行為一致：點一下開全螢幕面板（.tp-sheet）看全部，
        不在小卡內展開。 */
     const newsPastAll = computed(() => {
@@ -4377,12 +4390,12 @@ createApp({
       return trafficNews.value.filter(n => newsDayKey(n) !== today);
     });
 
-    /* 桌機面板：把消息分成「今日」與「過往兩天交通消息」兩組（與手機同一套叫法），
+    /* 面板：把消息分成「今日」與「過往消息」兩組（與手機同一套叫法），
        一次列出全部；沒有該組就不顯示該標題。 */
     const newsGroups = computed(() => {
       const groups = [];
       if (newsToday.value.length) groups.push({ key: "today", label: "今日", items: newsToday.value });
-      if (newsPastAll.value.length) groups.push({ key: "past", label: "過往兩天交通消息", items: newsPastAll.value });
+      if (newsPastAll.value.length) groups.push({ key: "past", label: "過往消息", items: newsPastAll.value });
       return groups;
     });
 
@@ -4408,7 +4421,8 @@ createApp({
     });
 
     /* 每則消息的 ticker 文字：標題 + 位置 + 內容，最新在最前（parseTrafficNews 已排序）。
-       只跑「今日」的消息 —— 過往兩天的收在下面的入口，不該在跑馬燈重複出現。 */
+       只跑「今日」的消息 —— 過往的收在下面的入口，不該在跑馬燈重複出現
+       （跑馬燈不受 15 則上限影響，它只播今日）。 */
     const tickerItems = computed(() => newsToday.value.map(n => ({
       text: [n.heading, n.location, n.detail].filter(Boolean).join("｜"),
       detail: [n.detail, n.direction, n.landmark].filter(Boolean).join("　"),
