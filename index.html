@@ -2007,7 +2007,10 @@
           </div>
 
           <template v-if="isMobile">
-            <!-- 跑馬燈只播「今日」的消息；點一下開全螢幕面板看完整清單。 -->
+            <!-- 跑馬燈只播「今日」的消息；點一下開全螢幕面板看完整清單。
+                 面板內已分「今日」與「過往兩天交通消息」兩組，所以 landing
+                 不再另設「過往兩天」卡片 —— 它與跑馬燈指向的是同一個面板，
+                 兩張卡會變成重複的入口（已回報）。 -->
             <div v-if="newsToday.length" class="tp-ticker"
                  :class="{ 'tp-tap': isMobile }"
                  :role="isMobile ? 'button' : null"
@@ -2029,11 +2032,12 @@
               </div>
             </div>
             <div v-if="newsToday.length" class="tp-tap-hint">點擊查看全部 ›</div>
-            <div v-if="!trafficNews.length" class="tp-empty">{{ trafficNewsError || "暫無特別交通消息" }}</div>
 
-            <!-- 過往兩天：與今日跑馬燈同一種行為 —— 點一下就開全螢幕面板看全部，
-                 不在這張小卡內展開。 -->
-            <div v-if="newsPastAll.length" class="tp-day">
+            <!-- 例外情況：今日完全沒有消息時，跑馬燈與「點擊查看全部」都不會
+                 出現，就沒有入口可以開面板。此時若仍有過往消息，補一個入口，
+                 否則過去兩天的消息在手機上會完全看不到。
+                 正常有今日消息時這塊不存在 —— 所以不會與跑馬燈重複。 -->
+            <div v-if="!newsToday.length && newsPastAll.length" class="tp-day">
               <button class="tp-day-head" type="button"
                       @click="openTrafficSheet('news')"
                       aria-label="查看全部特別交通消息">
@@ -2042,6 +2046,8 @@
                 <span class="tp-day-caret">›</span>
               </button>
             </div>
+
+            <div v-if="!trafficNews.length" class="tp-empty">{{ trafficNewsError || "暫無特別交通消息" }}</div>
           </template>
 
           <!-- 桌機：與手機一樣分「今日」／「過往兩天交通消息」兩組，一次列全部，
