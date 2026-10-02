@@ -17,8 +17,7 @@
  *
  * Usage: node tools/diagnose-news-sources.js [--url https://mattpenny.github.io/transport]
  */
-const PW = 'C:/Users/Ansum/.workbuddy-ai/binaries/node/pwtest/node_modules/playwright-core';
-const { chromium } = require(PW);
+const { chromium } = require('./pw');
 
 const argUrl = (() => {
   const i = process.argv.indexOf('--url');

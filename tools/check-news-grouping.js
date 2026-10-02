@@ -30,8 +30,7 @@
  *           also be looked at. A passing assertion set proves the properties you
  *           thought to check; it cannot tell you the result LOOKS right.
  */
-const PW = 'C:/Users/Ansum/.workbuddy-ai/binaries/node/pwtest/node_modules/playwright-core';
-const { chromium } = require(PW);
+const { chromium } = require('./pw');
 const fs = require('fs');
 
 const argUrl = (() => {

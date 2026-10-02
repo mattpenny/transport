@@ -1745,10 +1745,18 @@
 
       <hr class="fav-divider" />
 
-      <div v-if="!isMobile">
-        <div class="company-label">巴士公司</div>
+      <!-- 巴士公司列：**預設隱藏**，只在「同一個號碼有超過一間公司營運」時才出現
+           （例如 969 由九巴與城巴同時經營）。這與手機版的行為一致 ——
+           手機平常不顯示任何公司按鈕，撞號時才彈「選擇巴士公司」。
+           為什麼要改成預設隱藏？因為四個公司按鈕平時佔掉側欄一整行，
+           而絕大多數路線號碼只屬於一間公司，使用者根本不需要選；
+           真正需要選的時候（撞號）才顯示，資訊才有意義。
+           v-if="companyCollision" 由 companiesMatchingQuery 計算而來（見 setup）。
+           手機版另有 v-if="!isMobile" 的外層，兩者互不衝突。 -->
+      <div v-if="!isMobile && companyCollision">
+        <div class="company-label">巴士公司（{{ companyCollision.route }} 由多間公司營運）</div>
         <div class="company-row">
-          <button v-for="c in companies" :key="c.id"
+          <button v-for="c in companyCollision.list" :key="c.id"
                   class="company-btn"
                   :class="{ active: company === c.id }"
                   :title="c.name"
@@ -2808,6 +2816,7 @@ async function fetchNlbEta(routeId, stopId) {
 const MTR_API = "https://rt.data.gov.hk/v1/transport/mtr/bus/getSchedule";
 const MTR_ROUTES_URL = "mtr-routes.min.json";
 const MTR_STOPS_URL = "mtr-stops.min.json";
+const MTR_FARES_URL = "mtr-fares.min.json";
 const MTR_NO_ARRIVAL = 108000;
 const MTR_STOP_ID = /^(.+?)-([A-Za-z]{0,2})([DU])(\d+)$/;
 /* API 自報 appRefreshTimeInSecond: 60，留一點餘裕。 */
@@ -2815,7 +2824,33 @@ const MTR_CACHE_MS = 55000;
 
 let mtrRoutesCache = null, mtrRoutesPromise = null;
 let mtrStopsCache = null, mtrStopsPromise = null;
+let mtrFaresCache = null, mtrFaresPromise = null;
 const mtrScheduleCache = Object.create(null);   // route -> { at, data }
+
+/* ---------- 港鐵巴士票價（官方 data.gov.hk 開放數據）----------
+   為什麼港鐵巴士的票價**不能**沿用票價檔（routeFareList.min.json）？
+   因為那個檔案在 `lrtfeeder` 底下有 60 筆路線方向資料，但**只有 45 筆有 fares**，
+   其餘 15 筆是 `fares: null`。缺的正好是最多人查的路線：
+       K12 K14 K17 K18（整個大埔區）＋ K51 s3 ／ K52 s2 ／ K66 s2 ／ K68 s3
+   於是這些路線的「詳請」沒有票價、側欄也沒有票價 —— 而且畫面完全看不出壞掉。
+
+   官方資料集（MTR Bus routes, fares, barrier-free facilities）補齊了全部 26 條線。
+   實測兩邊**完全一致**：票價檔裡那 45 筆有 fares 的，跟官方 CSV 一筆不差，
+   所以兩個來源並不衝突，只是官方那個沒有洞。
+
+   ⚠️ 港鐵巴士是**單一收費**：同一條線每一站都同一個價錢。所以「逐站票價階梯」
+   在這裡本來就不存在，一條線一個成人票價就是完整答案（KMB／CTB 那些
+   「由第 N 站起 $X」的階梯是另一回事，仍舊走票價檔）。
+   資料檔由 tools/build-mtr-fares.js 產生，重新下載 CSV 後重跑即可。 */
+function loadMtrFares() {
+  if (mtrFaresCache) return Promise.resolve(mtrFaresCache);
+  if (!mtrFaresPromise) {
+    mtrFaresPromise = getJSON(MTR_FARES_URL)
+      .then(j => { mtrFaresCache = (j && j.routes) || {}; return mtrFaresCache; })
+      .catch(e => { mtrFaresPromise = null; throw e; });
+  }
+  return mtrFaresPromise;
+}
 
 function loadMtrRoutes() {
   if (mtrRoutesCache) return Promise.resolve(mtrRoutesCache);
@@ -4512,7 +4547,16 @@ createApp({
          讓使用者看到實際查的是哪個號碼。 */
       const code = normalizeRouteNo(q);
       if (routeInput.value !== code) routeInput.value = code;
-      if (!isMobile.value) { searchRoute(code); return; }
+      /* 桌機與手機**走同一條偵測流程**。
+         以前桌機是 searchRoute(code) 直接用「目前選中的公司」去查，
+         所以使用者必須先自己按下正確的公司按鈕（那排按鈕因此必須常駐）。
+         現在改成兩邊一樣：一次問齊四間公司，自動判斷這號碼屬於哪間；
+         真的撞號才提示選公司。
+         這樣公司列就能預設隱藏 —— 因為平常根本不需要它。 */
+      /* 清掉上一次搜尋留下的撞號名單，否則公司列會殘留。
+         （companyCollision 已經要求 searched 為真，但搜尋失敗／地名搜尋
+          都不會經過下面的分支，名單會留在記憶體裡，所以要主動清。） */
+      pickerCompanyIds.value = [];
       mobileSearching.value = true; error.value = "";
       try {
         const [kmb, ctb, nlb, mtr] = await Promise.all([
@@ -4537,8 +4581,30 @@ createApp({
           if (company.value !== matches[0]) { company.value = matches[0]; await loadRoutes(); }
           await searchRoute(code); return;
         }
+        /* 撞號：同一個號碼有兩間以上公司營運。
+           ⚠️ 兩邊處理方式不同，因為可用的 UI 不同：
+             手機／窄版 → 彈出 .company-overlay 選擇彈窗（z-index 3500）。
+             桌機      → **不彈窗**，改為把側欄那排公司按鈕顯示出來
+                        （companyCollision 計算屬性），並停在那裡等使用者按。
+                        桌機的 .company-overlay 在 CSS 是 display:none，
+                        彈了也看不到 —— 這是原本就存在的限制。
+                        停下來等使用者按的好處是：桌機本來就看得到整排按鈕，
+                        不需要再用一個蓋住畫面的彈窗重複同一件事。
+
+           ⚠️ 這裡一定要把 searched 設為 true。
+           桌機的公司列是 `v-if="companyCollision"`，而 companyCollision 要求
+           `searched.value` 為真（那幾個條件是為了防止殘留名單讓按鈕無故冒出）。
+           若這裡不設，桌機撞號時 searched 仍是 false → 公司列永遠不顯示
+           → 使用者卡在「已搜尋但沒有任何東西可選」的空白畫面，且無錯誤訊息。
+           （手機不受影響，因為彈窗不看 searched —— 所以這個漏設只在桌機浮現，
+             正是「同一個功能兩條分支，其中一條沒被走過」的典型。） */
+        searched.value = true;
+        lastSearched.value = code;
+        routeKey.value = ""; selectedDirectionLabel.value = "";
+        stops.value = []; selectedStop.value = null; etas.value = [];
+        dataAge.value = null; countdown.value = null; currentFareEntry.value = null;
         pickerCompanyIds.value = matches;
-        showCompanyPicker.value = true;
+        if (isMobile.value) showCompanyPicker.value = true;
       } catch (e) { error.value = "搜尋失敗：" + e.message; }
       finally { mobileSearching.value = false; }
     }
@@ -5233,11 +5299,54 @@ createApp({
       currentFareEntry.value = null;
       const r = findCurrentRoute();
       if (!r) return;
+      /* 港鐵巴士走官方資料集，不查票價檔（原因見 loadMtrFares 的說明）。
+         票價檔那個 lrtfeeder 條目有 15 筆 fares 是 null，查它等於沒有票價。 */
+      if (company.value === "MTR") {
+        const e = await mtrFareEntryFor(r.route);
+        if (e) currentFareEntry.value = e;
+        return;
+      }
       const db = await fetchFareDb();
       if (!db) return;
       /* 一定要帶 r.direction：不帶的話回程會拿到去程那份逐站票價。 */
       const e = lookupFareEntry(r.route, company.value, r.serviceType || "1", r.direction);
       if (e) currentFareEntry.value = e;
+    }
+
+    /* 把官方那筆單一票價包裝成票價檔的形狀，好讓 computeBoardingFare、
+       詳請的 detailFareRows 等既有程式完全不改就能用。
+       `fares` 陣列在港鐵巴士是「每一站都同一個價」，所以直接鋪滿站數：
+       這樣 computeBoardingFare 用 stop.seq 取到的仍是同一個數字，
+       而 detailFareRows 的「第 0 筆＝全程收費、其餘只在變價時列出」邏輯
+       會自然得出只有一行「全程收費」—— 正是港鐵巴士的事實。
+       ⚠️ 站數取票價檔的站序長度（有的話），沒有就至少放一格；
+       放太長只是多佔記憶體，不影響顯示。 */
+    async function mtrFareEntryFor(routeNum) {
+      let fares;
+      try { fares = await loadMtrFares(); } catch (e) { return null; }
+      const rec = fares && fares[String(routeNum).trim().toUpperCase()];
+      if (!rec || !Number.isFinite(rec.adult)) return null;
+      /* 站數：借用票價檔那份 lrtfeeder 站序長度，讓 detailStops 的逐位對齊
+         （詳請的收費表要跟沿途車站一一對應）不會因為票價比較短而截斷。
+         拿不到就退回單格 —— 單一收費只需要一格。 */
+      let n = 1;
+      try {
+        const db = await fetchFareDb();
+        const src = db && lookupFareEntry(routeNum, "MTR", findCurrentRoute()?.serviceType || "1", findCurrentRoute()?.direction);
+        const arr = src && src.stopsMap && (src.stopsMap.lrtfeeder || src.stopsMap[Object.keys(src.stopsMap)[0]]);
+        if (Array.isArray(arr) && arr.length) n = arr.length;
+      } catch (e) {}
+      const list = new Array(n).fill(rec.adult);
+      const holiday = isTodayHoliday() ? list : [];
+      return {
+        route: String(routeNum), serviceType: "1",
+        companyList: ["lrtfeeder"], bound: {},
+        fares: list, faresHoliday: holiday,
+        /* 站序留原票價檔那份（若拿得到），否則空物件。 */
+        stopsMap: {},
+        /* 標記來源，方便閱讀與除錯；不參與任何比對。 */
+        isMtrFlat: true,
+      };
     }
 
     async function selectDirection(r) {
@@ -5358,6 +5467,24 @@ createApp({
     const availableCompaniesForPicker = computed(() => {
       if (!pickerCompanyIds.value.length) return companies;
       return companies.filter(c => pickerCompanyIds.value.includes(c.id));
+    });
+
+    /* 桌機側欄的「巴士公司」列要不要顯示 —— 只在撞號時顯示。
+       撞號＝剛剛那次搜尋的號碼有兩間以上公司在營運（pickerCompanyIds 兩筆以上），
+       而且**真的已經搜尋過**（searched 為真、號碼還在）。
+       為什麼要多這幾個條件？
+         - 只看 pickerCompanyIds.length 不夠：使用者撞號後改了輸入框、
+           或按了別的路線，那筆殘留的名單會讓按鈕列無故冒出來。
+         - 只看 searched 不夠：普通路線（只屬一間公司）也會 searched=true。
+       兩者一起看，才等於「現在畫面上這個號碼是撞號的」。
+       route 帶出來是為了標題寫清楚是哪個號碼，讓使用者知道為什麼要選。 */
+    const companyCollision = computed(() => {
+      if (!searched.value || pickerCompanyIds.value.length < 2) return null;
+      const route = lastSearched.value;
+      if (!route) return null;
+      const list = companies.filter(c => pickerCompanyIds.value.includes(c.id));
+      if (list.length < 2) return null;
+      return { route, list };
     });
 
     const mapRowText = computed(() => selectedStop.value ? selectedStop.value.name : "路線地圖");
@@ -5993,10 +6120,20 @@ createApp({
          所以視窗一變就要重算，否則轉向後彈窗會超出畫面。 */
       if (detailOpen.value) updateDetailModalMaxHeight();
       if (!isMobile.value) {
+        /* 從窄版轉到寬版：窄版用的是 .company-overlay 彈窗（桌機看不到），
+           所以要關掉它。但**不能清掉 pickerCompanyIds** —— 現在桌機的
+           「巴士公司」列就是靠這份名單決定要不要顯示（companyCollision）。
+           清掉的話，使用者在撞號畫面把視窗拉寬，那排按鈕會整個消失，
+           就沒有東西可以讓他選公司了。 */
         showCompanyPicker.value = false;
-        pickerCompanyIds.value = [];
         if (mapExpanded.value) mapExpanded.value = false;
         if (isMapUsable(mapDesktop)) { activeMap = mapDesktop; nextTick(drawOnActiveMap); }
+      }
+      /* 由寬版轉到窄版：桌機那排公司按鈕會消失（v-if="!isMobile"），
+         若當下正處於撞號狀態，就必須改彈出窄版的選擇彈窗，
+         否則使用者同樣會卡住、無從選擇。 */
+      else if (companyCollision.value) {
+        showCompanyPicker.value = true;
       }
     }
 
@@ -6091,7 +6228,7 @@ createApp({
       loadingStops, error, stopListRef, mapExpanded, mapRowText,
       pickingDirection, selectedDirectionLabel, isMobile,
       showCompanyPicker, mobileSearching, pickerCompanyIds,
-      availableCompaniesForPicker, favExpanded, isLanding,
+      availableCompaniesForPicker, companyCollision, favExpanded, isLanding,
       favourites, isCurrentFavourite, fareDisplay, isHoliday,
       detailOpen, detailDayIndex, detailLoading, detailReady, detailFailed,
       detailRoute, detailCompanyName, detailDirectionLabel, detailFareKey,

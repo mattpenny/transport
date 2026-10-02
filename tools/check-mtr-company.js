@@ -22,8 +22,7 @@
  *
  * Usage: node tools/check-mtr-company.js [--url http://127.0.0.1:8000] [--shot <dir>]
  */
-const PW = 'C:/Users/Ansum/.workbuddy-ai/binaries/node/pwtest/node_modules/playwright-core';
-const { chromium } = require(PW);
+const { chromium } = require('./pw');
 const fs = require('fs');
 
 const argUrl = (() => {
@@ -73,19 +72,41 @@ async function run(browser, { label, viewport, mobile, routeNo }) {
   await p.goto(`${argUrl}/index.html`, { waitUntil: 'load' });
   await p.waitForTimeout(3000);
 
-  /* The company buttons render progressively as each company's (async) route
-     list finishes loading. On a slow CDN the 港鐵巴士 button can appear several
-     seconds after `load`, so wait for it before asserting. It is a desktop-only
-     row, so we only wait on desktop. A genuinely missing button still FAILs via
-     the assertion below once the timeout elapses. */
-  if (!mobile) {
-    await p.waitForFunction(
-      () => [...document.querySelectorAll('.company-btn')].some(b => (b.textContent || '').includes('港鐵巴士')),
-      { timeout: 30000 }
-    ).catch(() => {});
-  }
+  /* The 巴士公司 row is now HIDDEN BY DEFAULT on desktop (same behaviour as
+     mobile): it only appears when the number searched is shared by 2+ companies.
+     So the probe can no longer "click the 港鐵巴士 company button" — there is no
+     such button until a collision happens.
+     It instead drives the real user path on BOTH viewports: type the K-number
+     and let the page work out the company itself. That is the auto-detect path
+     which is now load-bearing for desktop, so this covers it too.
 
-  /* 1. the company button, and its logo */
+     The company-button assertions below are therefore only meaningful when the
+     row HAPPENS to be on screen (a collision). They are reported as
+     informational, not as pass/fail. */
+  await p.evaluate((r) => {
+    const inp = document.querySelector('.row input');
+    if (!inp) return;
+    inp.focus();
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+    setter.call(inp, r);
+    inp.dispatchEvent(new Event('input', { bubbles: true }));
+  }, routeNo);
+  await p.waitForTimeout(300);
+  await p.evaluate(() => {
+    const btn = [...document.querySelectorAll('button')].find(b => (b.textContent || '').trim() === '查詢');
+    if (btn) btn.click();
+  });
+
+  /* A K-number belongs to one company only, so no picker should appear. If one
+     DOES, the search would stall waiting for a choice and the stop list would
+     stay empty — worth asserting, because that is how this could regress. */
+  await p.waitForTimeout(1500);
+  const pickerOpen = await p.evaluate(() => !!document.querySelector('.company-overlay'));
+  const collisionRow = await p.evaluate(() => {
+    const row = document.querySelector('.sidebar .company-row');
+    return row ? [...row.querySelectorAll('.company-btn .name')].map(n => n.textContent.trim()) : null;
+  });
+
   const companyBtn = await p.evaluate(() => {
     const btns = [...document.querySelectorAll('.company-btn')];
     const b = btns.find(x => (x.textContent || '').includes('港鐵巴士'));
@@ -95,46 +116,9 @@ async function run(browser, { label, viewport, mobile, routeNo }) {
              logoLoaded: img ? (img.naturalWidth > 0) : false };
   });
 
-  const out = { label, mobile: !!mobile, companyBtn, errs };
+  const out = { label, mobile: !!mobile, companyBtn, errs, pickerOpen, collisionRow };
 
-  if (mobile) {
-    /* Mobile: type the number and let the page work out the company. */
-    await p.evaluate((r) => {
-      const inp = document.querySelector('.row input');
-      inp.focus();
-      const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-      setter.call(inp, r);
-      inp.dispatchEvent(new Event('input', { bubbles: true }));
-    }, routeNo);
-    await p.waitForTimeout(300);
-    await p.evaluate(() => {
-      const btn = [...document.querySelectorAll('button')].find(b => (b.textContent || '').trim() === '查詢');
-      if (btn) btn.click();
-    });
-  } else {
-    /* Desktop: click the 港鐵巴士 company button, then search. */
-    await p.evaluate(() => {
-      const b = [...document.querySelectorAll('.company-btn')].find(x => (x.textContent || '').includes('港鐵巴士'));
-      if (b) b.click();
-    });
-    await p.waitForTimeout(1500);
-    const routeListCount = await p.evaluate(() => document.querySelectorAll('.route-item, .route-btn, .routes-list li').length);
-    out.routeListCount = routeListCount;
-    await p.evaluate((r) => {
-      const inp = document.querySelector('.row input');
-      inp.focus();
-      const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-      setter.call(inp, r);
-      inp.dispatchEvent(new Event('input', { bubbles: true }));
-    }, routeNo);
-    await p.waitForTimeout(300);
-    await p.evaluate(() => {
-      const btn = [...document.querySelectorAll('button')].find(b => (b.textContent || '').trim() === '查詢');
-      if (btn) btn.click();
-    });
-  }
-
-  await p.waitForTimeout(5000);
+  await p.waitForTimeout(3500);
 
   /* The page shows a direction picker and waits. Nothing loads until one is
      chosen, so we must pick before reading the stop list — reading straight
@@ -217,19 +201,20 @@ async function run(browser, { label, viewport, mobile, routeNo }) {
     const bareIds = names.filter(n => STOP_ID_RE.test(n));
     const sentinel = (res.etas || []).filter(t => /1800|108000/.test(t));
     const numericEta = (res.etas || []).filter(t => /\d+\s*分鐘|\d{2}:\d{2}/.test(t));
-    /* The 巴士公司 row is desktop-only (v-if="!isMobile") — mobile picks the
-       company from the popup instead, so only require the button on desktop. */
-    const companyOk = r.mobile ? true : (r.companyBtn.found && r.companyBtn.logoLoaded);
-    const ok = companyOk &&
+    /* The 巴士公司 row is hidden by default on BOTH viewports now, so a missing
+       company button is no longer a failure — it is the expected state. What
+       must hold is that a K-number resolves WITHOUT one: no picker is raised and
+       no collision row appears (either would stall the search). */
+    const autoOk = !r.pickerOpen && r.collisionRow === null;
+    const ok = autoOk &&
                names.length > 0 && bareIds.length === 0 &&
                sentinel.length === 0 && numericEta.length > 0 &&
                !res.error && r.errs.length === 0;
 
     console.log(`\n### ${r.label} — search ${r.routeNo || ''}`);
     console.log(`  company button: found=${r.companyBtn.found} logo=${r.companyBtn.logo} loaded=${r.companyBtn.logoLoaded}` +
-                (r.mobile ? '  (desktop-only row, not required on mobile)' : ''));
+                '  (row is hidden by default now — only present on a company collision)');
     if (!r.companyBtn.found) console.log(`    buttons seen: ${(r.companyBtn.all || []).join(' / ')}`);
-    if (r.routeListCount !== undefined) console.log(`  route list after clicking the company: ${r.routeListCount} entries`);
     console.log(`  stops: ${names.length}  first: ${names.slice(0, 3).join(' / ')}`);
     console.log(`  etas: ${(res.etas || []).slice(0, 3).join(' | ')}`);
     console.log(`  directions: ${(r.dirs || []).join(' / ') || '(none)'}`);
@@ -237,6 +222,10 @@ async function run(browser, { label, viewport, mobile, routeNo }) {
     if (r.detail) console.log(`  detail modal: open=${r.detail.open}${r.detail.open ? ' | ' + r.detail.text.slice(0, 160) : ''}`);
     console.log(`  bareIds=${bareIds.length} sentinel=${sentinel.length} numericEta=${numericEta.length}` +
                 (res.error ? `  ERROR=${res.error}` : ''));
+    /* A K-number belongs to exactly one company, so the search must resolve on
+       its own — no picker, no collision row. If either appears, the search
+       would stall waiting for a choice. */
+    console.log(`  auto-detected (no picker=${!r.pickerOpen}, no collision row=${r.collisionRow === null})`);
     if (r.errs.length) r.errs.slice(0, 5).forEach(e => console.log('   ', e));
     console.log(`  => ${ok ? 'PASS' : 'FAIL'}`);
     if (!ok) failed = true;

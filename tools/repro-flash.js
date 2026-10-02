@@ -16,8 +16,7 @@
  *
  * Usage: node tools/repro-flash.js [--url http://127.0.0.1:8000]
  */
-const PW = 'C:/Users/Ansum/.workbuddy-ai/binaries/node/pwtest/node_modules/playwright-core';
-const { chromium } = require(PW);
+const { chromium } = require('./pw');
 
 const argUrl = (() => {
   const i = process.argv.indexOf('--url');

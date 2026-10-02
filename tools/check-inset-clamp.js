@@ -30,8 +30,7 @@
  *          padding) and asserts the probe goes RED. An always-green probe is
  *          worse than no probe: this proves the assertions can actually fail.
  */
-const pwPath = 'C:/Users/Ansum/.workbuddy-ai/binaries/node/pwtest/node_modules/playwright-core';
-const { chromium } = require(pwPath);
+const { chromium } = require('./pw');
 
 const argUrl = (() => {
   const i = process.argv.indexOf('--url');
