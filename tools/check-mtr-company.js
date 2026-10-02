@@ -73,6 +73,18 @@ async function run(browser, { label, viewport, mobile, routeNo }) {
   await p.goto(`${argUrl}/index.html`, { waitUntil: 'load' });
   await p.waitForTimeout(3000);
 
+  /* The company buttons render progressively as each company's (async) route
+     list finishes loading. On a slow CDN the 港鐵巴士 button can appear several
+     seconds after `load`, so wait for it before asserting. It is a desktop-only
+     row, so we only wait on desktop. A genuinely missing button still FAILs via
+     the assertion below once the timeout elapses. */
+  if (!mobile) {
+    await p.waitForFunction(
+      () => [...document.querySelectorAll('.company-btn')].some(b => (b.textContent || '').includes('港鐵巴士')),
+      { timeout: 30000 }
+    ).catch(() => {});
+  }
+
   /* 1. the company button, and its logo */
   const companyBtn = await p.evaluate(() => {
     const btns = [...document.querySelectorAll('.company-btn')];
