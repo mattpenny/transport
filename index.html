@@ -1999,7 +1999,11 @@
         <div v-if="showNewsSection" class="tp-section">
           <div class="tp-head">
             <h3>特別交通消息</h3>
-            <span v-if="trafficNews.length" class="tp-updated">{{ trafficNews.length }} 則</span>
+            <!-- 數量用 newsHeadCount 而不是 trafficNews.length：
+                 手機這張卡只放「今日」的消息（跑馬燈），若顯示總數，
+                 使用者會以為今日有舊消息 —— 這正是回報的 bug。
+                 桌機面板同時列出兩組，故仍計總數。 -->
+            <span v-if="newsHeadCount" class="tp-updated">{{ newsHeadCount }} 則</span>
           </div>
 
           <template v-if="isMobile">
@@ -2174,28 +2178,36 @@
         </div>
         <div class="tp-sheet-body">
 
-          <!-- 特別交通消息：桌機是橫向 ticker，這裏改成直向清單（見 .tp-news-list 的註解）。
-               同一份 trafficNews 資料，欄位與桌機一致。 -->
+          <!-- 特別交通消息：與桌機面板同一套分組（今日／過往兩天交通消息）。
+               這裡必須分組 —— 之前直接 v-for trafficNews，結果今日與過往兩天
+               的消息混成一份清單，而「跑馬燈」與「過往兩天」兩個入口又都開
+               這個面板，所以兩邊點進去看到的都是同一份「全部消息」。
+               桌機的欄位與叫法已在上面，這裡保持一致。 -->
           <div v-if="trafficSheet === 'news'" class="tp-section">
             <div v-if="trafficNews.length" class="tp-head">
               <h3>特別交通消息</h3>
               <span class="tp-updated">{{ trafficNews.length }} 則</span>
             </div>
-            <ul v-if="trafficNews.length" class="tp-news-list">
-              <li v-for="n in trafficNews" :key="n.id || n.heading"
-                  class="tp-news-item" :class="{ closed: n.closed }">
-                <span class="tp-news-dot">{{ n.closed ? '○' : '●' }}</span>
-                <div class="tp-news-main">
-                  <div class="tp-news-heading">{{ n.heading }}</div>
-                  <div v-if="n.location || n.direction || n.landmark" class="tp-news-meta">
-                    {{ [n.location, n.direction, n.landmark].filter(Boolean).join('　') }}
-                  </div>
-                  <div v-if="n.detail" class="tp-news-detail">{{ n.detail }}</div>
-                  <div v-if="n.whenText" class="tp-news-when"
-                       :class="{ future: isFutureNews(n) }">{{ newsWhen(n) }}</div>
-                </div>
-              </li>
-            </ul>
+            <template v-if="trafficNews.length">
+              <div v-for="g in newsGroups" :key="g.key" class="tp-news-group-block">
+                <p class="tp-news-group">{{ g.label }}</p>
+                <ul class="tp-news-list">
+                  <li v-for="n in g.items" :key="n.id || n.heading"
+                      class="tp-news-item" :class="{ closed: n.closed }">
+                    <span class="tp-news-dot">{{ n.closed ? '○' : '●' }}</span>
+                    <div class="tp-news-main">
+                      <div class="tp-news-heading">{{ n.heading }}</div>
+                      <div v-if="n.location || n.direction || n.landmark" class="tp-news-meta">
+                        {{ [n.location, n.direction, n.landmark].filter(Boolean).join('　') }}
+                      </div>
+                      <div v-if="n.detail" class="tp-news-detail">{{ n.detail }}</div>
+                      <div v-if="n.whenText" class="tp-news-when"
+                           :class="{ future: isFutureNews(n) }">{{ newsWhen(n) }}</div>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+            </template>
             <div v-else class="tp-empty">{{ trafficNewsError || "暫無特別交通消息" }}</div>
           </div>
 
@@ -4093,6 +4105,12 @@ createApp({
       return groups;
     });
 
+    /* 標題旁「N 則」的數量。手機那張卡只放今日的消息（跑馬燈），所以數量
+       也只算今日 —— 顯示總數會讓使用者以為今日有舊消息。桌機面板一次列出
+       兩組，故仍計總數。 */
+    const newsHeadCount = computed(() =>
+      isMobile.value ? newsToday.value.length : trafficNews.value.length);
+
     /* --- 桌機：特別交通消息改成側欄底部的入口，預設收起。 ---
        showNewsSection：手機永遠 inline 顯示；桌機只在展開時才顯示。
        展開時右欄只放新聞（交通快拍／行車時間收起，見模板的 v-if）。 */
@@ -5886,7 +5904,7 @@ createApp({
       journeyTimes, journeyError, selectedCamKey, selectedCam,
       regionCameras, regionJourneys, snapshotUrl, snapshotLoaded, snapshotFailed,
       snapshotUpdatedText, tickerLoop, tickerTrack, tickerDuration, tickerItems,
-      newsToday, newsPastAll, newsGroups,
+      newsToday, newsPastAll, newsGroups, newsHeadCount,
       desktopNewsOpen, showNewsSection, toggleDesktopNews,
       camMapVisibleCount,
       camUserKnown, camLocating, camLocateError, camSelDistance, locateOnCamMap,
