@@ -5,6 +5,12 @@ android/*.jks
 # v2 signature side-car produced next to the APK by apksigner
 *.apk.idsig
 
+# APK 建置產物 —— 不進版控。
+# 二進位檔放進 repo 會令每次 clone 都變重，而且每次重建都多一份歷史，
+# 對「APK 只是載入線上頁面的超薄外殼」這個架構沒有任何好處。
+# 需要 APK 請依 README「建置 APK」一節自行建置。
+*.apk
+
 # Signing material — NEVER commit these
 *.jks
 *.keystore

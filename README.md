@@ -99,7 +99,6 @@ python -m http.server 8000
 ├── stops-index.min.json        ← 站點索引（搜尋用）
 ├── bus-detail.json             ← 巴士班次（服務日 → 時段 → 班距）
 ├── traffic-news-archive.json   ← 特別交通消息存檔（Action 每 30 分鐘更新）
-├── Ansum-Transport-v1.3-fixed.apk ← 最新 APK（唯一保留的版本）
 ├── ansum-release.jks           ← 簽章金鑰（**git-ignored，絕不可上傳**）
 ├── .github/workflows/
 │   └── update-traffic-news.yml ← 定時更新交通消息存檔的 Action
@@ -123,6 +122,11 @@ python -m http.server 8000
 > **三個交通模式都必須上傳**（`index.html`、`gmb.html`、`rmb.html`）以及對應的
 > `bus.png`、`gmb.png`、`rmb.png`、`spinner.png`。缺任何一個都會令首頁連結、
 > 圖示或載入動畫變成 404。
+
+> **APK 不進版控。** 建置產物 `Ansum-Transport-v1.3-fixed.apk` 會產生在 repo 根目錄，
+> 但 `.gitignore` 已排除 `*.apk`。二進位檔進 repo 只會令每次 clone 變重，而且每次
+> 重建都多一份歷史 —— 對「APK 只是載入線上頁面的超薄外殼」這個架構毫無好處。
+> 需要 APK 請依下方「建置 APK」一節自行建置。
 
 ### 各檔案用途
 
@@ -1278,7 +1282,8 @@ APK 是一個**超薄 WebView 外殼**，本身不含任何網頁程式碼，只
 https://mattpenny.github.io/transport/
 ```
 
-已完成的 APK 位於 repo 根目錄 **`Ansum-Transport-v1.3-fixed.apk`**（約 54 KB，已簽署），
+建置產物是 **`Ansum-Transport-v1.3-fixed.apk`**（約 54 KB，已簽署），會產生在 repo
+根目錄，但**不進版控**（`.gitignore` 已排除 `*.apk`）—— 需要時請依下方步驟自行建置。
 完整原始碼與建置腳本在 **`android/`**：
 `AndroidManifest.xml`、`src/com/ansum/bus/MainActivity.java`、`res/`、`build.bat`、`merge.py`。
 
