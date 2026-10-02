@@ -139,8 +139,13 @@ async function runScenario(browser, { label, msgs, expect }) {
     if (!body) return { open: false };
     return {
       open: true,
+      /* Each group carries its own count. The heading's total alone cannot
+         explain itself: the landing card counts TODAY only, so tapping "2 則"
+         and arriving at "4 則" reads as a contradiction unless the groups break
+         the total down. */
       groups: [...body.querySelectorAll('.tp-news-group-block')].map((g) => ({
-        label: g.querySelector('.tp-news-group')?.textContent.trim(),
+        label: g.querySelector('.tp-news-group')?.childNodes[0]?.textContent.trim(),
+        count: g.querySelector('.tp-news-group-count')?.textContent.trim(),
         items: [...g.querySelectorAll('.tp-news-heading')].map((x) => x.textContent.trim()),
       })),
       flat: [...body.querySelectorAll('.tp-news-heading')].map((x) => x.textContent.trim()),
@@ -183,6 +188,11 @@ async function runScenario(browser, { label, msgs, expect }) {
   c.tickerOk = !expect.tickerPresent ||
     (landing.ticker.every((t) => todayNames.some((n) => t.includes(n))) &&
      landing.ticker.some((t) => todayNames.some((n) => t.includes(n))));
+  /* Each group's own count must match the number of items under it — this is
+     what makes the panel's total legible next to the landing card's today-only
+     count. A group with no count span at all must fail, not silently pass. */
+  c.groupCountsOk = sheet.open === true && sheet.groups.length > 0 &&
+    sheet.groups.every((g) => g.count === `${g.items.length} 則`);
   c.noErrors = errs.length === 0;
 
   return { label, landing, sheet, checks: c, errs };
@@ -233,7 +243,7 @@ async function runScenario(browser, { label, msgs, expect }) {
   await browser.close();
 
   const KEYS = ['headCountToday', 'pastCardRemoved', 'hasEntry', 'sheetOpen',
-                'sheetGrouped', 'partitionOk', 'tickerOk', 'noErrors'];
+                'sheetGrouped', 'partitionOk', 'tickerOk', 'groupCountsOk', 'noErrors'];
   let failed = false;
   let blind = false;
 

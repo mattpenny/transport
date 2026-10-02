@@ -730,6 +730,10 @@
   .tp-news-when.future { color: #c8102e; }
   /* 桌機分組標題（「今日」／「過往兩天交通消息」），與手機的叫法一致。 */
   .tp-news-group { margin: 12px 0 4px; color: #1a3d7c; font-weight: 700; font-size: calc(14px * var(--font-scale)); }
+  /* 每組自己的數量。標題旁的總數（例如「4 則」）說不出來源，而手機 landing
+     的卡片只數今日（「2 則」）—— 點進來卻看到「4 則」，讀起來像前後矛盾。
+     在組標題上標明各組數量，落差就解釋得通。 */
+  .tp-news-group-count { margin-left: 6px; font-weight: 400; color: #7b879b; font-size: calc(12px * var(--font-scale)); font-variant-numeric: tabular-nums; }
   .tp-news-group-block:first-child .tp-news-group { margin-top: 0; }
 
   /* --- 交通快拍 --- */
@@ -2056,7 +2060,7 @@
             <div v-if="!trafficNews.length" class="tp-empty">{{ trafficNewsError || "暫無特別交通消息" }}</div>
             <template v-else>
               <div v-for="g in newsGroups" :key="g.key" class="tp-news-group-block">
-                <p class="tp-news-group">{{ g.label }}</p>
+                <p class="tp-news-group">{{ g.label }}<span class="tp-news-group-count">{{ g.items.length }} 則</span></p>
                 <ul class="tp-news-list">
                   <li v-for="n in g.items" :key="n.id || n.heading"
                       class="tp-news-item" :class="{ closed: n.closed }">
@@ -2196,7 +2200,7 @@
             </div>
             <template v-if="trafficNews.length">
               <div v-for="g in newsGroups" :key="g.key" class="tp-news-group-block">
-                <p class="tp-news-group">{{ g.label }}</p>
+                <p class="tp-news-group">{{ g.label }}<span class="tp-news-group-count">{{ g.items.length }} 則</span></p>
                 <ul class="tp-news-list">
                   <li v-for="n in g.items" :key="n.id || n.heading"
                       class="tp-news-item" :class="{ closed: n.closed }">
