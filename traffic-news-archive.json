@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-01T22:50:26.161Z",
+  "generated": "2026-10-02T01:52:37.198Z",
   "retainDays": 3,
-  "count": 5,
+  "count": 6,
   "messages": [
+    {
+      "id": "147189",
+      "heading": "道路事故",
+      "detail": "因交通意外，康莊道(往海底隧道方向)近香港理工大學的部份行車線現已封閉。 駕駛人士只可使用餘下行車線行車。 現時上址交通繁忙。",
+      "location": "康莊道",
+      "direction": "海底隧道",
+      "landmark": "香港理工大學",
+      "status": "最新情況",
+      "closed": false,
+      "whenText": "2026-10-02T09:39:00",
+      "whenMs": 1790905140000,
+      "storedAt": 1790905956292
+    },
     {
       "id": "147173",
       "heading": "道路事故",
