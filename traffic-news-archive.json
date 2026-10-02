@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-02T19:25:36.469Z",
+  "generated": "2026-10-02T23:06:47.867Z",
   "maxItems": 15,
-  "count": 9,
+  "count": 10,
   "messages": [
+    {
+      "id": "147236",
+      "heading": "暴雨事故",
+      "detail": "黃色暴雨警告信號現已生效，天雨路滑，運輸署呼籲駕駛人士及乘客須: i.提早計劃行程路線； ii.預留充裕時間出門； iii.小心駕駛及保持忍讓；及 iv.留意交通情況，特别在視線受阻的繁忙路口。",
+      "location": "",
+      "direction": "",
+      "landmark": "",
+      "status": "最新情況",
+      "closed": false,
+      "whenText": "2026-10-03T06:00:00",
+      "whenMs": 1790978400000,
+      "storedAt": 1790982406950
+    },
     {
       "id": "147234",
       "heading": "道路事故",
