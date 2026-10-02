@@ -83,6 +83,7 @@ public class MainActivity extends Activity {
     private static final String HEADER_COLOR = "#1a3d7c";   // index.html  (bus)
     private static final String GMB_COLOR    = "#0d5e3a";   // gmb.html    (green minibus)
     private static final String RMB_COLOR    = "#c8102e";   // rmb.html    (red minibus)
+    private static final String MTR_COLOR    = "#8c1d40";   // mtr.html    (MTR feeder bus)
     private static final String PAGE_COLOR   = "#f5f7fb";
 
     private static final String START_URL = "https://mattpenny.github.io/transport/";
@@ -536,6 +537,7 @@ public class MainActivity extends Activity {
             String u = url.toLowerCase();
             if (u.contains("gmb.html") || u.endsWith("/gmb")) return GMB_COLOR;
             if (u.contains("rmb.html") || u.endsWith("/rmb")) return RMB_COLOR;
+            if (u.contains("mtr.html") || u.endsWith("/mtr")) return MTR_COLOR;
         }
         return HEADER_COLOR;
     }
