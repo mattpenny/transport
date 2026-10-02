@@ -533,6 +533,16 @@
     cursor: pointer; white-space: nowrap;
   }
   .stops-expand-btn:hover { background: #eaf1ff; }
+  /* 「官方暫時沒有站表」的說明。用中性偏提示的色調（不是紅色錯誤），
+     因為這不是使用者做錯事、也不是本程式的錯，硬要說就是官方沒資料。
+     刻意跟 .error（紅）分開，避免使用者以為要重試或回報。 */
+  .stops-notice {
+    display: flex; align-items: flex-start; gap: 6px;
+    margin: 8px 0; padding: 8px 10px; border-radius: 6px;
+    background: #f3f6fb; border: 1px solid #dde5f2; color: #41506b;
+    font-size: calc(13px * var(--font-scale)); line-height: 1.5;
+  }
+  .stops-notice-ico { flex-shrink: 0; color: #1a3d7c; font-weight: 700; }
   .stops-expand-btn:active { transform: scale(0.97); }
 
   /* === 沿線巴士站彈窗（完整清單） ===
@@ -1849,6 +1859,20 @@
         </button>
       </div>
       <div v-if="loadingStops" class="loading">載入中…</div>
+
+      <!-- 「路線查到了、但官方現在沒有站表」的說明。
+           為何需要它：有些路線官方 API 會回空站表（實測 K14／K52P／K75S／K506，
+           且會隨時間變動）。此時下面兩個區塊（stops-head／stop-list）因為
+           v-if="stops.length" 都不渲染，error 也沒被設定 —— 使用者只看到
+           「方向顯示正常、下面一片空白、ETA 永遠停在『請先選擇巴士站』」，
+           讀起來像程式壞了，其實是官方暫時沒有資料。
+           條件刻意寫成「站表空的 ＋ 不在載入中 ＋ 沒有錯誤」，才不會跟那兩者打架。 -->
+      <div v-if="!stops.length && !loadingStops && !error && stopsNotice"
+           class="stops-notice" role="status">
+        <span class="stops-notice-ico">ⓘ</span>
+        <span>{{ stopsNotice }}</span>
+      </div>
+
       <div class="stop-list" v-if="stops.length" ref="stopListRef">
         <ul>
           <li v-for="s in stops" :key="s.id"
@@ -1969,7 +1993,11 @@
           <span v-if="isHoliday" class="fare-holiday-tag">假日</span>
         </div>
 
-        <div v-if="!selectedStop" class="hint">請先選擇巴士站</div>
+        <!-- 沒有車站可選時，「請先選擇巴士站」是句廢話（使用者無從選起），
+             改顯示跟側欄同一句官方說明，兩邊讀起來才一致。 -->
+        <div v-if="!selectedStop && !stops.length && !loadingStops && stopsNotice"
+             class="hint">{{ stopsNotice }}</div>
+        <div v-else-if="!selectedStop" class="hint">請先選擇巴士站</div>
         <ul v-else>
           <li v-for="(e, i) in etas" :key="i">
             <span class="rank">第 {{ i + 1 }} 班</span>
@@ -2927,6 +2955,21 @@ function pickMtrGroup(groups, want) {
     if (score > bestScore) { bestScore = score; best = groups[k]; }
   }
   return best || [];
+}
+
+/* 官方對「這條線現在有沒有資料」的自報欄位。
+   ⚠️ 為什麼要看它：官方 API 對部分路線會回傳**空站表**（busStop: []），
+   而且**同一條線今天是空的、明天可能有資料**，所以不能寫死路線名單。
+   有資料時 routeStatus 是 "0"、remark 是 null；沒資料時 routeStatus 是 "1"
+   並附上一句使用者看得懂的說明（例如「到站時間暫時未能提供」）。
+   這裡把 remarkTitle／remarkContent 串起來當成畫面要顯示的解釋。
+   回空字串＝官方沒說任何話，呼叫端就別自作聰明猜原因。 */
+function mtrOutageNotice(data) {
+  if (!data) return "";
+  const parts = [data.routeStatusRemarkTitle, data.routeStatusRemarkContent]
+    .map(s => String(s == null ? "" : s).trim())
+    .filter(Boolean);
+  return parts.join("　");
 }
 
 /* 站序用當下的 API 回應，所以官方新增站會自動出現，不必等資料檔更新。 */
@@ -4220,6 +4263,16 @@ createApp({
     const refreshing = ref(false);
     const loadingStops = ref(false);
     const error = ref("");
+    /* 「路線載入成功、但一班站都沒有」時要給的說明。
+       為什麼需要這個：有些路線官方 API 會回傳空站表（實測 K14／K52P／K75S／
+       K506，而且**同一條線今天有、明天可能沒有**，不是固定名單）。此時
+       stops 是空陣列 → 站表（v-if="stops.length"）與站名區塊都不渲染、
+       error 也沒被設定 —— 使用者看到的是「方向顯示正常、下面一片空白、
+       ETA 永遠停在『請先選擇巴士站』」，**看起來像程式壞掉，其實是官方沒資料**。
+       所以這裡放一句來自官方回應的說明，讓畫面能自己解釋自己。
+       ⚠️ 內容**必須**來自 API 回的 routeStatusRemarkTitle，不能硬寫路線名單：
+       官方修好、改文案、或新增路線時，硬編的清單就會變成錯的。 */
+    const stopsNotice = ref("");
     const stopListRef = ref(null);
     /* 「沿線巴士站」彈窗（完整清單）是否開啟。側欄清單只有 60vh 高、站名會被
        ellipsis 切掉，所以另開一個大彈窗看整份；✕／點遮罩／Esc 都能關掉。 */
@@ -4493,6 +4546,7 @@ createApp({
       dataAge.value = null; countdown.value = null;
       currentFareEntry.value = null; allRoutes.value = [];
       searched.value = false; mapExpanded.value = false; pickingDirection.value = false;
+      stopsNotice.value = "";
       detailOpen.value = false;
       try {
         const list = await loadRouteListFor(company.value);
@@ -4524,6 +4578,7 @@ createApp({
       dataAge.value = null; countdown.value = null;
       currentFareEntry.value = null; error.value = "";
       mapExpanded.value = false; pickingDirection.value = false;
+      stopsNotice.value = "";
       const count = matchedRoutes.value.length;
       if (count === 0) return;
       if (autoKey) {
@@ -4572,6 +4627,7 @@ createApp({
           routeKey.value = ""; selectedDirectionLabel.value = "";
           stops.value = []; selectedStop.value = null; etas.value = [];
           dataAge.value = null; countdown.value = null; currentFareEntry.value = null;
+          stopsNotice.value = "";
           /* 找不到這個路線號碼時，再試一次地名搜尋（例如輸入「旺角」） */
           mobileSearching.value = false;
           await placeSearch(code);
@@ -4603,6 +4659,7 @@ createApp({
         routeKey.value = ""; selectedDirectionLabel.value = "";
         stops.value = []; selectedStop.value = null; etas.value = [];
         dataAge.value = null; countdown.value = null; currentFareEntry.value = null;
+        stopsNotice.value = "";
         pickerCompanyIds.value = matches;
         if (isMobile.value) showCompanyPicker.value = true;
       } catch (e) { error.value = "搜尋失敗：" + e.message; }
@@ -4826,6 +4883,7 @@ createApp({
       stops.value = []; selectedStop.value = null; etas.value = [];
       dataAge.value = null; countdown.value = null; currentFareEntry.value = null;
       detailOpen.value = false;   /* 詳請彈窗跟著方向一起收掉 */
+      stopsNotice.value = "";
     }
 
     /* 返回主頁：清空搜尋狀態，回到初始 landing 畫面 */
@@ -5300,6 +5358,7 @@ createApp({
       dataAge.value = null; countdown.value = null;
       currentFareEntry.value = null;
       loadingStops.value = false; refreshing.value = false;
+      stopsNotice.value = "";
       mapExpanded.value = false;
       detailOpen.value = false;
       error.value = "";
@@ -5370,6 +5429,7 @@ createApp({
       loadingStops.value = true; error.value = "";
       stops.value = []; selectedStop.value = null; etas.value = [];
       dataAge.value = null; countdown.value = null; currentFareEntry.value = null;
+      stopsNotice.value = "";
       const farePromise = loadFare().catch(() => {});
       try {
         let detailed = [];
@@ -5385,6 +5445,14 @@ createApp({
              也就是有機會靜默地選到相反方向。 */
           await farePromise;
           detailed = await fetchMtrRouteStops(r);
+          /* 空站表：官方現在沒有這條線的資料。抓官方自己的說法當畫面說明，
+             否則使用者只會看到一片空白＋「請先選擇巴士站」。
+             ⚠️ 只在真的拿到空清單時才設；有站時一定要清掉，不然上一次查詢
+             留下的提示會黏在畫面上（Vue 不會自動幫我們清 ref）。 */
+          if (!detailed.length) {
+            stopsNotice.value = mtrOutageNotice(mtrScheduleCache[r.route] && mtrScheduleCache[r.route].data)
+              || "此路線暫時沒有車站資料（官方未提供原因）。";
+          }
         } else if (company.value === "KMB") {
           const seq = await fetchKmbRouteStops(r.route, r.direction, r.serviceType || "1");
           const results = await Promise.all(seq.map(async s => {
@@ -6290,6 +6358,7 @@ createApp({
       dataAge, countdown, refreshing, clockText,
       streetViewUrl,
       loadingStops, error, stopListRef, mapExpanded, mapRowText,
+      stopsNotice,
       pickingDirection, selectedDirectionLabel, isMobile,
       showCompanyPicker, mobileSearching, pickerCompanyIds,
       availableCompaniesForPicker, companyCollision, favExpanded, isLanding,
