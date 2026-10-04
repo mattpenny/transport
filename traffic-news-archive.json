@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-04T08:58:17.460Z",
+  "generated": "2026-10-04T14:37:40.704Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "147332",
+      "heading": "道路事故",
+      "detail": "較早前因車輛故障而封閉的加士居道天橋(往觀塘方向)近衛理道的慢線現已解封。",
+      "location": "加士居道天橋",
+      "direction": "觀塘",
+      "landmark": "衛理道",
+      "status": "更新情況",
+      "closed": false,
+      "whenText": "2026-10-04T22:20:00",
+      "whenMs": 1791123600000,
+      "storedAt": 1791124655836
+    },
     {
       "id": "147319",
       "heading": "其他事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-01T13:35:00",
       "whenMs": 1790832900000,
       "storedAt": 1790833344065
-    },
-    {
-      "id": "147140",
-      "heading": "道路事故",
-      "detail": "較早前因交通意外而封閉的堅拿道天橋(往海底隧道方向)近軒尼詩道的部份行車線現已解封。",
-      "location": "堅拿道天橋",
-      "direction": "海底隧道",
-      "landmark": "軒尼詩道",
-      "status": "完結",
-      "closed": true,
-      "whenText": "2026-10-01T11:02:00",
-      "whenMs": 1790823720000,
-      "storedAt": 1790833040396
     }
   ]
 }
