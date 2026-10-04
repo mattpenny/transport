@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-04T14:37:40.704Z",
+  "generated": "2026-10-04T18:27:51.598Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "147338",
+      "heading": "道路事故",
+      "detail": "較早前因交通意外而封閉的大埔公路　－　琵琶山段(往九龍方向)近金山路的部份行車線現已解封。",
+      "location": "大埔公路　－　琵琶山段",
+      "direction": "九龍",
+      "landmark": "金山路",
+      "status": "更新情況",
+      "closed": false,
+      "whenText": "2026-10-05T00:00:00",
+      "whenMs": 1791129600000,
+      "storedAt": 1791138470134
+    },
     {
       "id": "147332",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-01T19:50:00",
       "whenMs": 1790855400000,
       "storedAt": 1790856210035
-    },
-    {
-      "id": "147141",
-      "heading": "道路事故",
-      "detail": "因車輛故障，東區走廊(往柴灣方向)近東區海底隧道的慢線現已封閉。 駕駛人士只可使用餘下行車線行車。 現時上址交通繁忙。",
-      "location": "東區走廊",
-      "direction": "柴灣",
-      "landmark": "東區海底隧道",
-      "status": "最新情況",
-      "closed": false,
-      "whenText": "2026-10-01T13:35:00",
-      "whenMs": 1790832900000,
-      "storedAt": 1790833344065
     }
   ]
 }
