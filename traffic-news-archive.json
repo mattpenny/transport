@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-05T00:19:20.417Z",
+  "generated": "2026-10-05T05:58:48.980Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "147374",
+      "heading": "道路事故",
+      "detail": "因道路事故，國瑞路(來回方向)近大窩口港鐵站的部份行車線仍然封閉。\r\n駕駛人士只可使用餘下行車線行車。  受影響九巴第32M及235線須改道行駛。\r\n有關個別巴士路線的最新服務情況，市民可參閱巴士公司的網頁或流動應用程式內的資訊。  現時上址交通繁忙。",
+      "location": "國瑞路",
+      "direction": "",
+      "landmark": "大窩口港鐵站",
+      "status": "更新情況",
+      "closed": false,
+      "whenText": "2026-10-05T13:30:00",
+      "whenMs": 1791178200000,
+      "storedAt": 1791179927541
+    },
     {
       "id": "147347",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-02T06:22:00",
       "whenMs": 1790893320000,
       "storedAt": 1790895024956
-    },
-    {
-      "id": "147170",
-      "heading": "道路事故",
-      "detail": "較早前因交通意外而封閉的域多利道(來回方向)近域多利道168號的全線現已解封。",
-      "location": "域多利道",
-      "direction": "",
-      "landmark": "域多利道168號",
-      "status": "完結",
-      "closed": true,
-      "whenText": "2026-10-01T23:29:00",
-      "whenMs": 1790868540000,
-      "storedAt": 1790879384169
     }
   ]
 }
