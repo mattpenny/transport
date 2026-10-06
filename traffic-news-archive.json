@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-05T21:22:24.830Z",
+  "generated": "2026-10-06T01:48:33.321Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "147420",
+      "heading": "道路事故",
+      "detail": "以下路段的交通繁忙:\r\n香港島\r\n–東區走廊(往中環方向)\r\n九龍\r\n–將軍澳道(往觀塘方向)\r\n新界\r\n–掃管埔路(雞嶺迴旋處)\r\n–寶石湖路(大頭嶺迴旋處)\r\n–大埔公路　–　沙田段(往九龍方向)\r\n–大老山公路(往九龍方向)\r\n駕駛人士行經上述路段敬請忍讓及小心駕駛。",
+      "location": "繁忙路段",
+      "direction": "",
+      "landmark": "",
+      "status": "更新情況",
+      "closed": false,
+      "whenText": "2026-10-06T08:54:00",
+      "whenMs": 1791248040000,
+      "storedAt": 1791251311907
+    },
     {
       "id": "147409",
       "heading": "強風管理",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-02T21:50:00",
       "whenMs": 1790949000000,
       "storedAt": 1790950699826
-    },
-    {
-      "id": "147200",
-      "heading": "道路事故",
-      "detail": "較早前因交通意外而封閉的干諾道中天橋(往西環方向)近信德中心的部份行車線現已解封。",
-      "location": "干諾道中",
-      "direction": "西環",
-      "landmark": "信德中心",
-      "status": "更新情況",
-      "closed": false,
-      "whenText": "2026-10-02T15:20:00",
-      "whenMs": 1790925600000,
-      "storedAt": 1790927031511
     }
   ]
 }
