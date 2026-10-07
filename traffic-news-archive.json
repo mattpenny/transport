@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-06T23:55:56.969Z",
+  "generated": "2026-10-07T03:35:21.408Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "147507",
+      "heading": "道路事故",
+      "detail": "較早前因車輛故障而封閉的加士居道天橋(往觀塘方向)近香港女童軍總會的慢線現已解封。",
+      "location": "加士居道天橋",
+      "direction": "觀塘",
+      "landmark": "香港女童軍總會",
+      "status": "完結",
+      "closed": true,
+      "whenText": "2026-10-07T10:29:00",
+      "whenMs": 1791340140000,
+      "storedAt": 1791344120380
+    },
     {
       "id": "147477",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-03T19:58:00",
       "whenMs": 1791028680000,
       "storedAt": 1791034466916
-    },
-    {
-      "id": "147283",
-      "heading": "道路事故",
-      "detail": "因緊急維修，香港仔隧道(往香港仔方向)的管道慢線現已封閉。 駕駛人士只可使用餘下行車線行車。 現時上址交通繁忙。",
-      "location": "香港仔隧道",
-      "direction": "香港仔",
-      "landmark": "",
-      "status": "更新情況",
-      "closed": false,
-      "whenText": "2026-10-03T15:58:00",
-      "whenMs": 1791014280000,
-      "storedAt": 1791015738749
     }
   ]
 }
