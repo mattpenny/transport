@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-08T21:38:27.985Z",
+  "generated": "2026-10-09T01:33:24.745Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "147629",
+      "heading": "道路事故",
+      "detail": "因交通意外，荃灣路(往九龍方向)近荃灣公園的快線現已封閉。 駕駛人士只可使用餘下行車線行車。 現時上址交通繁忙。",
+      "location": "荃灣路",
+      "direction": "九龍",
+      "landmark": "荃灣公園",
+      "status": "最新情況",
+      "closed": false,
+      "whenText": "2026-10-09T09:14:00",
+      "whenMs": 1791508440000,
+      "storedAt": 1791509603017
+    },
     {
       "id": "147614",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-05T20:35:00",
       "whenMs": 1791203700000,
       "storedAt": 1791208039024
-    },
-    {
-      "id": "147374",
-      "heading": "道路事故",
-      "detail": "因道路事故，國瑞路(來回方向)近大窩口港鐵站的部份行車線仍然封閉。\r\n駕駛人士只可使用餘下行車線行車。  受影響九巴第32M及235線須改道行駛。\r\n有關個別巴士路線的最新服務情況，市民可參閱巴士公司的網頁或流動應用程式內的資訊。  現時上址交通繁忙。",
-      "location": "國瑞路",
-      "direction": "",
-      "landmark": "大窩口港鐵站",
-      "status": "更新情況",
-      "closed": false,
-      "whenText": "2026-10-05T13:30:00",
-      "whenMs": 1791178200000,
-      "storedAt": 1791179927541
     }
   ]
 }
