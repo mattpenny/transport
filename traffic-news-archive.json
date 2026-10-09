@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-09T08:09:45.921Z",
+  "generated": "2026-10-09T15:24:05.013Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "147673",
+      "heading": "道路事故",
+      "detail": "較早前因交通意外而封閉的屯門公路(往元朗方向)近新墟街市的部份行車線現已解封。",
+      "location": "屯門公路",
+      "direction": "元朗",
+      "landmark": "新墟街市",
+      "status": "更新情況",
+      "closed": false,
+      "whenText": "2026-10-09T23:14:00",
+      "whenMs": 1791558840000,
+      "storedAt": 1791559443911
+    },
     {
       "id": "147637",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-06T08:54:00",
       "whenMs": 1791248040000,
       "storedAt": 1791251311907
-    },
-    {
-      "id": "147409",
-      "heading": "強風管理",
-      "detail": "因天氣情況改善，港珠澳大橋香港連接路已實施以下安排： 港珠澳大橋香港連接路最高車速限制恢復為每小時100 公里。",
-      "location": "港珠澳大橋香港連接路",
-      "direction": "",
-      "landmark": "",
-      "status": "完結",
-      "closed": true,
-      "whenText": "2026-10-06T00:55:00",
-      "whenMs": 1791219300000,
-      "storedAt": 1791235343148
     }
   ]
 }
