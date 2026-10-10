@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-10T06:06:07.345Z",
+  "generated": "2026-10-10T12:46:47.565Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "147709",
+      "heading": "道路事故",
+      "detail": "較早前因交通意外而封閉的漆咸道南(往油麻地方向)近香港理工大學的部份行車線現已解封。",
+      "location": "漆咸道南",
+      "direction": "油麻地",
+      "landmark": "香港理工大學",
+      "status": "完結",
+      "closed": true,
+      "whenText": "2026-10-10T18:50:00",
+      "whenMs": 1791629400000,
+      "storedAt": 1791636406637
+    },
     {
       "id": "147695",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-06T23:44:00",
       "whenMs": 1791301440000,
       "storedAt": 1791318363908
-    },
-    {
-      "id": "147472",
-      "heading": "道路事故",
-      "detail": "較早前因交通意外而封閉的西九龍公路(往荃灣方向)近荔枝角公園的部份行車線現已解封。",
-      "location": "西九龍公路",
-      "direction": "荃灣",
-      "landmark": "荔枝角公園",
-      "status": "完結",
-      "closed": true,
-      "whenText": "2026-10-06T21:03:00",
-      "whenMs": 1791291780000,
-      "storedAt": 1791300009096
     }
   ]
 }
