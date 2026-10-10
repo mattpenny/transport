@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-10T20:52:21.555Z",
+  "generated": "2026-10-10T23:58:12.851Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "147726",
+      "heading": "道路事故",
+      "detail": "因交通意外，北大嶼山公路(往機場方向)近大蠔灣的部份行車線現已封閉。 駕駛人士只可使用餘下行車線行車。 現時上址交通繁忙。",
+      "location": "北大嶼山公路",
+      "direction": "機場",
+      "landmark": "大蠔灣",
+      "status": "最新情況",
+      "closed": false,
+      "whenText": "2026-10-11T07:11:00",
+      "whenMs": 1791673860000,
+      "storedAt": 1791676691495
+    },
     {
       "id": "147723",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-07T18:25:00",
       "whenMs": 1791368700000,
       "storedAt": 1791369697862
-    },
-    {
-      "id": "147507",
-      "heading": "道路事故",
-      "detail": "較早前因車輛故障而封閉的加士居道天橋(往觀塘方向)近香港女童軍總會的慢線現已解封。",
-      "location": "加士居道天橋",
-      "direction": "觀塘",
-      "landmark": "香港女童軍總會",
-      "status": "完結",
-      "closed": true,
-      "whenText": "2026-10-07T10:29:00",
-      "whenMs": 1791340140000,
-      "storedAt": 1791344120380
     }
   ]
 }
