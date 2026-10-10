@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-10T17:31:54.816Z",
+  "generated": "2026-10-10T20:52:21.555Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "147723",
+      "heading": "道路事故",
+      "detail": "較早前因交通意外而封閉的由興華街西(往機場方向)通往貨櫃碼頭南路 的支路 的 唯一行車線現已解封。",
+      "location": "興華街西",
+      "direction": "機場",
+      "landmark": "",
+      "status": "完結",
+      "closed": true,
+      "whenText": "2026-10-11T04:01:00",
+      "whenMs": 1791662460000,
+      "storedAt": 1791665540321
+    },
     {
       "id": "147720",
       "heading": "活動",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-07T10:29:00",
       "whenMs": 1791340140000,
       "storedAt": 1791344120380
-    },
-    {
-      "id": "147477",
-      "heading": "道路事故",
-      "detail": "較早前因緊急路面維修而封閉的龍翔道(往葵涌方向)近竹園道的部份行車線現已解封。",
-      "location": "龍翔道",
-      "direction": "葵涌",
-      "landmark": "竹園道",
-      "status": "完結",
-      "closed": true,
-      "whenText": "2026-10-07T06:37:00",
-      "whenMs": 1791326220000,
-      "storedAt": 1791330956242
     }
   ]
 }
