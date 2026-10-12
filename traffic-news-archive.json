@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-12T03:17:27.353Z",
+  "generated": "2026-10-12T11:09:28.582Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "147805",
+      "heading": "道路事故",
+      "detail": "因交通意外，新田公路(往元朗方向)近錦繡花園的部份行車線現已封閉。 駕駛人士只可使用餘下行車線行車。 現時在新田公路(往元朗方向)的車龍龍尾已到新田公路近米埔隴村。 現時上址交通擠塞。",
+      "location": "新田公路",
+      "direction": "元朗",
+      "landmark": "錦繡花園",
+      "status": "最新情況",
+      "closed": false,
+      "whenText": "2026-10-12T18:56:00",
+      "whenMs": 1791802560000,
+      "storedAt": 1791803367826
+    },
     {
       "id": "147767",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-08T22:01:00",
       "whenMs": 1791468060000,
       "storedAt": 1791495506933
-    },
-    {
-      "id": "147583",
-      "heading": "道路事故",
-      "detail": "因路面有障礙物，屯門赤鱲角隧道公路(往機場方向)近行政大樓的部份行車線現已封閉。 駕駛人士只可使用餘下行車線行車。 現時上址交通繁忙。",
-      "location": "屯門赤鱲角隧道公路",
-      "direction": "機場",
-      "landmark": "行政大樓",
-      "status": "最新情況",
-      "closed": false,
-      "whenText": "2026-10-08T17:02:00",
-      "whenMs": 1791450120000,
-      "storedAt": 1791450761686
     }
   ]
 }
