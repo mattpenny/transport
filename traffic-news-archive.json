@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-14T10:51:07.147Z",
+  "generated": "2026-10-14T15:38:16.836Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "147949",
+      "heading": "道路事故",
+      "detail": "因交通意外，公主道(往海底隧道方向)近愛民邨的部份行車線現已封閉。 駕駛人士只可使用餘下行車線行車。 現時上址交通繁忙。",
+      "location": "公主道",
+      "direction": "海底隧道",
+      "landmark": "愛民邨",
+      "status": "最新情況",
+      "closed": false,
+      "whenText": "2026-10-14T23:14:00",
+      "whenMs": 1791990840000,
+      "storedAt": 1791992295051
+    },
     {
       "id": "147933",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-11T07:11:00",
       "whenMs": 1791673860000,
       "storedAt": 1791676691495
-    },
-    {
-      "id": "147723",
-      "heading": "道路事故",
-      "detail": "較早前因交通意外而封閉的由興華街西(往機場方向)通往貨櫃碼頭南路 的支路 的 唯一行車線現已解封。",
-      "location": "興華街西",
-      "direction": "機場",
-      "landmark": "",
-      "status": "完結",
-      "closed": true,
-      "whenText": "2026-10-11T04:01:00",
-      "whenMs": 1791662460000,
-      "storedAt": 1791665540321
     }
   ]
 }
