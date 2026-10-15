@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-15T06:03:18.509Z",
+  "generated": "2026-10-15T11:48:51.645Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "148001",
+      "heading": "道路事故",
+      "detail": "較早前因交通意外而封閉的西九龍公路(往葵涌方向)近奧運港鐵站的部份行車線現已解封。",
+      "location": "西九龍公路",
+      "direction": "葵涌",
+      "landmark": "奧運港鐵站",
+      "status": "完結",
+      "closed": true,
+      "whenText": "2026-10-15T19:08:00",
+      "whenMs": 1792062480000,
+      "storedAt": 1792064930709
+    },
     {
       "id": "147984",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-12T18:56:00",
       "whenMs": 1791802560000,
       "storedAt": 1791803367826
-    },
-    {
-      "id": "147767",
-      "heading": "道路事故",
-      "detail": "較早前因水管緊急維修而封閉的沙田圍路(往沙田港鐵站方向)近沙田路的快線現已解封。",
-      "location": "沙田圍路",
-      "direction": "沙田港鐵站",
-      "landmark": "沙田路",
-      "status": "完結",
-      "closed": true,
-      "whenText": "2026-10-12T07:53:00",
-      "whenMs": 1791762780000,
-      "storedAt": 1791775046335
     }
   ]
 }
