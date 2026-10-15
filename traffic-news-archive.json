@@ -2,7 +2,7 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-15T15:57:43.752Z",
+  "generated": "2026-10-15T19:41:05.626Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
@@ -13,11 +13,11 @@
       "location": "觀塘繞道",
       "direction": "油塘",
       "landmark": "香港郵政大樓",
-      "status": "更新情況",
-      "closed": false,
+      "status": "完結",
+      "closed": true,
       "whenText": "2026-10-15T23:39:00",
       "whenMs": 1792078740000,
-      "storedAt": 1792079862421
+      "storedAt": 1792093264380
     },
     {
       "id": "148001",
