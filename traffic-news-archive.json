@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-16T00:53:57.071Z",
+  "generated": "2026-10-16T05:17:00.728Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "148043",
+      "heading": "道路事故",
+      "detail": "較早前因交通意外而封閉的德士古道(往荃錦交匯處方向)近楊屋道的部份行車線現已解封。",
+      "location": "德士古道",
+      "direction": "荃錦交匯處",
+      "landmark": "楊屋道",
+      "status": "完結",
+      "closed": true,
+      "whenText": "2026-10-16T12:37:00",
+      "whenMs": 1792125420000,
+      "storedAt": 1792127819205
+    },
     {
       "id": "148022",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-13T14:26:00",
       "whenMs": 1791872760000,
       "storedAt": 1791884186766
-    },
-    {
-      "id": "147824",
-      "heading": "道路事故",
-      "detail": "較早前因車輛故障而封閉的大老山公路(往九龍方向)近碩門邨的部份行車線現已解封。",
-      "location": "大老山公路",
-      "direction": "九龍",
-      "landmark": "碩門邨",
-      "status": "完結",
-      "closed": true,
-      "whenText": "2026-10-13T08:53:00",
-      "whenMs": 1791852780000,
-      "storedAt": 1791857326815
     }
   ]
 }
