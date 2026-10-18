@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-17T23:14:48.700Z",
+  "generated": "2026-10-18T01:17:15.614Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "148135",
+      "heading": "高鐵事故",
+      "detail": "香港西九龍站公眾停車場現已泊滿。請使用公共交通工具前往。",
+      "location": "",
+      "direction": "",
+      "landmark": "",
+      "status": "最新情況",
+      "closed": false,
+      "whenText": "2026-10-18T08:49:00",
+      "whenMs": 1792284540000,
+      "storedAt": 1792286234728
+    },
     {
       "id": "148134",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-15T02:23:00",
       "whenMs": 1792002180000,
       "storedAt": 1792007423192
-    },
-    {
-      "id": "147949",
-      "heading": "道路事故",
-      "detail": "因交通意外，公主道(往海底隧道方向)近愛民邨的部份行車線現已封閉。 駕駛人士只可使用餘下行車線行車。 現時上址交通繁忙。",
-      "location": "公主道",
-      "direction": "海底隧道",
-      "landmark": "愛民邨",
-      "status": "最新情況",
-      "closed": false,
-      "whenText": "2026-10-14T23:14:00",
-      "whenMs": 1791990840000,
-      "storedAt": 1791992295051
     }
   ]
 }
