@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-18T06:10:22.494Z",
+  "generated": "2026-10-18T11:28:02.308Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "148148",
+      "heading": "道路事故",
+      "detail": "較早前因交通意外而封閉的西九龍公路(往尖沙咀方向)近海達邨的快線現已解封。",
+      "location": "西九龍公路",
+      "direction": "尖沙咀",
+      "landmark": "海達邨",
+      "status": "更新情況",
+      "closed": false,
+      "whenText": "2026-10-18T18:55:00",
+      "whenMs": 1792320900000,
+      "storedAt": 1792322881389
+    },
     {
       "id": "148136",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-15T08:31:00",
       "whenMs": 1792024260000,
       "storedAt": 1792026344436
-    },
-    {
-      "id": "147956",
-      "heading": "道路事故",
-      "detail": "較早前因緊急路面維修而封閉的西邊街(往般咸道方向)近德輔道西的部份行車線現已解封。",
-      "location": "西邊街",
-      "direction": "般咸道",
-      "landmark": "德輔道西",
-      "status": "完結",
-      "closed": true,
-      "whenText": "2026-10-15T06:05:00",
-      "whenMs": 1792015500000,
-      "storedAt": 1792018234148
     }
   ]
 }
