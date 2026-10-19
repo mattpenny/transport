@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-19T17:15:14.457Z",
+  "generated": "2026-10-19T21:37:43.959Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "148178",
+      "heading": "道路事故",
+      "detail": "較早前因火警而封閉的薄扶林道(來回方向)介乎第三街與皇后大道西之間的全線現已解封。  與此同時，較早前封閉的第三街介乎薄扶林道與西邊街之間的全線亦已解封。  較早前受影響巴⼠路線會陸續恢復原有路線⾏駛。有關個別巴⼠路線的最新服務情況，市⺠可參閱巴⼠公司的網⾴或流動應⽤程式內的資訊。",
+      "location": "薄扶林道",
+      "direction": "",
+      "landmark": "第三街",
+      "status": "完結",
+      "closed": true,
+      "whenText": "2026-10-20T01:09:00",
+      "whenMs": 1792429740000,
+      "storedAt": 1792445862406
+    },
     {
       "id": "148177",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-16T19:59:00",
       "whenMs": 1792151940000,
       "storedAt": 1792187393282
-    },
-    {
-      "id": "148062",
-      "heading": "道路事故",
-      "detail": "因交通意外，龍翔道天橋(往油塘方向)近坪石邨的快線現已封閉。 駕駛人士只可使用餘下行車線行車。 現時上址交通繁忙。",
-      "location": "龍翔道",
-      "direction": "油塘",
-      "landmark": "坪石邨",
-      "status": "最新情況",
-      "closed": false,
-      "whenText": "2026-10-16T17:46:00",
-      "whenMs": 1792143960000,
-      "storedAt": 1792144771692
     }
   ]
 }
