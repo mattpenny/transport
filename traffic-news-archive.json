@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-19T10:33:42.532Z",
+  "generated": "2026-10-19T17:15:14.457Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "148177",
+      "heading": "道路事故",
+      "detail": "較早前因火警而封閉的薄扶林道(來回方向)介乎第三街與皇后大道西之間的全線現已解封。  另一方面，第三街介乎薄扶林道與西邊街之間的全線仍然封閉。駕駛人士請考慮改用其他道路。  較早前受影響巴士路線會陸續恢復原有路線行駛。有關個別巴士路線的最新服務情況，市民可參閱巴士公司的網頁或流動應用程式內的資訊。  現時上址交通繁忙。",
+      "location": "薄扶林道",
+      "direction": "",
+      "landmark": "第三街",
+      "status": "更新情況",
+      "closed": false,
+      "whenText": "2026-10-20T00:55:00",
+      "whenMs": 1792428900000,
+      "storedAt": 1792430113562
+    },
     {
       "id": "148168",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-16T17:46:00",
       "whenMs": 1792143960000,
       "storedAt": 1792144771692
-    },
-    {
-      "id": "148043",
-      "heading": "道路事故",
-      "detail": "較早前因交通意外而封閉的德士古道(往荃錦交匯處方向)近楊屋道的部份行車線現已解封。",
-      "location": "德士古道",
-      "direction": "荃錦交匯處",
-      "landmark": "楊屋道",
-      "status": "完結",
-      "closed": true,
-      "whenText": "2026-10-16T12:37:00",
-      "whenMs": 1792125420000,
-      "storedAt": 1792127819205
     }
   ]
 }
