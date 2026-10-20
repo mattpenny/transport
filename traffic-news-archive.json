@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-20T05:32:33.153Z",
+  "generated": "2026-10-20T10:38:37.366Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "148248",
+      "heading": "道路事故",
+      "detail": "較早前因交通意外而於翔東路近深水角實施的單線雙程行車措施現已取消。",
+      "location": "翔東路",
+      "direction": "",
+      "landmark": "深水角",
+      "status": "更新情況",
+      "closed": false,
+      "whenText": "2026-10-20T18:28:00",
+      "whenMs": 1792492080000,
+      "storedAt": 1792492716548
+    },
     {
       "id": "148222",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-17T16:48:00",
       "whenMs": 1792226880000,
       "storedAt": 1792227346230
-    },
-    {
-      "id": "148109",
-      "heading": "道路事故",
-      "detail": "較早前因交通意外而封閉的廣東道(往梳士巴利道方向)近中港城的部份行車線現已解封。",
-      "location": "廣東道",
-      "direction": "梳士巴利道",
-      "landmark": "中港城",
-      "status": "完結",
-      "closed": true,
-      "whenText": "2026-10-17T11:53:00",
-      "whenMs": 1792209180000,
-      "storedAt": 1792212287396
     }
   ]
 }
