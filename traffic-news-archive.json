@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-20T10:38:37.366Z",
+  "generated": "2026-10-20T15:28:26.004Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "148261",
+      "heading": "道路事故",
+      "detail": "較早前因塌樹而封閉的流浮山道(來回方向)近新慶村的全線現已解封。",
+      "location": "流浮山道",
+      "direction": "",
+      "landmark": "新慶村",
+      "status": "完結",
+      "closed": true,
+      "whenText": "2026-10-20T23:04:00",
+      "whenMs": 1792508640000,
+      "storedAt": 1792510105350
+    },
     {
       "id": "148248",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-17T18:29:00",
       "whenMs": 1792232940000,
       "storedAt": 1792278887694
-    },
-    {
-      "id": "148129",
-      "heading": "道路事故",
-      "detail": "因交通意外，長沙灣道(往美孚方向)近長荔街的部份行車線現已封閉。 駕駛人士只可使用餘下行車線行車。 現時上址交通繁忙。",
-      "location": "長沙灣道",
-      "direction": "美孚",
-      "landmark": "長荔街",
-      "status": "最新情況",
-      "closed": false,
-      "whenText": "2026-10-17T16:48:00",
-      "whenMs": 1792226880000,
-      "storedAt": 1792227346230
     }
   ]
 }
