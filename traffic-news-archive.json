@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-21T12:06:21.144Z",
+  "generated": "2026-10-21T17:26:48.546Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "148306",
+      "heading": "渡輪事故",
+      "detail": "以下渡輪服務於2026年10⽉22⽇作出臨時調整：\r\n\r\n珀麗灣客運有限公司\r\n「⾺灣-中環」航線：\r\n-⾺灣⾄中環：下午5時及下午7時30分開出的班次由巴⼠服務(路線NR338S)代替營運\r\n-中環⾄⾺灣：下午5時30分及下午8時開出的班次由巴⼠服務(路線NR338S)代替營運\r\n\r\n「⾺灣-荃灣」航線：\r\n-⾺灣⾄荃灣：取消上午8時10分開出的班次\r\n-荃灣⾄⾺灣：取消上午8時30分開出的班次。",
+      "location": "",
+      "direction": "",
+      "landmark": "",
+      "status": "更新情況",
+      "closed": false,
+      "whenText": "2026-10-21T20:35:00",
+      "whenMs": 1792586100000,
+      "storedAt": 1792603607476
+    },
     {
       "id": "148297",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-18T21:19:00",
       "whenMs": 1792329540000,
       "storedAt": 1792334645345
-    },
-    {
-      "id": "148148",
-      "heading": "道路事故",
-      "detail": "較早前因交通意外而封閉的西九龍公路(往尖沙咀方向)近海達邨的快線現已解封。",
-      "location": "西九龍公路",
-      "direction": "尖沙咀",
-      "landmark": "海達邨",
-      "status": "更新情況",
-      "closed": false,
-      "whenText": "2026-10-18T18:55:00",
-      "whenMs": 1792320900000,
-      "storedAt": 1792322881389
     }
   ]
 }
