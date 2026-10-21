@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-20T22:31:19.530Z",
+  "generated": "2026-10-21T01:07:47.608Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "148272",
+      "heading": "道路事故",
+      "detail": "較早前因車輛故障而封閉的將軍澳道(往觀塘方向)近興田邨的慢線現已解封。",
+      "location": "將軍澳道",
+      "direction": "觀塘",
+      "landmark": "興田邨",
+      "status": "完結",
+      "closed": true,
+      "whenText": "2026-10-21T08:10:00",
+      "whenMs": 1792541400000,
+      "storedAt": 1792544866813
+    },
     {
       "id": "148262",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-18T10:00:00",
       "whenMs": 1792288800000,
       "storedAt": 1792303821598
-    },
-    {
-      "id": "148135",
-      "heading": "高鐵事故",
-      "detail": "香港西九龍站公眾停車場現已泊滿。請使用公共交通工具前往。",
-      "location": "",
-      "direction": "",
-      "landmark": "",
-      "status": "最新情況",
-      "closed": false,
-      "whenText": "2026-10-18T08:49:00",
-      "whenMs": 1792284540000,
-      "storedAt": 1792286234728
     }
   ]
 }
