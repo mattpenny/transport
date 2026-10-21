@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-21T01:07:47.608Z",
+  "generated": "2026-10-21T06:11:04.850Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "148287",
+      "heading": "道路事故",
+      "detail": "較早前因交通意外而封閉的干諾道中(往上環方向)近香港大會堂的部份行車線現已解封。",
+      "location": "干諾道中",
+      "direction": "上環",
+      "landmark": "香港大會堂",
+      "status": "完結",
+      "closed": true,
+      "whenText": "2026-10-21T11:10:00",
+      "whenMs": 1792552200000,
+      "storedAt": 1792563063403
+    },
     {
       "id": "148272",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-18T16:34:00",
       "whenMs": 1792312440000,
       "storedAt": 1792360972038
-    },
-    {
-      "id": "148136",
-      "heading": "道路事故",
-      "detail": "運輸署表示，通往萬宜水庫東壩的西貢萬宜路交通預計一般比較繁忙，專線小巴第9A號線的營辦商會按需要加強服務應付乘客需求。請遊人妥善規劃行程，預留充裕交通時間，同時在輪候時保持忍讓。",
-      "location": "西貢萬宜路",
-      "direction": "",
-      "landmark": "",
-      "status": "最新情況",
-      "closed": false,
-      "whenText": "2026-10-18T10:00:00",
-      "whenMs": 1792288800000,
-      "storedAt": 1792303821598
     }
   ]
 }
