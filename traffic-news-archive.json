@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-22T07:49:50.860Z",
+  "generated": "2026-10-22T13:18:20.713Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "148356",
+      "heading": "道路事故",
+      "detail": "較早前因車輛故障而封閉的城門隧道公路(往大埔方向)近道風山路的部份行車線現已解封。 車龍有待消散。",
+      "location": "城門隧道公路",
+      "direction": "大埔",
+      "landmark": "道風山路",
+      "status": "完結",
+      "closed": true,
+      "whenText": "2026-10-22T18:45:00",
+      "whenMs": 1792665900000,
+      "storedAt": 1792675098522
+    },
     {
       "id": "148341",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-20T00:55:00",
       "whenMs": 1792428900000,
       "storedAt": 1792430113562
-    },
-    {
-      "id": "148168",
-      "heading": "道路事故",
-      "detail": "因交通意外，堅拿道天橋(往海底隧道方向)近軒尼詩道的慢線現已封閉。 駕駛人士只可使用餘下行車線行車。 現時上址交通繁忙。",
-      "location": "堅拿道天橋",
-      "direction": "海底隧道",
-      "landmark": "軒尼詩道",
-      "status": "最新情況",
-      "closed": false,
-      "whenText": "2026-10-19T18:14:00",
-      "whenMs": 1792404840000,
-      "storedAt": 1792406021700
     }
   ]
 }
