@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-23T10:17:17.470Z",
+  "generated": "2026-10-23T15:15:18.727Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "148440",
+      "heading": "道路事故",
+      "detail": "較早前因交通意外而封閉的深圳灣公路大橋(往香港方向)的部份行車線現已解封。",
+      "location": "深圳灣公路大橋",
+      "direction": "香港",
+      "landmark": "",
+      "status": "完結",
+      "closed": true,
+      "whenText": "2026-10-23T21:33:00",
+      "whenMs": 1792762380000,
+      "storedAt": 1792768518127
+    },
     {
       "id": "148424",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-20T18:28:00",
       "whenMs": 1792492080000,
       "storedAt": 1792492716548
-    },
-    {
-      "id": "148222",
-      "heading": "道路事故",
-      "detail": "較早前因交通意外而封閉的屯門公路(往九龍方向)近屯興路的慢線現已解封。",
-      "location": "屯門公路",
-      "direction": "九龍",
-      "landmark": "屯興路",
-      "status": "更新情況",
-      "closed": false,
-      "whenText": "2026-10-20T13:16:00",
-      "whenMs": 1792473360000,
-      "storedAt": 1792474352236
     }
   ]
 }
