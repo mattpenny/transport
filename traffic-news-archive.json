@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-24T00:52:54.221Z",
+  "generated": "2026-10-24T05:12:34.400Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "148461",
+      "heading": "道路事故",
+      "detail": "位於勵業街和偉業街交界的交通燈已恢復正常運作。",
+      "location": "勵業街",
+      "direction": "",
+      "landmark": "",
+      "status": "完結",
+      "closed": true,
+      "whenText": "2026-10-24T12:55:00",
+      "whenMs": 1792817700000,
+      "storedAt": 1792818753099
+    },
     {
       "id": "148443",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-21T06:04:00",
       "whenMs": 1792533840000,
       "storedAt": 1792535478880
-    },
-    {
-      "id": "148261",
-      "heading": "道路事故",
-      "detail": "較早前因塌樹而封閉的流浮山道(來回方向)近新慶村的全線現已解封。",
-      "location": "流浮山道",
-      "direction": "",
-      "landmark": "新慶村",
-      "status": "完結",
-      "closed": true,
-      "whenText": "2026-10-20T23:04:00",
-      "whenMs": 1792508640000,
-      "storedAt": 1792524545520
     }
   ]
 }
