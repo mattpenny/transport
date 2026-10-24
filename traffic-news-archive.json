@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-24T09:39:35.473Z",
+  "generated": "2026-10-24T13:43:24.316Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "148490",
+      "heading": "道路事故",
+      "detail": "較早前因交通意外而封閉的彌敦道(往深水埗方向)近柯士甸道的慢線現已解封。",
+      "location": "彌敦道",
+      "direction": "深水埗",
+      "landmark": "柯士甸道",
+      "status": "更新情況",
+      "closed": false,
+      "whenText": "2026-10-24T21:31:00",
+      "whenMs": 1792848660000,
+      "storedAt": 1792849403079
+    },
     {
       "id": "148473",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-21T11:10:00",
       "whenMs": 1792552200000,
       "storedAt": 1792563063403
-    },
-    {
-      "id": "148272",
-      "heading": "道路事故",
-      "detail": "較早前因車輛故障而封閉的將軍澳道(往觀塘方向)近興田邨的慢線現已解封。",
-      "location": "將軍澳道",
-      "direction": "觀塘",
-      "landmark": "興田邨",
-      "status": "完結",
-      "closed": true,
-      "whenText": "2026-10-21T08:10:00",
-      "whenMs": 1792541400000,
-      "storedAt": 1792544866813
     }
   ]
 }
