@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-25T00:24:22.026Z",
+  "generated": "2026-10-25T05:00:22.080Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "148494",
+      "heading": "道路事故",
+      "detail": "運輸署表⽰，通往萬宜⽔庫東壩的西貢萬宜路交通現時⾮常繁忙，專線⼩巴第9A號線的營辦商已加強服務應對乘客需求。請遊⼈妥善計劃⾏程，預留充裕交通時間，同時在輪候時保持忍讓。",
+      "location": "萬宜里",
+      "direction": "",
+      "landmark": "",
+      "status": "最新情況",
+      "closed": false,
+      "whenText": "2026-10-25T11:00:00",
+      "whenMs": 1792897200000,
+      "storedAt": 1792904420693
+    },
     {
       "id": "148492",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-21T20:35:00",
       "whenMs": 1792586100000,
       "storedAt": 1792615606994
-    },
-    {
-      "id": "148297",
-      "heading": "道路事故",
-      "detail": "較早前因交通意外而封閉的元朗公路(往屯門方向)近東成里的部份行車線現已解封。 車龍有待消散。",
-      "location": "元朗公路",
-      "direction": "屯門",
-      "landmark": "東成里",
-      "status": "完結",
-      "closed": true,
-      "whenText": "2026-10-21T18:33:00",
-      "whenMs": 1792578780000,
-      "storedAt": 1792584380450
     }
   ]
 }
