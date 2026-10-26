@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-25T22:41:29.243Z",
+  "generated": "2026-10-26T00:51:41.060Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "148516",
+      "heading": "道路事故",
+      "detail": "因車輛故障，元朗公路(往上水方向)近東成里的部份行車線現已封閉。 駕駛人士只可使用餘下行車線行車。 現時在元朗公路(往上水方向)的車龍龍尾已到元朗公路近丹桂村。 現時上址交通擠塞。",
+      "location": "元朗公路",
+      "direction": "上水",
+      "landmark": "東成里",
+      "status": "最新情況",
+      "closed": false,
+      "whenText": "2026-10-26T08:43:00",
+      "whenMs": 1792975380000,
+      "storedAt": 1792975899907
+    },
     {
       "id": "148508",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-22T15:28:00",
       "whenMs": 1792654080000,
       "storedAt": 1792655389612
-    },
-    {
-      "id": "148330",
-      "heading": "道路事故",
-      "detail": "較早前因車輛故障而封閉的東區走廊(往中環方向)近北角碼頭的慢線現已解封。",
-      "location": "東區走廊",
-      "direction": "中環",
-      "landmark": "北角碼頭",
-      "status": "完結",
-      "closed": true,
-      "whenText": "2026-10-22T10:05:00",
-      "whenMs": 1792634700000,
-      "storedAt": 1792636052769
     }
   ]
 }
