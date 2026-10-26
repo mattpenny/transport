@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-26T11:51:49.895Z",
+  "generated": "2026-10-26T17:54:09.122Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "148556",
+      "heading": "道路事故",
+      "detail": "較早前因水管緊急維修而封閉的上鄉道近土瓜灣道的部份行車線現已解封。",
+      "location": "上鄉道",
+      "direction": "",
+      "landmark": "土瓜灣道",
+      "status": "完結",
+      "closed": true,
+      "whenText": "2026-10-26T21:45:00",
+      "whenMs": 1793022300000,
+      "storedAt": 1793037247760
+    },
     {
       "id": "148551",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-23T12:48:00",
       "whenMs": 1792730880000,
       "storedAt": 1792731970881
-    },
-    {
-      "id": "148363",
-      "heading": "道路事故",
-      "detail": "較早前因交通意外而封閉的告士打道(往北角方向)近入境事務大樓的部份行車線現已解封。",
-      "location": "告士打道",
-      "direction": "北角",
-      "landmark": "入境事務大樓",
-      "status": "完結",
-      "closed": true,
-      "whenText": "2026-10-23T07:26:00",
-      "whenMs": 1792711560000,
-      "storedAt": 1792714497705
     }
   ]
 }
