@@ -2,7 +2,7 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-26T17:54:09.122Z",
+  "generated": "2026-10-26T22:05:29.931Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
@@ -17,7 +17,7 @@
       "closed": true,
       "whenText": "2026-10-26T21:45:00",
       "whenMs": 1793022300000,
-      "storedAt": 1793037247760
+      "storedAt": 1793052328288
     },
     {
       "id": "148551",
