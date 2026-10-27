@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-26T22:05:29.931Z",
+  "generated": "2026-10-27T01:32:57.024Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "148575",
+      "heading": "道路事故",
+      "detail": "較早前因交通意外而封閉的連翔道(往尖沙咀方向)近欽州街西的部份行車線現已解封。 車龍有待消散。",
+      "location": "連翔道",
+      "direction": "尖沙咀",
+      "landmark": "欽州街西",
+      "status": "更新情況",
+      "closed": false,
+      "whenText": "2026-10-27T09:22:00",
+      "whenMs": 1793064120000,
+      "storedAt": 1793064773854
+    },
     {
       "id": "148556",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-23T18:07:00",
       "whenMs": 1792750020000,
       "storedAt": 1792750636563
-    },
-    {
-      "id": "148399",
-      "heading": "道路事故",
-      "detail": "因道路事故，屯門-赤鱲角隧道(往屯門方向)的管道慢線現已封閉。 駕駛人士只可使用餘下行車線行車。 現時上址交通繁忙。",
-      "location": "屯門-赤鱲角隧道",
-      "direction": "屯門",
-      "landmark": "",
-      "status": "最新情況",
-      "closed": false,
-      "whenText": "2026-10-23T12:48:00",
-      "whenMs": 1792730880000,
-      "storedAt": 1792731970881
     }
   ]
 }
