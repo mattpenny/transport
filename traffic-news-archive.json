@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-27T01:32:57.024Z",
+  "generated": "2026-10-27T07:01:44.688Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "148597",
+      "heading": "道路事故",
+      "detail": "因交通意外，粉嶺公路(往元朗方向)近和合石的部份行車線現已封閉。 駕駛人士只可使用餘下行車線行車。 現時上址交通繁忙。",
+      "location": "粉嶺公路",
+      "direction": "元朗",
+      "landmark": "和合石",
+      "status": "最新情況",
+      "closed": false,
+      "whenText": "2026-10-27T14:42:00",
+      "whenMs": 1793083320000,
+      "storedAt": 1793084503800
+    },
     {
       "id": "148575",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-23T21:33:00",
       "whenMs": 1792762380000,
       "storedAt": 1792794345119
-    },
-    {
-      "id": "148424",
-      "heading": "道路事故",
-      "detail": "因交通意外，太子道西(往大角咀方向)近園藝街的部份行車線現已封閉。 駕駛人士只可使用餘下行車線行車。 現時上址交通繁忙。",
-      "location": "太子道西",
-      "direction": "大角咀",
-      "landmark": "園藝街",
-      "status": "最新情況",
-      "closed": false,
-      "whenText": "2026-10-23T18:07:00",
-      "whenMs": 1792750020000,
-      "storedAt": 1792750636563
     }
   ]
 }
