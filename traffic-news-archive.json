@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-28T07:43:45.667Z",
+  "generated": "2026-10-28T14:41:07.539Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "148696",
+      "heading": "道路事故",
+      "detail": "因緊急路面維修，干德道近衛城道現已實施單線雙程行車措施。",
+      "location": "干德道",
+      "direction": "",
+      "landmark": "衛城道",
+      "status": "最新情況",
+      "closed": false,
+      "whenText": "2026-10-28T21:45:00",
+      "whenMs": 1793195100000,
+      "storedAt": 1793198466455
+    },
     {
       "id": "148672",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-25T01:55:00",
       "whenMs": 1792864500000,
       "storedAt": 1792887860963
-    },
-    {
-      "id": "148490",
-      "heading": "道路事故",
-      "detail": "較早前因交通意外而封閉的彌敦道(往深水埗方向)近柯士甸道的慢線現已解封。",
-      "location": "彌敦道",
-      "direction": "深水埗",
-      "landmark": "柯士甸道",
-      "status": "完結",
-      "closed": true,
-      "whenText": "2026-10-24T21:31:00",
-      "whenMs": 1792848660000,
-      "storedAt": 1792861540097
     }
   ]
 }
