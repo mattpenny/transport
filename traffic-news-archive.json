@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-28T01:54:41.312Z",
+  "generated": "2026-10-28T07:43:45.667Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "148672",
+      "heading": "道路事故",
+      "detail": "較早前因車輛故障而封閉的荃灣路(往九龍方向)近荃青交匯處的慢線現已解封。",
+      "location": "荃灣路",
+      "direction": "九龍",
+      "landmark": "荃青交匯處",
+      "status": "更新情況",
+      "closed": false,
+      "whenText": "2026-10-28T13:55:00",
+      "whenMs": 1793166900000,
+      "storedAt": 1793173424685
+    },
     {
       "id": "148655",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-24T21:31:00",
       "whenMs": 1792848660000,
       "storedAt": 1792861540097
-    },
-    {
-      "id": "148473",
-      "heading": "道路事故",
-      "detail": "較早前因交通意外而封閉的屯門公路(往屯門方向)近香港珠海學院的部份行車線現已解封。 車龍有待消散。",
-      "location": "屯門公路",
-      "direction": "屯門",
-      "landmark": "香港珠海學院",
-      "status": "更新情況",
-      "closed": false,
-      "whenText": "2026-10-24T17:30:00",
-      "whenMs": 1792834200000,
-      "storedAt": 1792834772851
     }
   ]
 }
