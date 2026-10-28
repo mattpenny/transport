@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-28T19:59:08.169Z",
+  "generated": "2026-10-28T23:54:38.503Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "148698",
+      "heading": "道路事故",
+      "detail": "較早前因水管緊急維修而於（九龍塘）義德道近安域道實施的單線雙程行車措施現已取消。",
+      "location": "九龍塘 義德道",
+      "direction": "",
+      "landmark": "安域道",
+      "status": "更新情況",
+      "closed": false,
+      "whenText": "2026-10-29T07:22:00",
+      "whenMs": 1793229720000,
+      "storedAt": 1793231677147
+    },
     {
       "id": "148696",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-25T11:00:00",
       "whenMs": 1792897200000,
       "storedAt": 1792904420693
-    },
-    {
-      "id": "148492",
-      "heading": "道路事故",
-      "detail": "以下路段的交通現已恢復正常: –雲咸街(方向) –己連拿利(方向) –德己立街(方向) 駕駛人士請留意有關臨時安排及遵從在場警務人員的指示。",
-      "location": "繁忙路段",
-      "direction": "",
-      "landmark": "",
-      "status": "完結",
-      "closed": true,
-      "whenText": "2026-10-25T01:55:00",
-      "whenMs": 1792864500000,
-      "storedAt": 1792887860963
     }
   ]
 }
