@@ -1,0 +1,49 @@
+name: Update fare & stop data
+
+# 每週由 hkbus.app 的最新 crawl（源頭是運輸署開放數據）刷新
+# routeFareList.min.json 與 stops-index.min.json，並重跑港鐵巴士的
+# 兩個擷取腳本。以前這步靠手動下載，資料曾過期約一個月而無人察覺；
+# 交通消息已有同類自動化（update-traffic-news.yml），票價／站點
+# 資料比消息更重要，不應反而靠人手。
+# 只有內容有變才會 commit（不會無故產生 commit）。
+
+on:
+  schedule:
+    - cron: "30 19 * * 0"   # 每週一 03:30 HKT（UTC 日 19:30）
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fare-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      - name: Rebuild fare & stop data
+        run: |
+          node tools/build-fare-data.mjs
+          node tools/build-mtr-routes.js
+          node tools/build-mtr-stops.js
+
+      - name: Commit if changed
+        run: |
+          git add routeFareList.min.json stops-index.min.json mtr-routes.min.json mtr-stops.min.json index.html gmb.html rmb.html
+          if git diff --cached --quiet; then
+            echo "No data change"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # 刻意不加 [skip ci]：需要觸發 GitHub Pages 重新部署，新資料才會到用戶手上。
+          git commit -m "chore: refresh fare & stop data"
+          git push
