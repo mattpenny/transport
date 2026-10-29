@@ -1850,7 +1850,7 @@ const GMB_COORD_DAYS = 30;
    瀏覽器就會當作新檔案重抓，不必再清 localStorage。
    必須宣告在使用它的 GMB_COORD_URL 之前 —— const 沒有提升，
    在宣告前取值會直接拋 ReferenceError。 */
-const DATA_VERSION = "2026-09-28";
+const DATA_VERSION = "2026-10-29";
 const GMB_COORD_URL = `gmb-stops-coords.csv?v=${DATA_VERSION}`;
 
 let gmbCoordDb = null;
@@ -2676,14 +2676,23 @@ const GMB_BASE = "https://data.etagmb.gov.hk";
 const GMB_MIN_INTERVAL_MS = 800;
 let gmbLastRequestTime = 0;
 
-async function gmbFetch(url) {
+async function gmbFetch(url, timeoutMs = 12000) {
   const now = Date.now();
   const wait = GMB_MIN_INTERVAL_MS - (now - gmbLastRequestTime);
   if (wait > 0) await new Promise(r => setTimeout(r, wait));
   gmbLastRequestTime = Date.now();
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) throw new Error("HTTP " + res.status);
-  return res.json();
+  /* fetch 本身沒有逾時：API 長時間無回應會令搜尋一直停在「搜尋中」。
+     設 AbortController 上限，逾時視為失敗，由呼叫端提示使用者。 */
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { cache: "no-store", signal: ctl.signal });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    return await res.json();
+  } catch (e) {
+    if (e && e.name === "AbortError") throw new Error("連線逾時（" + Math.round(timeoutMs / 1000) + " 秒）");
+    throw e;
+  } finally { clearTimeout(timer); }
 }
 
 const etaCache = new Map();

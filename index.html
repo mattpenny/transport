@@ -2150,7 +2150,7 @@
                         @click.stop="locateOnCamMap">📍</button>
               </div>
               <div class="tp-snapshot">
-                <img v-if="snapshotUrl && !snapshotFailed"
+                <img v-if="snapshotUrl && !snapshotFailed" v-show="snapshotLoaded"
                      :src="snapshotUrl"
                      :alt="selectedCam.description"
                      @load="snapshotLoaded = true; snapshotFailed = false"
@@ -2288,7 +2288,7 @@
                 <template v-if="camLocateError"> · {{ camLocateError }}</template>
               </p>
               <div class="tp-snapshot">
-                <img v-if="snapshotUrl && !snapshotFailed"
+                <img v-if="snapshotUrl && !snapshotFailed" v-show="snapshotLoaded"
                      :src="snapshotUrl"
                      :alt="selectedCam.description"
                      @load="snapshotLoaded = true; snapshotFailed = false"
@@ -2687,15 +2687,25 @@ function minutesUntil(iso) {
 /* 靜態資料的版本號。改資料時把這個值 +1（或改成當日日期），
    瀏覽器就會當作新檔案重抓，不必再清 localStorage。
    對應 tools/split-fare.py 產生的兩個檔案。 */
-const DATA_VERSION = "2026-09-28";
+const DATA_VERSION = "2026-10-29";
 
 /* noStore（預設 true）＝繞過 HTTP 快取，給會變動的 ETA API 用；
    傳 { noStore: false } 則改用瀏覽器快取，給靜態資料檔用
    （搭配 DATA_VERSION 就能指定失效）。 */
-async function getJSON(url, { noStore = true } = {}) {
-  const res = await fetch(url, { cache: noStore ? "no-store" : "default" });
-  if (!res.ok) throw new Error("HTTP " + res.status);
-  return res.json();
+async function getJSON(url, { noStore = true, timeoutMs = 12000 } = {}) {
+  /* 官方 API 偶爾會長時間無回應（實測 rt.data.gov.hk 可逾 10 秒不回），
+     fetch 本身沒有逾時就會令搜尋一直停在「搜尋中」且無法取消。
+     用 AbortController 設上限：逾時視為失敗，由呼叫端決定重試或提示。 */
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { cache: noStore ? "no-store" : "default", signal: ctl.signal });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    return await res.json();
+  } catch (e) {
+    if (e && e.name === "AbortError") throw new Error("連線逾時（" + Math.round(timeoutMs / 1000) + " 秒）");
+    throw e;
+  } finally { clearTimeout(timer); }
 }
 function isValidCoord(lat, lng) {
   return typeof lat === "number" && typeof lng === "number" && isFinite(lat) && isFinite(lng) &&
@@ -4516,6 +4526,16 @@ createApp({
     /* 換選中的攝影機（點地圖上的點）→ 更新標記樣式與常駐名稱。 */
     watch(selectedCamKey, () => { nextTick(renderCameraMarkers); });
 
+    /* 選中攝影機一變（換區、點新鏡頭、清單刷新令 fallback 換了鏡頭），
+       就把載入狀態歸零。配合模板上 img 的 v-show="snapshotLoaded"，
+       新圖未到之前只顯示「載入中…」，不會把上一支鏡頭的舊圖
+       掛在新鏡頭的名字之下（實測舊寫法可錯位約 10 秒）。
+       selectRegion／onCamChange 本來已各自歸零，這裡是補上所有其他路徑。 */
+    watch(() => (selectedCam.value ? selectedCam.value.key : ""), () => {
+      snapshotLoaded.value = false;
+      snapshotFailed.value = false;
+    });
+
 
     const fareDisplay = computed(() => {
       const entry = currentFareEntry.value;
@@ -4552,6 +4572,7 @@ createApp({
     }
 
     let loadToken = 0;
+    let searchToken = 0;   /* onSearch 的代次：返回主頁後，遲到的搜尋結果要丟棄 */
     async function loadRoutes() {
       const token = ++loadToken;
       error.value = "";
@@ -4566,7 +4587,10 @@ createApp({
         const list = await loadRouteListFor(company.value);
         if (token !== loadToken) return;
         allRoutes.value = list;
-        if (isMobile.value) prefetchOthers(company.value);
+        /* 桌機也要預熱：搜尋時要一次問齊四間公司，若其他公司的清單
+           尚未載入，搜尋就要等最慢的一間（實測可逾 10 秒）。
+           以前只在手機預熱，桌機首次搜尋因此特別慢。 */
+        prefetchOthers(company.value);
       } catch (e) {
         if (token !== loadToken) return;
         error.value = "無法載入路線清單：" + e.message;
@@ -4627,15 +4651,35 @@ createApp({
           都不會經過下面的分支，名單會留在記憶體裡，所以要主動清。） */
       pickerCompanyIds.value = [];
       mobileSearching.value = true; error.value = "";
+      const token = ++searchToken;
       try {
-        const [kmb, ctb, nlb, mtr] = await Promise.all([
+        /* allSettled 而非 all：一間公司的 API 慢／掛（實測城巴清單可逾
+           10 秒無回應）不應拖死整個搜尋。載入失敗的公司會在下面如實
+           反映：若在其餘公司都找不到此號碼，會提示哪幾間未能載入，
+           而不是靜默地當作「路線不存在」再跳去地名搜尋。 */
+        const settled = await Promise.allSettled([
           loadRouteListFor("KMB"), loadRouteListFor("CTB"),
           loadRouteListFor("NLB"), loadRouteListFor("MTR"),
         ]);
-        const matches = [
-          { id: "KMB", list: kmb }, { id: "CTB", list: ctb },
-          { id: "NLB", list: nlb }, { id: "MTR", list: mtr },
-        ].filter(c => c.list.some(r => normalizeRouteNo(r.route) === code)).map(c => c.id);
+        if (token !== searchToken) return;   /* 使用者已返回主頁，丟棄結果 */
+        const lists = [
+          { id: "KMB", r: settled[0] }, { id: "CTB", r: settled[1] },
+          { id: "NLB", r: settled[2] }, { id: "MTR", r: settled[3] },
+        ];
+        const failedNames = lists.filter(c => c.r.status !== "fulfilled")
+          .map(c => ({ KMB: "九巴", CTB: "城巴", NLB: "嶼巴", MTR: "港鐵巴士" }[c.id] || c.id));
+        const matches = lists
+          .filter(c => c.r.status === "fulfilled" && c.r.value.some(r => normalizeRouteNo(r.route) === code))
+          .map(c => c.id);
+        if (matches.length === 0 && failedNames.length) {
+          searched.value = true; lastSearched.value = code;
+          routeKey.value = ""; selectedDirectionLabel.value = "";
+          stops.value = []; selectedStop.value = null; etas.value = [];
+          dataAge.value = null; countdown.value = null; currentFareEntry.value = null;
+          stopsNotice.value = "";
+          error.value = "未能載入" + failedNames.join("、") + "的路線資料（連線逾時或失敗），未能確認「" + code + "」是否存在，請重試。";
+          return;
+        }
         if (matches.length === 0) {
           searched.value = true; lastSearched.value = code;
           routeKey.value = ""; selectedDirectionLabel.value = "";
@@ -5363,6 +5407,8 @@ createApp({
     }
 
     function goToLanding() {
+      searchToken++;   /* 令進行中的搜尋結果作廢，避免返回後又被彈回結果頁 */
+      mobileSearching.value = false; placeLoading.value = false;
       routeInput.value = "";
       lastSearched.value = "";
       searched.value = false;
