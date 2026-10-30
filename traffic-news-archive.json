@@ -2,7 +2,7 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-10-30T14:24:34.845Z",
+  "generated": "2026-10-30T19:32:06.549Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
@@ -18,6 +18,19 @@
       "whenText": "2026-10-30T21:11:00",
       "whenMs": 1793365860000,
       "storedAt": 1793370272284
+    },
+    {
+      "id": "148866",
+      "heading": "Car Park Publicity",
+      "detail": "西九文化區內所有停車場現已泊滿車輛，前往西九文化區一帶的市民請使用公共交通工具。",
+      "location": "",
+      "direction": "",
+      "landmark": "",
+      "status": "完結",
+      "closed": true,
+      "whenText": "2026-10-30T20:11:00",
+      "whenMs": 1793362260000,
+      "storedAt": 1793388722439
     },
     {
       "id": "148833",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-27T14:42:00",
       "whenMs": 1793083320000,
       "storedAt": 1793084503800
-    },
-    {
-      "id": "148575",
-      "heading": "道路事故",
-      "detail": "較早前因交通意外而封閉的連翔道(往尖沙咀方向)近欽州街西的部份行車線現已解封。 車龍有待消散。",
-      "location": "連翔道",
-      "direction": "尖沙咀",
-      "landmark": "欽州街西",
-      "status": "更新情況",
-      "closed": false,
-      "whenText": "2026-10-27T09:22:00",
-      "whenMs": 1793064120000,
-      "storedAt": 1793064773854
     }
   ]
 }
