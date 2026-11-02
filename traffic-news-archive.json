@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-11-02T10:16:52.356Z",
+  "generated": "2026-11-02T20:26:06.224Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "149022",
+      "heading": "道路事故",
+      "detail": "較早前因交通意外而封閉的長沙灣道(往旺角方向)近美荔道的部份行車線現已解封。",
+      "location": "長沙灣道",
+      "direction": "旺角",
+      "landmark": "美荔道",
+      "status": "完結",
+      "closed": true,
+      "whenText": "2026-11-02T20:45:00",
+      "whenMs": 1793623500000,
+      "storedAt": 1793651165387
+    },
     {
       "id": "149011",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-30T15:07:00",
       "whenMs": 1793344020000,
       "storedAt": 1793345180261
-    },
-    {
-      "id": "148793",
-      "heading": "道路事故",
-      "detail": "因車輛故障，青嶼幹線(汲水門大橋)(往機場方向) 的慢線現已封閉。 駕駛人士只可使用餘下行車線行車。 現時上址交通繁忙。",
-      "location": "青嶼幹線(汲水門大橋)",
-      "direction": "機場",
-      "landmark": "",
-      "status": "最新情況",
-      "closed": false,
-      "whenText": "2026-10-30T09:13:00",
-      "whenMs": 1793322780000,
-      "storedAt": 1793323575737
     }
   ]
 }
