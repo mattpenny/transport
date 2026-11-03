@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-11-02T20:26:06.224Z",
+  "generated": "2026-11-03T02:29:57.882Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "149040",
+      "heading": "道路事故",
+      "detail": "因交通意外，鯉魚門道(往旺角方向)近翠屏道的部份行車線現已封閉。 駕駛人士只可使用餘下行車線行車。 現時上址交通繁忙。",
+      "location": "鯉魚門道",
+      "direction": "旺角",
+      "landmark": "翠屏道",
+      "status": "最新情況",
+      "closed": false,
+      "whenText": "2026-11-03T10:20:00",
+      "whenMs": 1793672400000,
+      "storedAt": 1793672997090
+    },
     {
       "id": "149022",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-10-30T20:11:00",
       "whenMs": 1793362260000,
       "storedAt": 1793388722439
-    },
-    {
-      "id": "148833",
-      "heading": "道路事故",
-      "detail": "較早前因交通意外而封閉的觀塘繞道(往油塘方向)近啟德消防局的部份行車線現已解封。",
-      "location": "觀塘繞道",
-      "direction": "油塘",
-      "landmark": "啟德消防局",
-      "status": "完結",
-      "closed": true,
-      "whenText": "2026-10-30T15:07:00",
-      "whenMs": 1793344020000,
-      "storedAt": 1793345180261
     }
   ]
 }
