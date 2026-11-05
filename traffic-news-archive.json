@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-11-05T03:17:15.747Z",
+  "generated": "2026-11-05T11:16:22.127Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "149175",
+      "heading": "道路事故",
+      "detail": "較早前因交通意外而封閉的漆咸道南(往油麻地方向)近公主道的部份行車線現已解封。",
+      "location": "漆咸道南",
+      "direction": "油麻地",
+      "landmark": "公主道",
+      "status": "更新情況",
+      "closed": false,
+      "whenText": "2026-11-05T19:04:00",
+      "whenMs": 1793876640000,
+      "storedAt": 1793877381374
+    },
     {
       "id": "149139",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-11-01T00:25:00",
       "whenMs": 1793463900000,
       "storedAt": 1793474693453
-    },
-    {
-      "id": "148944",
-      "heading": "道路事故",
-      "detail": "較早前因交通意外而封閉的窩打老道(往尖沙咀方向)近火石道的快線現已解封。",
-      "location": "窩打老道",
-      "direction": "尖沙咀",
-      "landmark": "火石道",
-      "status": "完結",
-      "closed": true,
-      "whenText": "2026-10-31T20:25:00",
-      "whenMs": 1793449500000,
-      "storedAt": 1793460333566
     }
   ]
 }
