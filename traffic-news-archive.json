@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-11-07T03:44:13.976Z",
+  "generated": "2026-11-07T10:47:21.282Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "149314",
+      "heading": "道路事故",
+      "detail": "較早前因交通意外而封閉的將軍澳道(往觀塘方向)近翠屏南邨的部份行車線現已解封。",
+      "location": "將軍澳道",
+      "direction": "觀塘",
+      "landmark": "翠屏南邨",
+      "status": "更新情況",
+      "closed": false,
+      "whenText": "2026-11-07T18:37:00",
+      "whenMs": 1794047820000,
+      "storedAt": 1794048440451
+    },
     {
       "id": "149276",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-11-03T10:20:00",
       "whenMs": 1793672400000,
       "storedAt": 1793672997090
-    },
-    {
-      "id": "149022",
-      "heading": "道路事故",
-      "detail": "較早前因交通意外而封閉的長沙灣道(往旺角方向)近美荔道的部份行車線現已解封。",
-      "location": "長沙灣道",
-      "direction": "旺角",
-      "landmark": "美荔道",
-      "status": "完結",
-      "closed": true,
-      "whenText": "2026-11-02T20:45:00",
-      "whenMs": 1793623500000,
-      "storedAt": 1793651165387
     }
   ]
 }
