@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-11-08T00:04:34.864Z",
+  "generated": "2026-11-08T06:24:26.970Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "149343",
+      "heading": "道路事故",
+      "detail": "因車輛故障，堅拿道天橋(往香港仔隧道方向)近時代廣場的部份行車線現已封閉。 駕駛人士只可使用餘下行車線行車。 現時上址交通繁忙。",
+      "location": "堅拿道天橋",
+      "direction": "香港仔隧道",
+      "landmark": "時代廣場",
+      "status": "最新情況",
+      "closed": false,
+      "whenText": "2026-11-08T13:37:00",
+      "whenMs": 1794116220000,
+      "storedAt": 1794119065674
+    },
     {
       "id": "149323",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-11-03T23:52:00",
       "whenMs": 1793721120000,
       "storedAt": 1793744693578
-    },
-    {
-      "id": "149054",
-      "heading": "道路事故",
-      "detail": "因交通意外，元朗公路(往屯門方向)近十八鄉交匯處的部份行車線現已封閉。 駕駛人士只可使用餘下行車線行車。 現時上址交通繁忙。",
-      "location": "元朗公路",
-      "direction": "屯門",
-      "landmark": "十八鄉交匯處",
-      "status": "更新情況",
-      "closed": false,
-      "whenText": "2026-11-03T17:29:00",
-      "whenMs": 1793698140000,
-      "storedAt": 1793699680825
     }
   ]
 }
