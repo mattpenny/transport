@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-11-08T18:34:55.141Z",
+  "generated": "2026-11-08T22:35:39.910Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "149357",
+      "heading": "道路事故",
+      "detail": "較早前因緊急路面維修而封閉的龍翔道(往觀塘方向)近龍坪道的慢線現已解封。",
+      "location": "龍翔道",
+      "direction": "觀塘",
+      "landmark": "龍坪道",
+      "status": "更新情況",
+      "closed": false,
+      "whenText": "2026-11-09T06:00:00",
+      "whenMs": 1794175200000,
+      "storedAt": 1794177339023
+    },
     {
       "id": "149355",
       "heading": "渡輪事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-11-04T23:34:00",
       "whenMs": 1793806440000,
       "storedAt": 1793833166155
-    },
-    {
-      "id": "149090",
-      "heading": "道路事故",
-      "detail": "較早前因交通意外而封閉的青葵公路(往九龍方向)近荔枝角公園的部份行車線現已解封。 車龍有待消散。",
-      "location": "青葵公路",
-      "direction": "九龍",
-      "landmark": "荔枝角公園",
-      "status": "更新情況",
-      "closed": false,
-      "whenText": "2026-11-04T10:05:00",
-      "whenMs": 1793757900000,
-      "storedAt": 1793759382220
     }
   ]
 }
