@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-11-10T18:22:16.700Z",
+  "generated": "2026-11-10T23:36:15.411Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "149517",
+      "heading": "道路事故",
+      "detail": "較早前因交通意外而封閉的青衣西北交匯處(往九龍方向)近青衣行政大樓的快線現已解封。",
+      "location": "青衣西北交匯處",
+      "direction": "九龍",
+      "landmark": "青衣行政大樓",
+      "status": "完結",
+      "closed": true,
+      "whenText": "2026-11-11T07:18:00",
+      "whenMs": 1794352680000,
+      "storedAt": 1794353773769
+    },
     {
       "id": "149514",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-11-07T01:35:00",
       "whenMs": 1793986500000,
       "storedAt": 1793993746205
-    },
-    {
-      "id": "149248",
-      "heading": "道路事故",
-      "detail": "因車輛故障，長青隧道(往機場方向)的部份行車線現已封閉。 駕駛人士只可使用餘下行車線行車。 現時上址交通繁忙。",
-      "location": "長青隧道",
-      "direction": "機場",
-      "landmark": "",
-      "status": "最新情況",
-      "closed": false,
-      "whenText": "2026-11-06T19:59:00",
-      "whenMs": 1793966340000,
-      "storedAt": 1793967527590
     }
   ]
 }
