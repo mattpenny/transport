@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-11-09T20:28:24.184Z",
+  "generated": "2026-11-10T02:50:25.963Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "149450",
+      "heading": "道路事故",
+      "detail": "朗日路(往青山公路　–　元朗段方向)近元朗港鐵站的交通燈已恢復正常運作。",
+      "location": "朗日路",
+      "direction": "青山公路　–　元朗段",
+      "landmark": "元朗港鐵站",
+      "status": "完結",
+      "closed": true,
+      "whenText": "2026-11-10T09:31:00",
+      "whenMs": 1794274260000,
+      "storedAt": 1794279025041
+    },
     {
       "id": "149436",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-11-06T07:15:00",
       "whenMs": 1793920500000,
       "storedAt": 1793922770017
-    },
-    {
-      "id": "149184",
-      "heading": "道路事故",
-      "detail": "較早前因交通意外而封閉的康莊道(往何文田方向)近香港理工大學的部份行車線現已解封。",
-      "location": "康莊道",
-      "direction": "何文田",
-      "landmark": "香港理工大學",
-      "status": "完結",
-      "closed": true,
-      "whenText": "2026-11-05T20:56:00",
-      "whenMs": 1793883360000,
-      "storedAt": 1793904718122
     }
   ]
 }
