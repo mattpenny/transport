@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-11-10T23:36:15.411Z",
+  "generated": "2026-11-11T03:45:27.095Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "149549",
+      "heading": "道路事故",
+      "detail": "較早前因交通意外而封閉的公主道(往海底隧道方向)近漆咸道北的部份行車線現已解封。",
+      "location": "公主道",
+      "direction": "海底隧道",
+      "landmark": "漆咸道北",
+      "status": "更新情況",
+      "closed": false,
+      "whenText": "2026-11-11T10:44:00",
+      "whenMs": 1794365040000,
+      "storedAt": 1794368725919
+    },
     {
       "id": "149517",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-11-07T07:29:00",
       "whenMs": 1794007740000,
       "storedAt": 1794009140675
-    },
-    {
-      "id": "149259",
-      "heading": "道路事故",
-      "detail": "較早前因交通意外而封閉的康莊道(往何文田方向)近香港理工大學的部份行車線現已解封。",
-      "location": "康莊道",
-      "direction": "何文田",
-      "landmark": "香港理工大學",
-      "status": "更新情況",
-      "closed": false,
-      "whenText": "2026-11-07T01:35:00",
-      "whenMs": 1793986500000,
-      "storedAt": 1793993746205
     }
   ]
 }
