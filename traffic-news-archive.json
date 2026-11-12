@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-11-11T18:59:42.697Z",
+  "generated": "2026-11-12T01:21:48.393Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "149596",
+      "heading": "道路事故",
+      "detail": "因交通意外，公主道(往海底隧道方向)近愛民邨的部份行車線現已封閉。 駕駛人士只可使用餘下行車線行車。 現時上址交通繁忙。",
+      "location": "公主道",
+      "direction": "海底隧道",
+      "landmark": "愛民邨",
+      "status": "最新情況",
+      "closed": false,
+      "whenText": "2026-11-12T09:02:00",
+      "whenMs": 1794445320000,
+      "storedAt": 1794446507448
+    },
     {
       "id": "149589",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-11-08T00:04:00",
       "whenMs": 1794067440000,
       "storedAt": 1794096273917
-    },
-    {
-      "id": "149314",
-      "heading": "道路事故",
-      "detail": "較早前因交通意外而封閉的將軍澳道(往觀塘方向)近翠屏南邨的部份行車線現已解封。",
-      "location": "將軍澳道",
-      "direction": "觀塘",
-      "landmark": "翠屏南邨",
-      "status": "更新情況",
-      "closed": false,
-      "whenText": "2026-11-07T18:37:00",
-      "whenMs": 1794047820000,
-      "storedAt": 1794048440451
     }
   ]
 }
