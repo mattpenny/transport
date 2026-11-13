@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-11-13T03:01:51.473Z",
+  "generated": "2026-11-13T11:18:56.899Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "149690",
+      "heading": "道路事故",
+      "detail": "較早前因位於屯門公路(往九龍方向)近屯門市廣場的車輛着火而受影響的巴士服務已陸續回復正常。同時，受影響龍運第A36、A37、E36、E36A、E37號線(來回方向)，港鐵巴士第K54號綫(屯門市中心方向)陸續恢復原有路線行駛。 有關個別巴士路線的最新服務情況，市民可參閱巴士公司的網頁或流動應用程式內的資訊。",
+      "location": "屯門公路",
+      "direction": "九龍",
+      "landmark": "屯門市廣場",
+      "status": "更新情況",
+      "closed": false,
+      "whenText": "2026-11-13T19:03:00",
+      "whenMs": 1794567780000,
+      "storedAt": 1794568736105
+    },
     {
       "id": "149658",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-11-09T17:10:00",
       "whenMs": 1794215400000,
       "storedAt": 1794218337229
-    },
-    {
-      "id": "149392",
-      "heading": "道路事故",
-      "detail": "較早前因交通意外而封閉的火炭路(往駿洋邨方向)近源禾路的部份行車線現已解封。",
-      "location": "火炭路",
-      "direction": "駿洋邨",
-      "landmark": "源禾路",
-      "status": "更新情況",
-      "closed": false,
-      "whenText": "2026-11-09T10:05:00",
-      "whenMs": 1794189900000,
-      "storedAt": 1794190421328
     }
   ]
 }
