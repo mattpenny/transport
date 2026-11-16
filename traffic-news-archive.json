@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-11-16T01:12:38.189Z",
+  "generated": "2026-11-16T08:09:40.315Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "149842",
+      "heading": "道路事故",
+      "detail": "因火警，北角道介乎英皇道與渣華道之間的全線以及春秧街的全線現已封閉。\r\n駕駛人士請考慮改用其他道路。  同時，春秧街站及北角總站的電車服務暫停。  現時上址交通繁忙。",
+      "location": "北角道",
+      "direction": "",
+      "landmark": "英皇道",
+      "status": "最新情況",
+      "closed": false,
+      "whenText": "2026-11-16T15:50:00",
+      "whenMs": 1794815400000,
+      "storedAt": 1794816579248
+    },
     {
       "id": "149811",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-11-12T16:17:00",
       "whenMs": 1794471420000,
       "storedAt": 1794472337123
-    },
-    {
-      "id": "149596",
-      "heading": "道路事故",
-      "detail": "因交通意外，公主道(往海底隧道方向)近愛民邨的部份行車線現已封閉。 駕駛人士只可使用餘下行車線行車。 現時上址交通繁忙。",
-      "location": "公主道",
-      "direction": "海底隧道",
-      "landmark": "愛民邨",
-      "status": "最新情況",
-      "closed": false,
-      "whenText": "2026-11-12T09:02:00",
-      "whenMs": 1794445320000,
-      "storedAt": 1794446507448
     }
   ]
 }
