@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-11-16T18:43:41.580Z",
+  "generated": "2026-11-17T02:12:44.009Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "149904",
+      "heading": "道路事故",
+      "detail": "因交通意外，荃灣路(往屯門公路方向)近葵順街遊樂場的快線現已封閉。 駕駛人士只可使用餘下行車線行車。 現時上址交通繁忙。",
+      "location": "荃灣路",
+      "direction": "屯門公路",
+      "landmark": "葵順街遊樂場",
+      "status": "最新情況",
+      "closed": false,
+      "whenText": "2026-11-17T09:37:00",
+      "whenMs": 1794879420000,
+      "storedAt": 1794881562543
+    },
     {
       "id": "149879",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-11-13T00:30:00",
       "whenMs": 1794501000000,
       "storedAt": 1794503642771
-    },
-    {
-      "id": "149643",
-      "heading": "道路事故",
-      "detail": "較早前因臨時交通安排而封閉的由中環灣仔繞道(往北角方向)通往博覽道 的支路的全線現已解封。",
-      "location": "中環灣仔繞道",
-      "direction": "北角",
-      "landmark": "",
-      "status": "完結",
-      "closed": true,
-      "whenText": "2026-11-12T22:41:00",
-      "whenMs": 1794494460000,
-      "storedAt": 1794523696963
     }
   ]
 }
