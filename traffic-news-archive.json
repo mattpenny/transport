@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-11-19T17:29:03.133Z",
+  "generated": "2026-11-19T23:42:02.597Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "150076",
+      "heading": "道路事故",
+      "detail": "較早前因緊急路面維修而封閉的卑路乍街(往域多利道方向)近士美菲路的中線現已解封。",
+      "location": "卑路乍街",
+      "direction": "域多利道",
+      "landmark": "士美菲路",
+      "status": "完結",
+      "closed": true,
+      "whenText": "2026-11-20T06:08:00",
+      "whenMs": 1795126080000,
+      "storedAt": 1795131721687
+    },
     {
       "id": "150037",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-11-15T17:19:00",
       "whenMs": 1794734340000,
       "storedAt": 1794735597045
-    },
-    {
-      "id": "149760",
-      "heading": "道路事故",
-      "detail": "運輸署表⽰，通往萬宜⽔庫東壩的西貢萬宜路交通現時⾮常繁忙，專線⼩巴第9A號線的營辦商已加強服務應對乘客需求。請遊⼈妥善計劃⾏程，預留充裕交通時間，同時在輪候時保持忍讓。",
-      "location": "西貢萬宜路",
-      "direction": "",
-      "landmark": "",
-      "status": "更新情況",
-      "closed": false,
-      "whenText": "2026-11-15T10:06:00",
-      "whenMs": 1794708360000,
-      "storedAt": 1794708996509
     }
   ]
 }
