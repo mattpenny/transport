@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-11-19T23:42:02.597Z",
+  "generated": "2026-11-20T04:52:13.030Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "150120",
+      "heading": "道路事故",
+      "detail": "因交通意外，吐露港公路(往九龍方向)近大埔滘的快線現已封閉。 駕駛人士只可使用餘下行車線行車。 現時上址交通繁忙。",
+      "location": "吐露港公路",
+      "direction": "九龍",
+      "landmark": "大埔滘",
+      "status": "最新情況",
+      "closed": false,
+      "whenText": "2026-11-20T12:38:00",
+      "whenMs": 1795149480000,
+      "storedAt": 1795150331529
+    },
     {
       "id": "150076",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-11-16T00:08:00",
       "whenMs": 1794758880000,
       "storedAt": 1794777893764
-    },
-    {
-      "id": "149782",
-      "heading": "道路事故",
-      "detail": "較早前因火警而封閉的正德街(往沙田㘭道方向)近龍樂樓的部份行車線現已解封。",
-      "location": "正德街",
-      "direction": "沙田㘭道",
-      "landmark": "龍樂樓",
-      "status": "更新情況",
-      "closed": false,
-      "whenText": "2026-11-15T17:19:00",
-      "whenMs": 1794734340000,
-      "storedAt": 1794735597045
     }
   ]
 }
