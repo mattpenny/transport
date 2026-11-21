@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-11-21T10:26:36.762Z",
+  "generated": "2026-11-21T17:41:59.211Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "150241",
+      "heading": "道路事故",
+      "detail": "較早前因交通意外而封閉的西九龍公路(往荃灣方向)近南昌港鐵站的部份行車線現已解封。 車龍有待消散。",
+      "location": "西九龍公路",
+      "direction": "荃灣",
+      "landmark": "南昌港鐵站",
+      "status": "完結",
+      "closed": true,
+      "whenText": "2026-11-21T22:51:00",
+      "whenMs": 1795272660000,
+      "storedAt": 1795282918578
+    },
     {
       "id": "150220",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-11-17T18:38:00",
       "whenMs": 1794911880000,
       "storedAt": 1794912873845
-    },
-    {
-      "id": "149904",
-      "heading": "道路事故",
-      "detail": "因交通意外，荃灣路(往屯門公路方向)近葵順街遊樂場的快線現已封閉。 駕駛人士只可使用餘下行車線行車。 現時上址交通繁忙。",
-      "location": "荃灣路",
-      "direction": "屯門公路",
-      "landmark": "葵順街遊樂場",
-      "status": "最新情況",
-      "closed": false,
-      "whenText": "2026-11-17T09:37:00",
-      "whenMs": 1794879420000,
-      "storedAt": 1794881562543
     }
   ]
 }
