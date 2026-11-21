@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-11-20T21:37:12.005Z",
+  "generated": "2026-11-21T02:54:59.080Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "150193",
+      "heading": "道路事故",
+      "detail": "運輸署表示，通往萬宜水庫東壩的西貢萬宜路交通現時非常繁忙，專線小巴第9A號線的營辦商已加強服務應對乘客需求。請遊人妥善計劃行程，預留充裕交通時間，同時在輪候時保持忍讓。",
+      "location": "",
+      "direction": "",
+      "landmark": "",
+      "status": "更新情況",
+      "closed": false,
+      "whenText": "2026-11-21T10:32:00",
+      "whenMs": 1795228320000,
+      "storedAt": 1795229697860
+    },
     {
       "id": "150182",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-11-17T02:12:00",
       "whenMs": 1794852720000,
       "storedAt": 1794854620509
-    },
-    {
-      "id": "149842",
-      "heading": "道路事故",
-      "detail": "因火警，北角道介乎英皇道與渣華道之間的全線以及春秧街的全線現已封閉。\r\n駕駛人士請考慮改用其他道路。  同時，春秧街站及北角總站的電車服務暫停。  現時上址交通繁忙。",
-      "location": "北角道",
-      "direction": "",
-      "landmark": "英皇道",
-      "status": "最新情況",
-      "closed": false,
-      "whenText": "2026-11-16T15:50:00",
-      "whenMs": 1794815400000,
-      "storedAt": 1794816579248
     }
   ]
 }
