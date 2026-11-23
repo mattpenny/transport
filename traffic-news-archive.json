@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-11-22T23:20:14.694Z",
+  "generated": "2026-11-23T03:51:32.257Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "150292",
+      "heading": "道路事故",
+      "detail": "因交通意外，獅子山隧道現已實施單管雙程行車措施。 現時在獅子山隧道(往九龍方向)的車龍龍尾已到沙田路近博康邨。 駕駛人士請考慮改用其他道路，例如青沙公路或大老山隧道。 現時上址交通擠塞。",
+      "location": "獅子山隧道",
+      "direction": "九龍",
+      "landmark": "",
+      "status": "更新情況",
+      "closed": false,
+      "whenText": "2026-11-23T11:40:00",
+      "whenMs": 1795405200000,
+      "storedAt": 1795405891362
+    },
     {
       "id": "150262",
       "heading": "港鐵事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-11-19T08:23:00",
       "whenMs": 1795047780000,
       "storedAt": 1795048567269
-    },
-    {
-      "id": "150014",
-      "heading": "道路事故",
-      "detail": "較早前因交通意外而封閉的梳士巴利道(往紅磡方向)近漢口道的部份行車線現已解封。 同時，較早前實施的禁止車輛由梳士巴利道(往紅磡方向)左轉漢口道的行車措施現已取消。",
-      "location": "梳士巴利道",
-      "direction": "紅磡",
-      "landmark": "漢口道",
-      "status": "完結",
-      "closed": true,
-      "whenText": "2026-11-18T23:07:00",
-      "whenMs": 1795014420000,
-      "storedAt": 1795025902367
     }
   ]
 }
