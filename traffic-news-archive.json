@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-11-24T11:13:56.832Z",
+  "generated": "2026-11-24T21:24:58.868Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "150420",
+      "heading": "強風管理",
+      "detail": "因天氣情況改善，將軍澳跨灣大橋單車徑及行人路現已實施下列安排: 前往跨灣大橋人士請注意，跨灣大橋單車徑及行人路已經重開。",
+      "location": "將軍澳跨灣大橋",
+      "direction": "",
+      "landmark": "",
+      "status": "更新情況",
+      "closed": false,
+      "whenText": "2026-11-24T21:15:00",
+      "whenMs": 1795526100000,
+      "storedAt": 1795555497529
+    },
     {
       "id": "150411",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-11-20T12:38:00",
       "whenMs": 1795149480000,
       "storedAt": 1795150331529
-    },
-    {
-      "id": "150076",
-      "heading": "道路事故",
-      "detail": "較早前因緊急路面維修而封閉的卑路乍街(往域多利道方向)近士美菲路的中線現已解封。",
-      "location": "卑路乍街",
-      "direction": "域多利道",
-      "landmark": "士美菲路",
-      "status": "完結",
-      "closed": true,
-      "whenText": "2026-11-20T06:08:00",
-      "whenMs": 1795126080000,
-      "storedAt": 1795131721687
     }
   ]
 }
