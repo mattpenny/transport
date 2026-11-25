@@ -2,10 +2,23 @@
   "source": "https://www.td.gov.hk/tc/special_news/trafficnews.xml",
   "sourceName": "特別交通消息（運輸署開放數據）",
   "note": "跨裝置共用的交通消息存檔，由 tools/build-traffic-news.js 產生；index.html 會下載並與即時資料及本機存檔合併。",
-  "generated": "2026-11-25T14:43:16.566Z",
+  "generated": "2026-11-25T23:24:48.387Z",
   "maxItems": 15,
   "count": 15,
   "messages": [
+    {
+      "id": "150485",
+      "heading": "港鐵事故",
+      "detail": "運輸署接獲港鐵公司通知， 在天水圍站有故障的工程車已駛離行車綫，屯馬綫列車服務逐步回復正常。 較早前港鐵安排的免費接駁巴⼠第K90C號線將會在上午06:30停止服務。 有關個別巴⼠路線的最新服務情況，市⺠可參閱港鐵公司的網⾴或流動應⽤程式內的資訊。",
+      "location": "屯馬綫服務延誤",
+      "direction": "",
+      "landmark": "",
+      "status": "更新情況",
+      "closed": false,
+      "whenText": "2026-11-26T06:20:00",
+      "whenMs": 1795645200000,
+      "storedAt": 1795649087236
+    },
     {
       "id": "150478",
       "heading": "道路事故",
@@ -187,19 +200,6 @@
       "whenText": "2026-11-21T10:32:00",
       "whenMs": 1795228320000,
       "storedAt": 1795229697860
-    },
-    {
-      "id": "150182",
-      "heading": "道路事故",
-      "detail": "以下路段現已解封： -利園山道（往告士打道方向）介乎啓超道與白沙道之間的一段 -介乎白沙道與啓超道之間的恩平道的全線",
-      "location": "利園山道，恩平道，啓超道",
-      "direction": "",
-      "landmark": "",
-      "status": "完結",
-      "closed": true,
-      "whenText": "2026-11-21T00:11:00",
-      "whenMs": 1795191060000,
-      "storedAt": 1795210631121
     }
   ]
 }
